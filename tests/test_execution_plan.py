@@ -1,4 +1,4 @@
-from orbit.models.execution_plan import (
+from core.models.execution_plan import (
     DynamicExtractionSchema,
     ExecutionPlan,
     ExtractionField,

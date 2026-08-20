@@ -1,10 +1,10 @@
 import pytest
-from orbit.models.execution_plan import (
+from core.models.execution_plan import (
     DynamicExtractionSchema,
     ExecutionPlan,
     ExtractionField,
 )
-from orbit.pipeline.validation.schema_validator import SchemaValidator
+from core.pipeline.validation.schema_validator import SchemaValidator
 
 
 def test_schema_validator_valid_job_listing():

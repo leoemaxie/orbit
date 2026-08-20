@@ -1,5 +1,5 @@
 import pytest
-from orbit.agent.condition import ConditionEvaluator
+from core.agent.condition import ConditionEvaluator
 
 
 def test_condition_aggregation_min():
