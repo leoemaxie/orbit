@@ -1,28 +1,9 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import sys
+from pathlib import Path
 
-from app.db.session import Base, engine
-from app.models import orm  # noqa: F401 (registers models with Base)
-from app.api.routes import router
+# Add src to sys.path if not installed in editable mode
+src_path = str(Path(__file__).resolve().parent.parent / "src")
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
 
-app = FastAPI(title="Orbit", description="Autonomous Goal-Driven Web Data Operations")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-app.include_router(router, prefix="/api")
+from orbit.app import app  # noqa: F401
