@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import logging
 from typing import Any
 from sqlalchemy.orm import Session
 
+from core.adapters.storage.local_export import LocalFileExportSink
 from core.agent.condition import ConditionEvaluator
 from core.agent.reasoner import AgentReasoner
 from core.db.orm import Automation, Result, Run
@@ -11,20 +12,15 @@ from core.events.types import OrbitEvent
 from core.models.enums import Frequency, RunStatus
 from core.models.execution_plan import ExecutionPlan
 from core.notifications.service import NotificationService
-from core.pipeline.discovery.serpapi import SerpApiDiscovery
+from core.pipeline.discovery.composite import CompositeDiscovery
 from core.pipeline.extraction.llm_extractor import LLMExtractor
 from core.pipeline.retrieval.brightdata import BrightDataRetrieval
+from core.pipeline.retrieval.link_extractor import LinkExtractor
+from core.pipeline.validation.anomaly_detector import AnomalyDetector
 from core.pipeline.validation.schema_validator import SchemaValidator
+from core.scheduler.cron import calculate_next_run
 
 logger = logging.getLogger("core.agent.orchestrator")
-
-FREQUENCY_DELTAS = {
-    Frequency.hourly: timedelta(hours=1),
-    Frequency.daily: timedelta(days=1),
-    Frequency.weekly: timedelta(weeks=1),
-    Frequency.monthly: timedelta(days=30),
-    Frequency.once: None,
-}
 
 
 class AgentOrchestrator:
@@ -39,14 +35,21 @@ class AgentOrchestrator:
         evaluator=None,
         notifier=None,
         reasoner=None,
+        link_extractor=None,
+        anomaly_detector=None,
+        export_sink=None,
     ):
-        self.discovery = discovery or SerpApiDiscovery()
+        # Default to CompositeDiscovery so Orbit functions with or without SerpApi
+        self.discovery = discovery or CompositeDiscovery()
         self.retrieval = retrieval or BrightDataRetrieval()
         self.extractor = extractor or LLMExtractor()
         self.validator = validator or SchemaValidator()
         self.evaluator = evaluator or ConditionEvaluator()
         self.notifier = notifier or NotificationService()
         self.reasoner = reasoner or AgentReasoner()
+        self.link_extractor = link_extractor or LinkExtractor()
+        self.anomaly_detector = anomaly_detector or AnomalyDetector()
+        self.export_sink = export_sink or LocalFileExportSink()
 
     async def execute_run(self, db: Session, automation: Automation) -> Run:
         """Executes a full agent run with self-correction, validation, alerting, and verification."""
@@ -75,7 +78,7 @@ class AgentOrchestrator:
 
         try:
             # ────────────────────────────────────────────────
-            # 1. DISCOVERY STAGE
+            # 1. DISCOVERY STAGE (Decoupled & Multi-Engine)
             # ────────────────────────────────────────────────
             urls = await self.discovery.discover(plan, max_results=8)
 
@@ -84,7 +87,7 @@ class AgentOrchestrator:
                 logger.info("0 sources found, invoking Agent Reasoner for recovery...")
                 diagnosis = await self.reasoner.diagnose_and_recover(
                     stage="discovery",
-                    error="No search results returned for query",
+                    error="No search results returned for query across available engines",
                     plan=plan,
                 )
                 reasoning_trail.append({"stage": "discovery", "decision": diagnosis})
@@ -107,7 +110,7 @@ class AgentOrchestrator:
                 return run
 
             # ────────────────────────────────────────────────
-            # 2. RETRIEVAL STAGE
+            # 2. RETRIEVAL STAGE (with 2-Hop Detail Link Discovery)
             # ────────────────────────────────────────────────
             run.status = RunStatus.retrieving
             db.commit()
@@ -124,6 +127,22 @@ class AgentOrchestrator:
                     failed_urls, country_code=plan.country_code
                 )
                 pages.update(retry_pages)
+
+            # 2-Hop Navigation: Check if retrieved pages are listing pages and discover detail links
+            extra_detail_urls = []
+            for u, content in pages.items():
+                if content:
+                    child_links = self.link_extractor.extract_child_links(u, content, max_links=2)
+                    for child in child_links:
+                        if child not in pages and child not in extra_detail_urls:
+                            extra_detail_urls.append(child)
+
+            if extra_detail_urls:
+                logger.info(f"Discovered {len(extra_detail_urls)} child detail links for 2-hop crawl.")
+                child_pages = await self.retrieval.retrieve_many(
+                    extra_detail_urls, country_code=plan.country_code
+                )
+                pages.update(child_pages)
 
             retrieved_urls = [u for u, content in pages.items() if content]
             run.pages_retrieved = retrieved_urls
@@ -152,15 +171,18 @@ class AgentOrchestrator:
             db.commit()
 
             # ────────────────────────────────────────────────
-            # 4. VALIDATION & STORAGE STAGE
+            # 4. VALIDATION & ANOMALY DETECTION
             # ────────────────────────────────────────────────
             run.status = RunStatus.validating
             db.commit()
 
+            # Statistical anomaly check across records
+            annotated_records = self.anomaly_detector.filter_and_annotate_outliers(extracted_records)
+
             valid_count = 0
             valid_records = []
 
-            for rec in extracted_records:
+            for rec in annotated_records:
                 is_valid, errors = self.validator.validate(rec, plan)
                 if is_valid:
                     valid_count += 1
@@ -179,14 +201,23 @@ class AgentOrchestrator:
             run.status = RunStatus.storing
             db.commit()
 
+            # Export sink (local file / external storage)
+            if valid_records:
+                await self.export_sink.export_results(automation.id, run.id, valid_records)
+
             # ────────────────────────────────────────────────
-            # 5. CONDITION EVALUATION & ALERTING
+            # 5. CONDITION EVALUATION & HISTORICAL COMPARISON
             # ────────────────────────────────────────────────
             if plan.condition and valid_records:
                 run.status = RunStatus.evaluating
                 db.commit()
 
-                matched, cond_msg = self.evaluator.evaluate(plan.condition, valid_records)
+                # Fetch previous run records for historical delta calculations
+                previous_records = self._get_previous_run_records(db, automation.id, run.id)
+
+                matched, cond_msg = self.evaluator.evaluate(
+                    plan.condition, valid_records, previous_records=previous_records
+                )
                 run.condition_matched = matched
                 run.condition_message = cond_msg
                 db.commit()
@@ -213,12 +244,17 @@ class AgentOrchestrator:
             db.commit()
 
             # ────────────────────────────────────────────────
-            # 7. SCHEDULE NEXT RUN
+            # 7. TIMEZONE-AWARE WALL-CLOCK SCHEDULING
             # ────────────────────────────────────────────────
-            delta = FREQUENCY_DELTAS.get(plan.frequency)
-            if delta and automation.active:
-                automation.next_run_at = datetime.now(timezone.utc) + delta
-                db.commit()
+            if automation.active and plan.frequency != Frequency.once:
+                next_run = calculate_next_run(
+                    frequency=plan.frequency,
+                    schedule_time=plan.schedule_time,
+                    tz_name=plan.timezone,
+                )
+                if next_run:
+                    automation.next_run_at = next_run
+                    db.commit()
 
             await event_bus.publish(
                 OrbitEvent(
@@ -239,3 +275,22 @@ class AgentOrchestrator:
             run.finished_at = datetime.now(timezone.utc)
             db.commit()
             return run
+
+    def _get_previous_run_records(
+        self, db: Session, automation_id: str, current_run_id: str
+    ) -> list[dict[str, Any]]:
+        """Retrieves valid records from the most recent previous run of this automation."""
+        last_run = (
+            db.query(Run)
+            .filter(
+                Run.automation_id == automation_id,
+                Run.id != current_run_id,
+                Run.status.in_([RunStatus.verified, RunStatus.alerting]),
+            )
+            .order_by(Run.started_at.desc())
+            .first()
+        )
+        if not last_run or not last_run.results:
+            return []
+
+        return [{"url": r.url, "data": r.data or {}} for r in last_run.results if r.valid]
