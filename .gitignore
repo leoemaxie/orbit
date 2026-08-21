@@ -1,9 +1,13 @@
 __pycache__/
 *.pyc
 .env
+**/.env
 venv/
+**/venv/
 *.db
 .DS_Store
 *.pdf
 *.egg-info/
+**/*.egg-info/
 bin/
+**/bin/
