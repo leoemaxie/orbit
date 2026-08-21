@@ -1,6 +1,6 @@
 import json
 from typing import Any
-from orbit_mcp.client import OrbitBackendClient
+from orbit.client import OrbitBackendClient
 
 
 class OrbitResourceProvider:
@@ -10,16 +10,16 @@ class OrbitResourceProvider:
         self.client = client
 
     async def list_automations_resource(self) -> str:
-        """Resource content for orbit://automations"""
+        """Resource content for orbc://automations"""
         data = await self.client.list_automations()
         return json.dumps(data, indent=2)
 
     async def get_automation_resource(self, automation_id: str) -> str:
-        """Resource content for orbit://automations/{automation_id}"""
+        """Resource content for orbc://automations/{automation_id}"""
         data = await self.client.get_automation(automation_id)
         return json.dumps(data, indent=2)
 
     async def get_run_resource(self, run_id: str) -> str:
-        """Resource content for orbit://runs/{run_id}"""
+        """Resource content for orbc://runs/{run_id}"""
         data = await self.client.get_run(run_id)
         return json.dumps(data, indent=2)

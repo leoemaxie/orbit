@@ -3,32 +3,32 @@ import logging
 from typing import Any
 from mcp.server.fastmcp import FastMCP
 
-from orbit_mcp.client import OrbitBackendClient
-from orbit_mcp.prompts.templates import AUDIT_FAILURE_PROMPT, WORKFLOW_DESIGN_PROMPT
-from orbit_mcp.resources.provider import OrbitResourceProvider
-from orbit_mcp.tools.automations import (
+from orbit.client import OrbitBackendClient
+from orbit.prompts.templates import AUDIT_FAILURE_PROMPT, WORKFLOW_DESIGN_PROMPT
+from orbit.resources.provider import OrbitResourceProvider
+from orbit.tools.automations import (
     create_automation_tool,
     get_automation_tool,
     list_automations_tool,
 )
-from orbit_mcp.tools.execution import execute_goal_tool, run_automation_tool
-from orbit_mcp.tools.inspection import (
+from orbit.tools.execution import execute_goal_tool, run_automation_tool
+from orbit.tools.inspection import (
     get_run_details_tool,
     list_recurring_schedules_tool,
     query_extracted_data_tool,
 )
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("orbit_mcp.server")
+logger = logging.getLogger("orbc.server")
 
-# Initialize FastMCP Server
-mcp = FastMCP("Orbit MCP Server")
+# Initialize FastMCP Server with tool name 'orbc'
+mcp = FastMCP("orbc")
 client = OrbitBackendClient()
 resource_provider = OrbitResourceProvider(client)
 
 
 # ─────────────────────────────────────────────────────────────
-# TOOLS
+# TOOLS (orbc)
 # ─────────────────────────────────────────────────────────────
 
 @mcp.tool()
@@ -120,22 +120,22 @@ async def list_recurring_schedules() -> dict[str, Any]:
 
 
 # ─────────────────────────────────────────────────────────────
-# RESOURCES
+# RESOURCES (orbc://)
 # ─────────────────────────────────────────────────────────────
 
-@mcp.resource("orbit://automations")
+@mcp.resource("orbc://automations")
 async def get_automations_resource() -> str:
     """Resource returning JSON list of all registered automations."""
     return await resource_provider.list_automations_resource()
 
 
-@mcp.resource("orbit://automations/{automation_id}")
+@mcp.resource("orbc://automations/{automation_id}")
 async def get_single_automation_resource(automation_id: str) -> str:
     """Resource returning JSON representation of an automation specification."""
     return await resource_provider.get_automation_resource(automation_id)
 
 
-@mcp.resource("orbit://runs/{run_id}")
+@mcp.resource("orbc://runs/{run_id}")
 async def get_single_run_resource(run_id: str) -> str:
     """Resource returning JSON execution log and records for a run."""
     return await resource_provider.get_run_resource(run_id)
@@ -147,7 +147,7 @@ async def get_single_run_resource(run_id: str) -> str:
 
 @mcp.prompt()
 def create_web_data_workflow() -> str:
-    """Guided prompt for formulating an autonomous web data goal."""
+    """Guided prompt for formulating an autonomous web data goal with orbc."""
     return WORKFLOW_DESIGN_PROMPT
 
 
@@ -158,7 +158,7 @@ def audit_run_failure(run_id: str) -> str:
 
 
 def main():
-    """Main entrypoint for standard stdio MCP transport."""
+    """Main entrypoint for standard stdio orbc MCP transport."""
     mcp.run(transport="stdio")
 
 

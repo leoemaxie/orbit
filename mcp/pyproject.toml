@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "orbit-mcp"
+name = "orbc-mcp"
 version = "0.2.0"
-description = "Model Context Protocol (MCP) server for Orbit Autonomous Web Data Operations"
+description = "orbc - Model Context Protocol (MCP) server for Orbit Autonomous Web Data Operations"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -23,7 +23,8 @@ dev = [
 ]
 
 [project.scripts]
-orbit-mcp = "orbit_mcp.server:main"
+orbc-mcp = "orbit.server:main"
+orbc = "orbit.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

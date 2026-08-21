@@ -1,5 +1,5 @@
 from typing import Any
-from orbit_mcp.client import OrbitBackendClient
+from orbit.client import OrbitBackendClient
 
 
 async def create_automation_tool(goal: str, client: OrbitBackendClient) -> dict[str, Any]:

@@ -1,5 +1,5 @@
 from typing import Any
-from orbit_mcp.client import OrbitBackendClient
+from orbit.client import OrbitBackendClient
 
 
 async def run_automation_tool(automation_id: str, client: OrbitBackendClient) -> dict[str, Any]:
@@ -40,8 +40,7 @@ async def execute_goal_tool(goal: str, client: OrbitBackendClient) -> dict[str, 
     immediately executes the full agent loop, and returns the extracted structured results.
 
     Args:
-        goal: Natural language web data objective (e.g. 'Find latest price of iPhone 16 Pro in Nigeria',
-              'Find active remote Python jobs')
+        goal: Natural language web data objective.
     """
     try:
         # Step 1: Create

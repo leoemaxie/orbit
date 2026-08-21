@@ -16,17 +16,19 @@ type Config struct {
 	Format  string        `mapstructure:"format"`
 }
 
-// LoadConfig loads the CLI configuration from ~/.orbit/config.yaml or environment variables.
+// LoadConfig loads the CLI configuration from ~/.orbc/config.yaml or environment variables.
 func LoadConfig() (*Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
-	configDir := filepath.Join(home, ".orbit")
+	configDir := filepath.Join(home, ".orbc")
 	configFile := filepath.Join(configDir, "config.yaml")
 
 	viper.AddConfigPath(configDir)
+	// Also check fallback ~/.orbit for backward compatibility
+	viper.AddConfigPath(filepath.Join(home, ".orbit"))
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
@@ -34,10 +36,10 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("timeout", DefaultTimeout)
 	viper.SetDefault("format", DefaultFormat)
 
-	viper.SetEnvPrefix("ORBIT")
+	viper.SetEnvPrefix("ORBC")
 	viper.AutomaticEnv()
 
-	// If config file doesn't exist, create it with defaults
+	// If config file doesn't exist, create ~/.orbc/config.yaml with defaults
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		_ = os.MkdirAll(configDir, 0755)
 		_ = viper.WriteConfigAs(configFile)
@@ -53,14 +55,14 @@ func LoadConfig() (*Config, error) {
 	return &cfg, nil
 }
 
-// SetKey updates a configuration key and saves to ~/.orbit/config.yaml.
+// SetKey updates a configuration key and saves to ~/.orbc/config.yaml.
 func SetKey(key, value string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
 
-	configDir := filepath.Join(home, ".orbit")
+	configDir := filepath.Join(home, ".orbc")
 	_ = os.MkdirAll(configDir, 0755)
 	configFile := filepath.Join(configDir, "config.yaml")
 

@@ -1,5 +1,5 @@
 from typing import Any
-from orbit_mcp.client import OrbitBackendClient
+from orbit.client import OrbitBackendClient
 
 
 async def get_run_details_tool(run_id: str, client: OrbitBackendClient) -> dict[str, Any]:

@@ -1,9 +1,9 @@
 import pytest
 from unittest.mock import AsyncMock
-from orbit_mcp.client import OrbitBackendClient
-from orbit_mcp.tools.automations import create_automation_tool, list_automations_tool
-from orbit_mcp.tools.execution import execute_goal_tool, run_automation_tool
-from orbit_mcp.tools.inspection import query_extracted_data_tool
+from orbit.client import OrbitBackendClient
+from orbit.tools.automations import create_automation_tool, list_automations_tool
+from orbit.tools.execution import execute_goal_tool, run_automation_tool
+from orbit.tools.inspection import query_extracted_data_tool
 
 
 @pytest.mark.asyncio

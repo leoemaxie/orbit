@@ -1,9 +1,9 @@
 import logging
 from typing import Any, Optional
 import httpx
-from orbit_mcp.config import get_mcp_settings
+from orbit.config import get_mcp_settings
 
-logger = logging.getLogger("orbit_mcp.client")
+logger = logging.getLogger("orbc.client")
 
 
 class OrbitBackendClient:

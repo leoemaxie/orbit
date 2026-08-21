@@ -18,11 +18,11 @@ var (
 	client *orbitclient.Client
 )
 
-// RootCmd is the base command for Orbit CLI.
+// RootCmd is the base command for orbc CLI.
 var RootCmd = &cobra.Command{
-	Use:   "orbit",
-	Short: "Orbit - Autonomous Goal-Driven Web Data Operations",
-	Long: `Orbit is an agentic web-data automation CLI.
+	Use:   "orbc",
+	Short: "orbc - Autonomous Goal-Driven Web Data Operations CLI",
+	Long: `orbc is an agentic web-data automation CLI for Orbit.
 Transform natural-language goals into recurring, verifiable web-data workflows.
 
 "Set the goal. Walk away."`,

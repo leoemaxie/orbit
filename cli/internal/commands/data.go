@@ -17,9 +17,9 @@ var (
 var dataCmd = &cobra.Command{
 	Use:   "data <run-id>",
 	Short: "View and export extracted records for a run",
-	Example: `  orbit data 8f2c34a1
-  orbit data 8f2c34a1 --format csv > results.csv
-  orbit data 8f2c34a1 --format json | jq .`,
+	Example: `  orbc data 8f2c34a1
+  orbc data 8f2c34a1 --format csv > results.csv
+  orbc data 8f2c34a1 --format json | jq .`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		runID := args[0]

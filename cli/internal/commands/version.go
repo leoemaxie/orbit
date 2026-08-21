@@ -12,7 +12,7 @@ const CLIVersion = "0.2.0"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version of Orbit CLI and Server",
+	Short: "Print the version of orbc CLI and Orbit Server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		health, err := client.Health()
 
@@ -30,7 +30,7 @@ var versionCmd = &cobra.Command{
 		}
 
 		ui.PrintBanner()
-		fmt.Printf("Orbit CLI Version    : %s\n", ui.Cyan(CLIVersion))
+		fmt.Printf("orbc CLI Version     : %s\n", ui.Cyan(CLIVersion))
 		if err == nil {
 			fmt.Printf("Orbit Server Version : %s (%s)\n", ui.Green(serverVer), health.Environment)
 		} else {

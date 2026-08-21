@@ -1,4 +1,4 @@
-from orbit_mcp.prompts.templates import (
+from orbit.prompts.templates import (
     AUDIT_FAILURE_PROMPT,
     WORKFLOW_DESIGN_PROMPT,
 )

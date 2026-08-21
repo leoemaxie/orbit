@@ -17,8 +17,8 @@ var (
 var goalCmd = &cobra.Command{
 	Use:   "goal <prompt>",
 	Short: "Interpret a natural-language goal and create an autonomous web-data automation",
-	Example: `  orbit goal "Every day at 8AM, find cheapest PS5 in Nigeria and alert if price < 400000 NGN"
-  orbit goal "Weekly, monitor Python remote jobs paying > $150k" --run`,
+	Example: `  orbc goal "Every day at 8AM, find cheapest PS5 in Nigeria and alert if price < 400000 NGN"
+  orbc goal "Weekly, monitor Python remote jobs paying > $150k" --run`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		goalText := strings.Join(args, " ")
@@ -84,7 +84,7 @@ var goalCmd = &cobra.Command{
 			return executeRun(auto.ID)
 		}
 
-		fmt.Printf("To execute this automation now, run:\n  %s\n", ui.Cyan(fmt.Sprintf("orbit run %s", auto.ID)))
+		fmt.Printf("To execute this automation now, run:\n  %s\n", ui.Cyan(fmt.Sprintf("orbc run %s", auto.ID)))
 		return nil
 	},
 }

@@ -1,8 +1,8 @@
-# Orbit MCP Server 🛰️
+# orbc MCP Server 🛰️
 
 **Model Context Protocol (MCP) Server for Orbit Autonomous Web Data Operations**
 
-The Orbit MCP server allows AI assistants (Claude Desktop, Cursor, Antigravity, VS Code) to directly control Orbit to formulate web-data goals, execute multi-stage scraping and extraction runs, inspect data records, and query schedules.
+The `orbc` MCP server allows AI assistants (Claude Desktop, Cursor, Antigravity, VS Code) to directly control Orbit to formulate web-data goals, execute multi-stage scraping and extraction runs, inspect data records, and query schedules.
 
 ---
 
@@ -23,9 +23,9 @@ The Orbit MCP server allows AI assistants (Claude Desktop, Cursor, Antigravity, 
 
 ### 2. Resources
 
-- `orbit://automations`: List of all registered automations.
-- `orbit://automations/{automation_id}`: Single automation specification JSON.
-- `orbit://runs/{run_id}`: Full run audit log and data payload.
+- `orbc://automations`: List of all registered automations.
+- `orbc://automations/{automation_id}`: Single automation specification JSON.
+- `orbc://runs/{run_id}`: Full run audit log and data payload.
 
 ### 3. Prompts
 
@@ -50,9 +50,9 @@ Add to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "orbit": {
+    "orbc": {
       "command": "python",
-      "args": ["-m", "orbit_mcp.server"],
+      "args": ["-m", "orbc_mcp.server"],
       "cwd": "/path/to/orbit/mcp",
       "env": {
         "ORBIT_API_URL": "http://localhost:8000"
@@ -69,9 +69,9 @@ In `.cursor/mcp.json` or your MCP config file:
 ```json
 {
   "mcpServers": {
-    "orbit": {
+    "orbc": {
       "command": "python",
-      "args": ["-m", "orbit_mcp.server"],
+      "args": ["-m", "orbc_mcp.server"],
       "cwd": "/path/to/orbit/mcp",
       "env": {
         "ORBIT_API_URL": "http://localhost:8000"
