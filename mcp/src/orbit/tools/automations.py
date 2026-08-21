@@ -7,9 +7,15 @@ async def create_automation_tool(goal: str, client: OrbitBackendClient) -> dict[
     Creates an autonomous web data workflow from a natural-language goal.
     The goal is interpreted into a domain-agnostic execution plan with dynamic extraction schema.
 
+    Supports:
+    - Zero-key open-web search (DuckDuckGo), Bright Data SERP, and SerpApi
+    - 2-hop autonomous navigation from listing/search pages to detail pages
+    - Static threshold alerts ('min(price) < 400000', 'salary >= 150000')
+    - Relative historical drop alerts ('alert me when lowest price drops by 10%')
+    - Timezone-aware wall-clock schedules ('Every day at 8 AM WAT')
+
     Args:
-        goal: Plain English objective (e.g. 'Daily at 8AM, find cheapest PS5 in Nigeria and alert if < 400000 NGN',
-              'Find remote Python developer jobs paying > $150k')
+        goal: Plain English objective.
     """
     try:
         data = await client.create_automation(goal)

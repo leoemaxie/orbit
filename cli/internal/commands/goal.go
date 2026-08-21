@@ -17,7 +17,13 @@ var (
 var goalCmd = &cobra.Command{
 	Use:   "goal <prompt>",
 	Short: "Interpret a natural-language goal and create an autonomous web-data automation",
-	Example: `  orbc goal "Every day at 8AM, find cheapest PS5 in Nigeria and alert if price < 400000 NGN"
+	Example: `  # Static threshold alert
+  orbc goal "Every day at 8AM, find cheapest PS5 in Nigeria and alert if price < 400000 NGN"
+
+  # Relative historical price drop alert
+  orbc goal "Daily at 8 AM, track PS5 prices and alert me when the lowest price drops by 10%"
+
+  # Tech job monitoring with immediate run
   orbc goal "Weekly, monitor Python remote jobs paying > $150k" --run`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
