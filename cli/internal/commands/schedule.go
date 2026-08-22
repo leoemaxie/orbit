@@ -1,10 +1,10 @@
 package commands
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/leoemaxie/orbit/cli/internal/formatters"
 	"github.com/leoemaxie/orbit/cli/internal/ui"
-	"github.com/leoemaxie/orbit/cli/pkg/orbitclient"
+	"github.com/leoemaxie/orbit/cli/pkg/orbc"
+	"github.com/spf13/cobra"
 )
 
 var scheduleCmd = &cobra.Command{
@@ -22,7 +22,7 @@ var scheduleListCmd = &cobra.Command{
 			return err
 		}
 
-		scheduled := make([]orbitclient.AutomationOut, 0)
+		scheduled := make([]orbc.AutomationOut, 0)
 		for _, a := range list.Items {
 			if a.Active && a.Plan.Frequency != "once" {
 				scheduled = append(scheduled, a)

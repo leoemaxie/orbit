@@ -3,10 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/leoemaxie/orbit/cli/internal/formatters"
 	"github.com/leoemaxie/orbit/cli/internal/ui"
-	"github.com/leoemaxie/orbit/cli/pkg/orbitclient"
+	"github.com/leoemaxie/orbit/cli/pkg/orbc"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -31,7 +31,7 @@ var dataCmd = &cobra.Command{
 
 		results := run.Results
 		if validOnlyFlag {
-			filtered := make([]orbitclient.ResultOut, 0)
+			filtered := make([]orbc.ResultOut, 0)
 			for _, r := range results {
 				if r.Valid {
 					filtered = append(filtered, r)

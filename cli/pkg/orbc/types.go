@@ -1,4 +1,4 @@
-package orbitclient
+package orbc
 
 // ExtractionField defines a single dynamic field in an extraction schema.
 type ExtractionField struct {

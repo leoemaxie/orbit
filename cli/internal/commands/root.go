@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/leoemaxie/orbit/cli/internal/config"
-	"github.com/leoemaxie/orbit/cli/pkg/orbitclient"
+	"github.com/leoemaxie/orbit/cli/pkg/orbc"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 	verboseFlag bool
 
 	cfg    *config.Config
-	client *orbitclient.Client
+	client *orbc.Client
 )
 
 // RootCmd is the base command for orbc CLI.
@@ -38,7 +38,7 @@ Transform natural-language goals into recurring, verifiable web-data workflows.
 			targetURL = apiURLFlag
 		}
 
-		client = orbitclient.NewClient(targetURL, cfg.Timeout)
+		client = orbc.NewClient(targetURL, cfg.Timeout)
 		return nil
 	},
 }

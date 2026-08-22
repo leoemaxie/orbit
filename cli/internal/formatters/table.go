@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strings"
 
+	"github.com/leoemaxie/orbit/cli/pkg/orbc"
 	"github.com/olekukonko/tablewriter"
-	"github.com/leoemaxie/orbit/cli/pkg/orbitclient"
 )
 
 // RenderAutomationsTable renders a list of automations into an ASCII table.
-func RenderAutomationsTable(automations []orbitclient.AutomationOut) {
+func RenderAutomationsTable(automations []orbc.AutomationOut) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"ID", "OBJECTIVE", "DOMAIN", "FREQUENCY", "ACTIVE", "NEXT RUN"})
 	table.SetBorder(true)
@@ -47,7 +46,7 @@ func RenderAutomationsTable(automations []orbitclient.AutomationOut) {
 }
 
 // RenderRunsTable renders a list of runs into an ASCII table.
-func RenderRunsTable(runs []orbitclient.RunOut) {
+func RenderRunsTable(runs []orbc.RunOut) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"RUN ID", "STATUS", "EXTRACTED", "VALIDATED", "CONDITION", "STARTED AT"})
 	table.SetBorder(true)
@@ -82,7 +81,7 @@ func RenderRunsTable(runs []orbitclient.RunOut) {
 }
 
 // RenderResultsTable dynamically renders arbitrary extracted records into an aligned table.
-func RenderResultsTable(results []orbitclient.ResultOut) {
+func RenderResultsTable(results []orbc.ResultOut) {
 	if len(results) == 0 {
 		fmt.Println("No records extracted.")
 		return

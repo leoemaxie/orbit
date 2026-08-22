@@ -6,11 +6,11 @@ import (
 	"os"
 	"sort"
 
-	"github.com/leoemaxie/orbit/cli/pkg/orbitclient"
+	"github.com/leoemaxie/orbit/cli/pkg/orbc"
 )
 
 // ExportResultsCSV exports extracted records to standard CSV output.
-func ExportResultsCSV(results []orbitclient.ResultOut) error {
+func ExportResultsCSV(results []orbc.ResultOut) error {
 	if len(results) == 0 {
 		return nil
 	}

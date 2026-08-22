@@ -7,7 +7,6 @@ import (
 	"github.com/fatih/color"
 )
 
-// NewSpinner creates a standard styled spinner.
 func NewSpinner(msg string) *spinner.Spinner {
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	s.Suffix = " " + color.CyanString(msg)

@@ -1,4 +1,4 @@
-package orbitclient
+package orbc
 
 import (
 	"fmt"
@@ -8,12 +8,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// Client interacts with the Orbit REST API.
 type Client struct {
 	http *resty.Client
 }
 
-// NewClient initializes a new Orbit SDK client.
 func NewClient(baseURL string, timeout time.Duration) *Client {
 	baseURL = strings.TrimRight(baseURL, "/")
 	r := resty.New().
