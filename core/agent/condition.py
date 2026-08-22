@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("core.agent.condition")
 
@@ -12,7 +12,7 @@ class ConditionEvaluator:
         self,
         condition_expr: str | None,
         records: list[dict[str, Any]],
-        previous_records: Optional[list[dict[str, Any]]] = None,
+        previous_records: list[dict[str, Any]] | None = None,
     ) -> tuple[bool, str]:
         """
         Evaluates a condition string against extracted records, with support for historical comparisons.
@@ -119,7 +119,7 @@ class ConditionEvaluator:
         return False, f"Unsupported condition format: '{expr}'"
 
     def _extract_numeric_values(self, records: list[dict[str, Any]], field: str) -> list[float]:
-        values = []
+        values: list[float] = []
         for r in records:
             data = r.get("data", {})
             v = data.get(field)

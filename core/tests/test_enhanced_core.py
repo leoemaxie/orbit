@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
-import pytest
 from core.agent.condition import ConditionEvaluator
 from core.models.enums import Frequency
 from core.pipeline.retrieval.link_extractor import LinkExtractor
@@ -34,7 +33,7 @@ def test_historical_price_drop_not_met():
     # Dropped only 5% (to 380,000)
     curr_records = [{"url": "https://example.com/1", "data": {"price": 380000}}]
 
-    matched, msg = evaluator.evaluate("price drops by 10%", curr_records, previous_records=prev_records)
+    matched, _ = evaluator.evaluate("price drops by 10%", curr_records, previous_records=prev_records)
     assert matched is False
 
 

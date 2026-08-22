@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from orbit import __version__
+from core import __version__
 from core.config.settings import get_settings
 
 router = APIRouter(tags=["Health"])

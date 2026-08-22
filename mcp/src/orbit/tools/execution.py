@@ -46,9 +46,11 @@ async def execute_goal_tool(goal: str, client: OrbitBackendClient) -> dict[str, 
         # Step 1: Create
         auto = await client.create_automation(goal)
         auto_id = auto.get("id")
+        if not auto_id:
+            return {"success": False, "error": "Failed to create automation"}
 
         # Step 2: Run
-        run = await client.run_automation(auto_id)
+        run = await client.run_automation(str(auto_id))
         valid_results = [r for r in run.get("results", []) if r.get("valid")]
 
         return {

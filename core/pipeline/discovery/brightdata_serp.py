@@ -1,3 +1,4 @@
+import re
 import httpx
 from core.config.settings import get_settings
 from core.models.execution_plan import ExecutionPlan
@@ -45,7 +46,6 @@ class BrightDataSerpDiscovery:
                     return []
 
                 # Extract markdown links
-                import re
                 links = re.findall(r'\[.*?\]\((https?://[^\s\)]+)\)', resp.text)
                 clean_links = [
                     l for l in links
@@ -53,7 +53,7 @@ class BrightDataSerpDiscovery:
                 ]
 
                 seen = set()
-                deduped = []
+                deduped: list[str] = []
                 for l in clean_links:
                     if l not in seen:
                         seen.add(l)

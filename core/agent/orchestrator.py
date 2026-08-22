@@ -26,18 +26,29 @@ logger = logging.getLogger("core.agent.orchestrator")
 class AgentOrchestrator:
     """The central agentic execution engine that executes goal-driven web data operations."""
 
+    discovery: CompositeDiscovery
+    retrieval: BrightDataRetrieval
+    extractor: LLMExtractor
+    validator: SchemaValidator
+    evaluator: ConditionEvaluator
+    notifier: NotificationService
+    reasoner: AgentReasoner
+    link_extractor: LinkExtractor
+    anomaly_detector: AnomalyDetector
+    export_sink: LocalFileExportSink
+
     def __init__(
         self,
-        discovery=None,
-        retrieval=None,
-        extractor=None,
-        validator=None,
-        evaluator=None,
-        notifier=None,
-        reasoner=None,
-        link_extractor=None,
-        anomaly_detector=None,
-        export_sink=None,
+        discovery: CompositeDiscovery | None = None,
+        retrieval: BrightDataRetrieval | None = None,
+        extractor: LLMExtractor | None = None,
+        validator: SchemaValidator | None = None,
+        evaluator: ConditionEvaluator | None = None,
+        notifier: NotificationService | None = None,
+        reasoner: AgentReasoner | None = None,
+        link_extractor: LinkExtractor | None = None,
+        anomaly_detector: AnomalyDetector | None = None,
+        export_sink: LocalFileExportSink | None = None,
     ):
         # Default to CompositeDiscovery so Orbit functions with or without SerpApi
         self.discovery = discovery or CompositeDiscovery()
@@ -163,7 +174,7 @@ class AgentOrchestrator:
 
             extracted_records: list[dict[str, Any]] = []
             for url in retrieved_urls:
-                content = pages.get(url, "")
+                content = pages.get(url) or ""
                 record = await self.extractor.extract(url, content, plan)
                 extracted_records.append(record)
 

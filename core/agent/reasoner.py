@@ -10,6 +10,8 @@ logger = logging.getLogger("core.agent.reasoner")
 class AgentReasoner:
     """Diagnoses execution bottlenecks/failures and reasons about autonomous recovery."""
 
+    llm: OpenRouterLLMClient
+
     def __init__(self, llm_client: OpenRouterLLMClient | None = None):
         self.llm = llm_client or OpenRouterLLMClient()
 

@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Callable, Coroutine
+from typing import Any, Callable, Coroutine
 from core.events.types import OrbitEvent
 
 logger = logging.getLogger("core.events")

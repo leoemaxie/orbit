@@ -1,11 +1,12 @@
 import json
-import os
 from pathlib import Path
 from typing import Any
 
 
 class LocalFileExportSink:
     """Exports validated records to JSON lines or CSV files on the local filesystem."""
+
+    export_dir: Path
 
     def __init__(self, export_dir: str = "exports"):
         self.export_dir = Path(export_dir)

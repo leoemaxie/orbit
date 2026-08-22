@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Optional
+from typing import Any
 import httpx
 from core.config.settings import get_settings
 
@@ -23,7 +23,7 @@ class OpenRouterLLMClient:
         system_prompt: str,
         user_prompt: str,
         temperature: float = 0.0,
-        schema: Optional[dict[str, Any]] = None,
+        schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not self.settings.openrouter_api_key:
             raise ValueError("OPENROUTER_API_KEY is not configured in settings or environment.")

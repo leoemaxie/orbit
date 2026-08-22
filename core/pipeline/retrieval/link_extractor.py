@@ -48,7 +48,7 @@ class LinkExtractor:
 
         # Deduplicate
         seen = set()
-        deduped = []
+        deduped: list[str] = []
         for u in candidate_urls:
             if u not in seen and u != base_url:
                 seen.add(u)

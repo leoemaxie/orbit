@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 import httpx
 from core.config.settings import get_settings
 
@@ -16,8 +16,8 @@ class NotificationService:
         self,
         title: str,
         message: str,
-        payload: Optional[dict[str, Any]] = None,
-        webhook_url: Optional[str] = None,
+        payload: dict[str, Any] | None = None,
+        webhook_url: str | None = None,
     ) -> bool:
         target_url = webhook_url or self.settings.default_webhook_url
 

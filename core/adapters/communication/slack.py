@@ -1,20 +1,22 @@
-from typing import Any, Optional
+from typing import Any
 import httpx
 
 
 class SlackWebhookAdapter:
     """Dispatches alerts formatted as Slack blocks via incoming webhook."""
 
+    webhook_url: str
+
     def __init__(self, webhook_url: str):
         self.webhook_url = webhook_url
 
     async def send_alert(
-        self, title: str, message: str, payload: Optional[dict[str, Any]] = None
+        self, title: str, message: str, payload: dict[str, Any] | None = None
     ) -> bool:
         if not self.webhook_url:
             return False
 
-        blocks = [
+        blocks: list[dict[str, Any]] = [
             {
                 "type": "header",
                 "text": {"type": "plain_text", "text": f"🛰️ {title}"},

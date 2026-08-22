@@ -14,6 +14,10 @@ logger = logging.getLogger("core.scheduler")
 class SchedulerService:
     """Background scheduler that automatically queries and executes recurring automations."""
 
+    scheduler: AsyncIOScheduler
+    orchestrator: AgentOrchestrator
+    _is_running: bool
+
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
         self.orchestrator = AgentOrchestrator()

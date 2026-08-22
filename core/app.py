@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from orbit import __version__
+from core import __version__
 from core.api.v1.router import v1_router
 from core.config.settings import get_settings
 from core.db.orm import Automation, Result, Run  # noqa: F401

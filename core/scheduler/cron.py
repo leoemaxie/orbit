@@ -1,15 +1,14 @@
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
-from typing import Optional
 from core.models.enums import Frequency
 
 
 def calculate_next_run(
     frequency: Frequency,
-    schedule_time: Optional[str] = None,
+    schedule_time: str | None = None,
     tz_name: str = "UTC",
-    now: Optional[datetime] = None,
-) -> Optional[datetime]:
+    now: datetime | None = None,
+) -> datetime | None:
     """
     Computes the exact next execution timestamp accounting for wall-clock time and timezone.
     """

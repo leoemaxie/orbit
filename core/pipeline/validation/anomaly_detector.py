@@ -6,8 +6,10 @@ class AnomalyDetector:
     """Detects statistical outliers and anomalies across extracted records in a run."""
 
     def filter_and_annotate_outliers(
-        self, records: list[dict[str, Any]], numeric_fields: list[str] = ["price", "salary", "fare", "amount"]
+        self, records: list[dict[str, Any]], numeric_fields: list[str] | None = None
     ) -> list[dict[str, Any]]:
+        if numeric_fields is None:
+            numeric_fields = ["price", "salary", "fare", "amount"]
         if len(records) < 3:
             return records
 
