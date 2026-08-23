@@ -27,7 +27,7 @@ The Orbit Web Application is an operational telemetry interface and mission cont
 
 - **Node.js**: v20.x, v22.x, or v24.x (LTS recommended)
 - **Package Manager**: `pnpm` (v9 or later)
-- **Orbit Core API**: FastAPI daemon running on `http://localhost:8000` (optional for offline preview)
+- **Orbit Core API**: Backend daemon running on `http://localhost:8000` (optional for offline preview)
 
 ---
 
@@ -58,7 +58,7 @@ pnpm install
 pnpm dev
 ```
 
-The application will be accessible at `http://localhost:5173`. Requests to `/api/v1` are automatically proxied to the Orbit Core FastAPI backend configured in your `.env`.
+The application will be accessible at `http://localhost:5173`. Requests to `/api/v1` are automatically proxied to the Orbit Core backend configured in your `.env`.
 
 ---
 
