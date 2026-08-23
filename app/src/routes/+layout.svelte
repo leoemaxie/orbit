@@ -17,6 +17,8 @@
 	} from '@lucide/svelte';
 	import { orbitStore } from '$lib/state/orbit.svelte';
 
+	import OrbitLogo from '$lib/components/ui/OrbitLogo.svelte';
+
 	let { children } = $props();
 
 	onMount(() => {
@@ -42,18 +44,9 @@
 	<!-- Left Navigation Sidebar -->
 	<aside class="w-64 bg-surface-900 border-r border-white/10 flex flex-col justify-between shrink-0 z-20">
 		<!-- Brand / Logo -->
-		<div class="p-5 border-b border-white/10 flex items-center justify-between">
-			<a href="/" class="flex items-center gap-2.5 group">
-				<div class="p-2 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 text-white shadow-glow-cyan/50 group-hover:scale-105 transition-transform">
-					<Orbit size={20} class="animate-pulse-slow" />
-				</div>
-				<div>
-					<div class="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-						<span>ORBIT</span>
-						<span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-orbit-cyan/10 text-orbit-cyan border border-orbit-cyan/20">v0.1</span>
-					</div>
-					<div class="text-[10px] font-mono text-slate-400">Autonomous Web Ops</div>
-				</div>
+		<div class="p-4 border-b border-white/10 flex items-center justify-between">
+			<a href="/" class="group block">
+				<OrbitLogo size="md" showWordmark={true} animated={true} class="group-hover:opacity-90 transition-opacity" />
 			</a>
 		</div>
 

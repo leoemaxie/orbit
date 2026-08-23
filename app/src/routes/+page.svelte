@@ -7,6 +7,7 @@
 	import StatusBadge from '$lib/components/ui/StatusBadge.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import OrbitLogo from '$lib/components/ui/OrbitLogo.svelte';
 	import type { AutomationOut } from '$lib/api/types';
 
 	let previewAutomation = $state<AutomationOut | null>(null);
@@ -28,7 +29,8 @@
 
 <div class="max-w-6xl mx-auto space-y-10">
 	<!-- Hero Section -->
-	<div class="text-center space-y-3 pt-4">
+	<div class="text-center space-y-4 pt-4 flex flex-col items-center">
+		<OrbitLogo size="lg" showWordmark={false} animated={true} class="mb-1" />
 		<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orbit-cyan/10 border border-orbit-cyan/30 text-orbit-cyan text-xs font-mono">
 			<Sparkles size={13} class="animate-pulse" />
 			<span>Set the goal. Walk away.</span>
