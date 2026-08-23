@@ -27,4 +27,6 @@ orbc-mcp = "orbit.server:main"
 orbc = "orbit.server:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["orbit*"]
+
