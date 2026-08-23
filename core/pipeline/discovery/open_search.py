@@ -6,13 +6,13 @@ import httpx
 from core.models.execution_plan import ExecutionPlan
 
 
-class DuckDuckGoDiscovery:
+class OpenWebSearchDiscovery:
     """
-    Zero-API-key open-web discovery using DuckDuckGo search.
-    Enables Orbit to discover sources without any SerpApi or third-party search key.
+    Zero-API-key open-web discovery using HTML search.
+    Enables Orbit to discover sources without any paid search API key.
     """
 
-    DDG_URL = "https://html.duckduckgo.com/html/"
+    SEARCH_ENDPOINT = "https://html.duckduckgo.com/html/"
 
     async def discover(self, plan: ExecutionPlan, max_results: int = 10) -> list[str]:
         query = plan.search_query.strip()
@@ -32,7 +32,7 @@ class DuckDuckGoDiscovery:
         urls: list[str] = []
         try:
             async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as client:
-                resp = await client.post(self.DDG_URL, data=data, headers=headers)
+                resp = await client.post(self.SEARCH_ENDPOINT, data=data, headers=headers)
                 if resp.status_code != 200:
                     return []
 
@@ -43,7 +43,7 @@ class DuckDuckGoDiscovery:
                     raw_links = re.findall(r'href="([^"]*uddg=[^"]+)"', html)
 
                 for link in raw_links:
-                    actual_url = self._clean_ddg_url(link)
+                    actual_url = self._clean_search_url(link)
                     if (
                         actual_url
                         and actual_url.startswith("http")
@@ -67,7 +67,7 @@ class DuckDuckGoDiscovery:
 
         return deduped[:max_results]
 
-    def _clean_ddg_url(self, link: str) -> str:
+    def _clean_search_url(self, link: str) -> str:
         if "uddg=" in link:
             parsed = urlparse(link)
             qs = parse_qs(parsed.query)

@@ -8,7 +8,7 @@ The backend execution engine, agentic reasoning pipeline, scheduler daemon, and 
 
 Orbit Core is responsible for:
 - **Goal Interpretation & Planning**: Translating natural-language requests into typed schemas, search queries, schedules, and condition triggers via LLMs.
-- **Autonomous Discovery & Retrieval**: Utilizing multi-source discovery (SerpApi, web hints) and robust retrieval proxies (Bright Data Web Unlocker) to fetch web pages.
+- **Autonomous Discovery & Retrieval**: Utilizing multi-source discovery (search APIs, open web, hints) and resilient proxy retrieval to fetch web pages.
 - **Dynamic Extraction & Validation**: Extracting structured records matching dynamic JSON schemas and validating fields, types, and anomalies.
 - **Agentic Self-Correction & Reasoning**: Diagnosing discovery and extraction failures and dynamically refining strategies.
 - **Condition Alerts & Event Bus**: Evaluating aggregate and scalar condition rules (`min(price) < 400000`) and dispatching events/webhooks.
@@ -21,18 +21,18 @@ Orbit Core is responsible for:
 ```text
 core/
 ├── adapters/         # Pluggable outputs & notification sinks (Slack, Local Files, etc.)
-├── agent/            # Goal Interpreter, Condition Evaluator, Reasoner, Orchestrator
+├── agent/            # Goal Interpreter, Condition Evaluator, Agent Brain, Orchestrator
 ├── api/              # FastAPI v1 router & endpoints (automations, runs, health)
 ├── config/           # Pydantic Settings & environment configuration
 ├── db/               # SQLAlchemy ORM models & session lifecycle management
 ├── events/           # Async in-process Event Bus & event definitions
-├── llm/              # LLM client abstractions (OpenRouter) & prompt templates
+├── llm/              # LLM client abstractions & prompt templates
 ├── models/           # Domain schemas, DynamicExtractionSchema, ExecutionPlan
 ├── notifications/    # Alerting service (Webhooks & Structured Logs)
 ├── pipeline/         # Discovery, Retrieval, Extraction, and Validation stages
-│   ├── discovery/    # SerpApi & composite URL search
-│   ├── extraction/   # LLM structured data extractor
-│   ├── retrieval/    # Bright Data proxy client & link extraction
+│   ├── discovery/    # Multi-source search & composite URL discovery
+│   ├── extraction/   # Schema-driven LLM structured data extractor
+│   ├── retrieval/    # Resilient proxy client & link extraction
 │   └── validation/   # JSONSchema validation & anomaly detection
 ├── scheduler/        # APScheduler recurring execution engine & cron helpers
 └── app.py            # FastAPI application factory

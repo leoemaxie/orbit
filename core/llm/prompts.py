@@ -64,7 +64,7 @@ Rules:
 """
 
 
-FAILURE_REASONER_PROMPT = """You are the Diagnostic and Self-Correction Reasoner for Orbit.
+FAILURE_BRAIN_PROMPT = """You are the Diagnostic and Self-Correction Brain for Orbit.
 
 A pipeline stage encountered an issue during execution.
 Analyze the execution context, diagnosed problem, and recommend an action.

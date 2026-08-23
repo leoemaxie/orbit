@@ -14,8 +14,8 @@ def strip_json_fences(text: str) -> str:
     return _JSON_FENCE_RE.sub("", text).strip()
 
 
-class OpenRouterLLMClient:
-    """OpenRouter API client supporting JSON outputs and structured completions."""
+class DefaultLLMClient:
+    """OpenAI-compatible LLM client supporting JSON outputs and structured completions."""
 
     def __init__(self):
         self.settings = get_settings()
@@ -58,7 +58,7 @@ class OpenRouterLLMClient:
 
         choices = data.get("choices", [])
         if not choices:
-            raise ValueError(f"OpenRouter returned no choices in response: {data}")
+            raise ValueError(f"LLM API returned no choices in response: {data}")
 
         content = choices[0]["message"]["content"]
         cleaned = strip_json_fences(content)

@@ -1,4 +1,4 @@
-from core.llm.openrouter import OpenRouterLLMClient
+from core.llm.client import DefaultLLMClient
 from core.llm.prompts import GOAL_INTERPRETER_PROMPT
 from core.models.execution_plan import (
     DynamicExtractionSchema,
@@ -10,10 +10,10 @@ from core.models.execution_plan import (
 class GoalInterpreter:
     """Interprets natural language goals into structured domain-agnostic ExecutionPlans."""
 
-    llm: OpenRouterLLMClient
+    llm: DefaultLLMClient
 
-    def __init__(self, llm_client: OpenRouterLLMClient | None = None):
-        self.llm = llm_client or OpenRouterLLMClient()
+    def __init__(self, llm_client: DefaultLLMClient | None = None):
+        self.llm = llm_client or DefaultLLMClient()
 
     async def interpret(self, goal: str) -> ExecutionPlan:
         raw = await self.llm.call_json(

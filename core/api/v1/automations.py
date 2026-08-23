@@ -1,8 +1,5 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
 from core.agent.interpreter import GoalInterpreter
 from core.agent.orchestrator import AgentOrchestrator
 from core.api.dependencies import get_db
@@ -15,6 +12,8 @@ from core.models.schemas import (
     ResultOut,
     RunOut,
 )
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/automations", tags=["Automations"])
 

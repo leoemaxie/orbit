@@ -5,8 +5,8 @@ import httpx
 from core.config.settings import get_settings
 
 
-class BrightDataRetrieval:
-    """Page retrieval via Bright Data Web Unlocker API (returns clean markdown)."""
+class ProxyRetrieval:
+    """Resilient proxy and unlocker-based page retrieval (returns clean markdown)."""
 
     def __init__(self):
         self.settings = get_settings()

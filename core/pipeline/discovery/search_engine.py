@@ -4,10 +4,10 @@ from core.config.settings import get_settings
 from core.models.execution_plan import ExecutionPlan
 
 
-class SerpApiDiscovery:
-    """Domain-agnostic web source discovery using Google Search via SerpApi."""
+class SearchEngineDiscovery:
+    """Domain-agnostic web source discovery using search engine API."""
 
-    SERPAPI_URL = "https://serpapi.com/search.json"
+    SEARCH_ENGINE_URL = "https://serpapi.com/search.json"
 
     def __init__(self):
         self.settings = get_settings()
@@ -36,7 +36,7 @@ class SerpApiDiscovery:
             params["location"] = plan.geography
 
         async with httpx.AsyncClient(timeout=35.0) as client:
-            resp = await client.get(self.SERPAPI_URL, params=params)
+            resp = await client.get(self.SEARCH_ENGINE_URL, params=params)
             resp.raise_for_status()
             data = resp.json()
 

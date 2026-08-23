@@ -18,7 +18,7 @@ Orbit interprets your objective, derives structured extraction schemas, discover
 
 - 🗣️ **Natural-Language Goal Interpretation**: Provide goals like *"Every morning at 8 AM, find the cheapest flights from Lagos to London in December and alert me if under $800"*. Orbit synthesizes domain plans, extraction schemas, and search queries automatically.
 - 🌐 **Universal & Domain Agnostic**: Operates across e-commerce, real estate, job listings, travel, financial data, and news without writing domain-specific scrapers.
-- 🤖 **Agentic Self-Correction**: When discovery yields empty results or page structures change, an autonomous reasoner diagnoses the issue and refines search queries or retrieval strategies on the fly.
+- 🤖 **Agentic Self-Correction**: When discovery yields empty results or page structures change, an autonomous Agent Brain diagnoses the issue and refines search queries or retrieval strategies on the fly.
 - 🛡️ **Verification & Anomaly Detection**: Every extracted dataset is validated against dynamically generated JSON schemas and inspected for anomalies, ensuring only clean, verified data reaches downstream systems.
 - 🎯 **Condition Triggers & Alerts**: Evaluate expressions (e.g., `min(price) < 400000` or `salary >= 150000`) and dispatch instant notifications via webhooks or notification sinks.
 - ⏰ **Daemonized Scheduling**: Set recurring intervals (`hourly`, `daily`, `weekly`, `monthly`) powered by a persistent background scheduler.
@@ -40,9 +40,9 @@ graph TD
         
         subgraph Core ["Orbit Core Engine"]
             API --> Orchestrator["Agent Orchestrator"]
-            Orchestrator --> LLM["Goal Interpreter & Reasoner"]
-            Orchestrator --> Discovery["Multi-Source Discovery (SerpApi)"]
-            Orchestrator --> Retrieval["Resilient Retrieval (Bright Data)"]
+            Orchestrator --> LLM["Goal Interpreter & Agent Brain"]
+            Orchestrator --> Discovery["Multi-Source Discovery Engine"]
+            Orchestrator --> Retrieval["Resilient Proxy Retrieval"]
             Orchestrator --> Extraction["Schema Extractor & Validator"]
             Orchestrator --> Condition["Condition Evaluator"]
             Orchestrator --> DB[(PostgreSQL Store)]

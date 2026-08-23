@@ -5,8 +5,8 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from core.adapters.storage.local_export import LocalFileExportSink
+from core.agent.brain import AgentBrain
 from core.agent.condition import ConditionEvaluator
-from core.agent.reasoner import AgentReasoner
 from core.db.orm import Automation, Result, Run
 from core.events.bus import event_bus
 from core.events.types import OrbitEvent
@@ -15,8 +15,8 @@ from core.models.execution_plan import ExecutionPlan
 from core.notifications.service import NotificationService
 from core.pipeline.discovery.composite import CompositeDiscovery
 from core.pipeline.extraction.llm_extractor import LLMExtractor
-from core.pipeline.retrieval.brightdata import BrightDataRetrieval
 from core.pipeline.retrieval.link_extractor import LinkExtractor
+from core.pipeline.retrieval.proxy import ProxyRetrieval
 from core.pipeline.validation.anomaly_detector import AnomalyDetector
 from core.pipeline.validation.schema_validator import SchemaValidator
 from core.scheduler.cron import calculate_next_run
@@ -28,12 +28,12 @@ class AgentOrchestrator:
     """The central agentic execution engine that executes goal-driven web data operations."""
 
     discovery: CompositeDiscovery
-    retrieval: BrightDataRetrieval
+    retrieval: ProxyRetrieval
     extractor: LLMExtractor
     validator: SchemaValidator
     evaluator: ConditionEvaluator
     notifier: NotificationService
-    reasoner: AgentReasoner
+    brain: AgentBrain
     link_extractor: LinkExtractor
     anomaly_detector: AnomalyDetector
     export_sink: LocalFileExportSink
@@ -41,24 +41,24 @@ class AgentOrchestrator:
     def __init__(
         self,
         discovery: CompositeDiscovery | None = None,
-        retrieval: BrightDataRetrieval | None = None,
+        retrieval: ProxyRetrieval | None = None,
         extractor: LLMExtractor | None = None,
         validator: SchemaValidator | None = None,
         evaluator: ConditionEvaluator | None = None,
         notifier: NotificationService | None = None,
-        reasoner: AgentReasoner | None = None,
+        brain: AgentBrain | None = None,
         link_extractor: LinkExtractor | None = None,
         anomaly_detector: AnomalyDetector | None = None,
         export_sink: LocalFileExportSink | None = None,
     ):
-        # Default to CompositeDiscovery so Orbit functions with or without SerpApi
+        # Default to CompositeDiscovery so Orbit functions across multi-source discovery backends
         self.discovery = discovery or CompositeDiscovery()
-        self.retrieval = retrieval or BrightDataRetrieval()
+        self.retrieval = retrieval or ProxyRetrieval()
         self.extractor = extractor or LLMExtractor()
         self.validator = validator or SchemaValidator()
         self.evaluator = evaluator or ConditionEvaluator()
         self.notifier = notifier or NotificationService()
-        self.reasoner = reasoner or AgentReasoner()
+        self.brain = brain or AgentBrain()
         self.link_extractor = link_extractor or LinkExtractor()
         self.anomaly_detector = anomaly_detector or AnomalyDetector()
         self.export_sink = export_sink or LocalFileExportSink()
@@ -94,10 +94,10 @@ class AgentOrchestrator:
             # ────────────────────────────────────────────────
             urls = await self.discovery.discover(plan, max_results=8)
 
-            # Self-correction check: if no URLs discovered, ask reasoner to rephrase query
+            # Self-correction check: if no URLs discovered, ask brain to rephrase query
             if not urls:
-                logger.info("0 sources found, invoking Agent Reasoner for recovery...")
-                diagnosis = await self.reasoner.diagnose_and_recover(
+                logger.info("0 sources found, invoking Agent Brain for recovery...")
+                diagnosis = await self.brain.diagnose_and_recover(
                     stage="discovery",
                     error="No search results returned for query across available engines",
                     plan=plan,

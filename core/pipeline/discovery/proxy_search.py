@@ -6,8 +6,8 @@ from core.config.settings import get_settings
 from core.models.execution_plan import ExecutionPlan
 
 
-class BrightDataSerpDiscovery:
-    """Discovery strategy using Bright Data SERP API endpoint."""
+class ProxySearchDiscovery:
+    """Discovery strategy using proxy-routed search endpoint."""
 
     def __init__(self):
         self.settings = get_settings()
@@ -22,7 +22,7 @@ class BrightDataSerpDiscovery:
             if site_filters:
                 query = f"{query} ({site_filters})"
 
-        # Google search via Bright Data Web Unlocker/SERP API
+        # Google search via proxy unlocker endpoint
         search_url = f"https://www.google.com/search?q={query}&num={max_results}"
 
         headers = {

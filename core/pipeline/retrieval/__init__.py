@@ -1,5 +1,9 @@
-from core.pipeline.retrieval.brightdata import BrightDataRetrieval
 from core.pipeline.retrieval.direct import DirectHttpRetrieval
 from core.pipeline.retrieval.link_extractor import LinkExtractor
+from core.pipeline.retrieval.proxy import ProxyRetrieval
 
-__all__ = ["BrightDataRetrieval", "DirectHttpRetrieval", "LinkExtractor"]
+__all__ = [
+    "DirectHttpRetrieval",
+    "LinkExtractor",
+    "ProxyRetrieval",
+]

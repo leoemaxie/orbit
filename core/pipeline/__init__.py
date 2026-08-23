@@ -4,20 +4,35 @@ from core.pipeline.base import (
     RetrievalStrategy,
     ValidationStrategy,
 )
-from core.pipeline.discovery import SerpApiDiscovery, StaticDiscovery
+from core.pipeline.discovery import (
+    CompositeDiscovery,
+    OpenWebSearchDiscovery,
+    ProxySearchDiscovery,
+    SearchEngineDiscovery,
+    StaticDiscovery,
+)
 from core.pipeline.extraction import LLMExtractor
-from core.pipeline.retrieval import BrightDataRetrieval, DirectHttpRetrieval
-from core.pipeline.validation import SchemaValidator
+from core.pipeline.retrieval import (
+    DirectHttpRetrieval,
+    LinkExtractor,
+    ProxyRetrieval,
+)
+from core.pipeline.validation import AnomalyDetector, SchemaValidator
 
 __all__ = [
-    "BrightDataRetrieval",
+    "AnomalyDetector",
+    "CompositeDiscovery",
     "DirectHttpRetrieval",
     "DiscoveryStrategy",
     "ExtractionStrategy",
     "LLMExtractor",
+    "LinkExtractor",
+    "OpenWebSearchDiscovery",
+    "ProxyRetrieval",
+    "ProxySearchDiscovery",
     "RetrievalStrategy",
     "SchemaValidator",
-    "SerpApiDiscovery",
+    "SearchEngineDiscovery",
     "StaticDiscovery",
     "ValidationStrategy",
 ]

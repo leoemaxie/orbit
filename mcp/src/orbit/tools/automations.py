@@ -8,7 +8,7 @@ async def create_automation_tool(goal: str, client: OrbitBackendClient) -> dict[
     The goal is interpreted into a domain-agnostic execution plan with dynamic extraction schema.
 
     Supports:
-    - Zero-key open-web search (DuckDuckGo), Bright Data SERP, and SerpApi
+    - Multi-source discovery (open-web search, search APIs, and proxy search)
     - 2-hop autonomous navigation from listing/search pages to detail pages
     - Static threshold alerts ('min(price) < 400000', 'salary >= 150000')
     - Relative historical drop alerts ('alert me when lowest price drops by 10%')

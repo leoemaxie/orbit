@@ -1,12 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
 from core.api.dependencies import get_db
 from core.api.v1.automations import _run_to_out
 from core.db.orm import Run
 from core.models.schemas import RunOut
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["Runs"])
 
