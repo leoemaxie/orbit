@@ -27,18 +27,18 @@
 	}
 </script>
 
-<div class="max-w-6xl mx-auto space-y-10">
+<div class="max-w-5xl mx-auto space-y-12 pb-12">
 	<!-- Hero Section -->
-	<div class="text-center space-y-4 pt-4 flex flex-col items-center">
-		<OrbitLogo size="lg" showWordmark={false} animated={true} class="mb-1" />
-		<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orbit-cyan/10 border border-orbit-cyan/30 text-orbit-cyan text-xs font-mono">
+	<div class="text-center space-y-5 pt-8 flex flex-col items-center">
+		<OrbitLogo size="lg" showWordmark={false} animated={true} class="mb-2 hover:scale-105 transition-transform" />
+		<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orbit-cyan/10 border border-orbit-cyan/30 text-orbit-cyan text-xs font-mono shadow-glow-cyan/20">
 			<Sparkles size={13} class="animate-pulse" />
 			<span>Set the goal. Walk away.</span>
 		</div>
-		<h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white font-sans">
+		<h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white font-sans">
 			Autonomous Web Data Operations
 		</h1>
-		<p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto">
+		<p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
 			Specify extraction objectives in natural language. Orbit discovers web sources, bypasses dynamic barriers, extracts structured records, and runs on schedule with complete provenance.
 		</p>
 	</div>

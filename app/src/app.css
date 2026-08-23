@@ -35,6 +35,10 @@
 
 body {
 	background-color: #07090E;
+	background-image: 
+		radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 242, 254, 0.07) 0%, transparent 60%),
+		radial-gradient(ellipse 60% 40% at 80% 25%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+	background-attachment: fixed;
 	color: #F8FAFC;
 }
 

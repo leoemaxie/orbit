@@ -60,12 +60,17 @@
 				{@const active = page.url.pathname === item.href || (item.href !== '/' && page.url.pathname.startsWith(item.href))}
 				<a
 					href={item.href}
-					class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all {active
-						? 'bg-gradient-to-r from-orbit-cyan/15 to-transparent text-orbit-cyan border-l-2 border-orbit-cyan font-semibold'
-						: 'text-slate-400 hover:text-slate-200 hover:bg-surface-800'}"
+					class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all {active
+						? 'bg-gradient-to-r from-orbit-cyan/15 to-transparent text-orbit-cyan border-l-2 border-orbit-cyan font-semibold shadow-glow-cyan/10'
+						: 'text-slate-300 hover:text-white hover:bg-surface-800/80'}"
 				>
-					<item.icon size={16} />
-					<span>{item.label}</span>
+					<div class="flex items-center gap-3">
+						<item.icon size={16} class={active ? 'text-orbit-cyan' : 'text-slate-400 group-hover:text-slate-200'} />
+						<span>{item.label}</span>
+					</div>
+					{#if active}
+						<span class="w-1.5 h-1.5 rounded-full bg-orbit-cyan shadow-glow-cyan"></span>
+					{/if}
 				</a>
 			{/each}
 		</nav>
