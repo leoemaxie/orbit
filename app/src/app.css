@@ -1,52 +1,75 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-	* {
-		border-color: rgba(255, 255, 255, 0.08);
-	}
-	
-	body {
-		background-color: #07090E;
-		color: #F8FAFC;
-	}
+@theme {
+	--color-void: #07090E;
+	--color-void-950: #07090E;
 
-	/* Custom Monospace Scrollbars */
-	::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
-	}
-	::-webkit-scrollbar-track {
-		background: #07090E;
-	}
-	::-webkit-scrollbar-thumb {
-		background: #1D263B;
-		border-radius: 9999px;
-	}
-	::-webkit-scrollbar-thumb:hover {
-		background: #2A364F;
-	}
+	--color-surface-950: #07090E;
+	--color-surface-900: #0E131F;
+	--color-surface-850: #111726;
+	--color-surface-800: #141B2D;
+	--color-surface-700: #1D263B;
+	--color-surface-600: #2A364F;
+	--color-surface-500: #3D4C6B;
+
+	--color-orbit-cyan: #00F2FE;
+	--color-orbit-cyan-glow: #38BDF8;
+	--color-orbit-violet: #8B5CF6;
+	--color-orbit-violet-glow: #A855F7;
+	--color-orbit-emerald: #10B981;
+	--color-orbit-amber: #F59E0B;
+	--color-orbit-rose: #EF4444;
+
+	--font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+	--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+	--shadow-glow-cyan: 0 0 25px -5px rgba(56, 189, 248, 0.3);
+	--shadow-glow-violet: 0 0 25px -5px rgba(139, 92, 246, 0.3);
+	--shadow-glow-emerald: 0 0 25px -5px rgba(16, 185, 129, 0.3);
+	--shadow-glow-amber: 0 0 25px -5px rgba(245, 158, 11, 0.3);
 }
 
-@layer components {
-	.orbit-glass {
-		background-color: rgba(14, 19, 31, 0.75);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		border: 1px solid rgba(255, 255, 255, 0.08);
-	}
+* {
+	border-color: rgba(255, 255, 255, 0.08);
+}
 
-	.orbit-card {
-		background-color: rgba(20, 27, 45, 0.85);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
-		border: 1px solid rgba(255, 255, 255, 0.08);
-		border-radius: 0.75rem;
-		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-	}
+body {
+	background-color: #07090E;
+	color: #F8FAFC;
+}
 
-	.orbit-card:hover {
-		border-color: rgba(255, 255, 255, 0.15);
-	}
+/* Custom Monospace Scrollbars */
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+::-webkit-scrollbar-track {
+	background: #07090E;
+}
+::-webkit-scrollbar-thumb {
+	background: #1D263B;
+	border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: #2A364F;
+}
+
+.orbit-glass {
+	background-color: rgba(14, 19, 31, 0.75);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.orbit-card {
+	background-color: rgba(20, 27, 45, 0.85);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.75rem;
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.orbit-card:hover {
+	border-color: rgba(255, 255, 255, 0.15);
 }
