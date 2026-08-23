@@ -12,16 +12,16 @@ class ProxyRetrieval:
         self.settings = get_settings()
 
     async def retrieve_one(self, url: str, country_code: str | None = None) -> str | None:
-        if not self.settings.brightdata_api_key or not self.settings.brightdata_zone:
-            raise ValueError("BRIGHTDATA_API_KEY or BRIGHTDATA_ZONE is not configured.")
+        if not self.settings.retrieval_api_key or not self.settings.retrieval_zone:
+            raise ValueError("RETRIEVAL_API_KEY (or BRIGHTDATA_API_KEY) or RETRIEVAL_ZONE is not configured.")
 
         headers = {
-            "Authorization": f"Bearer {self.settings.brightdata_api_key}",
+            "Authorization": f"Bearer {self.settings.retrieval_api_key}",
             "Content-Type": "application/json",
         }
 
         payload = {
-            "zone": self.settings.brightdata_zone,
+            "zone": self.settings.retrieval_zone,
             "url": url,
             "format": "raw",
             "data_format": "markdown",
@@ -30,7 +30,7 @@ class ProxyRetrieval:
         if country_code:
             payload["country"] = country_code.lower()
 
-        request_url = f"{self.settings.brightdata_base_url}/request"
+        request_url = f"{self.settings.retrieval_base_url}/request"
 
         async with httpx.AsyncClient(timeout=75.0) as client:
             resp = await client.post(request_url, headers=headers, json=payload)

@@ -13,7 +13,7 @@ class ProxySearchDiscovery:
         self.settings = get_settings()
 
     async def discover(self, plan: ExecutionPlan, max_results: int = 10) -> list[str]:
-        if not self.settings.brightdata_api_key or not self.settings.brightdata_zone:
+        if not self.settings.retrieval_api_key or not self.settings.retrieval_zone:
             return []
 
         query = plan.search_query.strip()
@@ -26,12 +26,12 @@ class ProxySearchDiscovery:
         search_url = f"https://www.google.com/search?q={query}&num={max_results}"
 
         headers = {
-            "Authorization": f"Bearer {self.settings.brightdata_api_key}",
+            "Authorization": f"Bearer {self.settings.retrieval_api_key}",
             "Content-Type": "application/json",
         }
 
         payload = {
-            "zone": self.settings.brightdata_zone,
+            "zone": self.settings.retrieval_zone,
             "url": search_url,
             "format": "raw",
             "data_format": "markdown",
@@ -39,7 +39,7 @@ class ProxySearchDiscovery:
         if plan.country_code:
             payload["country"] = plan.country_code.lower()
 
-        request_url = f"{self.settings.brightdata_base_url}/request"
+        request_url = f"{self.settings.retrieval_base_url}/request"
 
         try:
             async with httpx.AsyncClient(timeout=45.0) as client:

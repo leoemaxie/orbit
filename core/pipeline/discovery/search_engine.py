@@ -13,8 +13,8 @@ class SearchEngineDiscovery:
         self.settings = get_settings()
 
     async def discover(self, plan: ExecutionPlan, max_results: int = 10) -> list[str]:
-        if not self.settings.serpapi_api_key:
-            raise ValueError("SERPAPI_API_KEY is not configured in settings or environment.")
+        if not self.settings.search_engine_api_key:
+            raise ValueError("SEARCH_ENGINE_API_KEY (or SERPAPI_API_KEY) is not configured in settings or environment.")
 
         # Build search query
         query = plan.search_query.strip()
@@ -27,7 +27,7 @@ class SearchEngineDiscovery:
             "engine": "google",
             "q": query,
             "num": max_results,
-            "api_key": self.settings.serpapi_api_key,
+            "api_key": self.settings.search_engine_api_key,
         }
 
         if plan.country_code:
@@ -35,8 +35,10 @@ class SearchEngineDiscovery:
         if plan.geography:
             params["location"] = plan.geography
 
+        endpoint = self.settings.search_engine_base_url or self.SEARCH_ENGINE_URL
+
         async with httpx.AsyncClient(timeout=35.0) as client:
-            resp = await client.get(self.SEARCH_ENGINE_URL, params=params)
+            resp = await client.get(endpoint, params=params)
             resp.raise_for_status()
             data = resp.json()
 

@@ -27,11 +27,11 @@ class DefaultLLMClient:
         temperature: float = 0.0,
         schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        if not self.settings.openrouter_api_key:
-            raise ValueError("OPENROUTER_API_KEY is not configured in settings or environment.")
+        if not self.settings.llm_api_key:
+            raise ValueError("LLM_API_KEY (or OPENROUTER_API_KEY) is not configured in settings or environment.")
 
         payload: dict[str, Any] = {
-            "model": self.settings.openrouter_model,
+            "model": self.settings.llm_model,
             "temperature": temperature,
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -41,15 +41,15 @@ class DefaultLLMClient:
         }
 
         headers = {
-            "Authorization": f"Bearer {self.settings.openrouter_api_key}",
+            "Authorization": f"Bearer {self.settings.llm_api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/leoemaxie/orbit",
-            "X-Title": "Orbit Web Data Agent",
         }
+
+        url = f"{self.settings.llm_base_url.rstrip('/')}/chat/completions"
 
         async with httpx.AsyncClient(timeout=90.0) as client:
             resp = await client.post(
-                f"{self.settings.openrouter_base_url}/chat/completions",
+                url,
                 headers=headers,
                 json=payload,
             )

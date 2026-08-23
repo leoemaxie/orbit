@@ -31,7 +31,7 @@ class CompositeDiscovery:
             return direct
 
         # 2. Search Engine API (if API key is present)
-        if self.settings.serpapi_api_key:
+        if self.settings.search_engine_api_key:
             try:
                 urls = await self.search_engine.discover(plan, max_results=max_results)
                 if urls:
@@ -50,7 +50,7 @@ class CompositeDiscovery:
             logger.warning(f"Open web search discovery failed: {e}")
 
         # 4. Proxy-routed search (if configured)
-        if self.settings.brightdata_api_key and self.settings.brightdata_zone:
+        if self.settings.retrieval_api_key and self.settings.retrieval_zone:
             try:
                 urls = await self.proxy_search.discover(plan, max_results=max_results)
                 if urls:
