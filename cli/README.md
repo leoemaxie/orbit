@@ -6,7 +6,7 @@ A high-performance, single-binary Go CLI for **Orbit — Autonomous Goal-Driven 
 
 ---
 
-## 📦 Installation & Build
+## Installation & Build
 
 ### Build from Source
 
@@ -28,7 +28,7 @@ Move-Item .\bin\orbc.exe C:\Windows\System32\
 
 ---
 
-## ⚡ Commands Reference
+## Commands Reference
 
 ### 1. Interpret & Create Goal
 

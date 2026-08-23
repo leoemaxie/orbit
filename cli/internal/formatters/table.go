@@ -33,8 +33,12 @@ func RenderAutomationsTable(automations []orbc.AutomationOut) {
 		if !a.Active {
 			activeStr = "No"
 		}
+		idStr := a.ID
+		if len(idStr) > 8 {
+			idStr = idStr[:8] + "..."
+		}
 		table.Append([]string{
-			a.ID[:8] + "...",
+			idStr,
 			a.Plan.Objective,
 			a.Plan.Domain,
 			a.Plan.Frequency,
@@ -68,8 +72,12 @@ func RenderRunsTable(runs []orbc.RunOut) {
 				cond = "NO"
 			}
 		}
+		idStr := r.ID
+		if len(idStr) > 8 {
+			idStr = idStr[:8] + "..."
+		}
 		table.Append([]string{
-			r.ID[:8] + "...",
+			idStr,
 			r.Status,
 			fmt.Sprintf("%d", r.ExtractedCount),
 			fmt.Sprintf("%d", r.ValidatedCount),
