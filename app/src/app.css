@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	* {
+		border-color: rgba(255, 255, 255, 0.08);
+	}
+	
+	body {
+		background-color: #07090E;
+		color: #F8FAFC;
+	}
+
+	/* Custom Monospace Scrollbars */
+	::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+	::-webkit-scrollbar-track {
+		background: #07090E;
+	}
+	::-webkit-scrollbar-thumb {
+		background: #1D263B;
+		border-radius: 9999px;
+	}
+	::-webkit-scrollbar-thumb:hover {
+		background: #2A364F;
+	}
+}
+
+@layer components {
+	.orbit-glass {
+		background-color: rgba(14, 19, 31, 0.75);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	.orbit-card {
+		background-color: rgba(20, 27, 45, 0.85);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		border-radius: 0.75rem;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.orbit-card:hover {
+		border-color: rgba(255, 255, 255, 0.15);
+	}
+}
