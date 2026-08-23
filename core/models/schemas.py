@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from core.models.execution_plan import ExecutionPlan
 
@@ -11,15 +11,14 @@ class GoalRequest(BaseModel):
 
 
 class AutomationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     raw_goal: str
     plan: ExecutionPlan
     active: bool = True
     created_at: str
     next_run_at: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class ResultOut(BaseModel):

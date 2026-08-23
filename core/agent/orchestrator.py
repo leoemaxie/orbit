@@ -69,8 +69,7 @@ class AgentOrchestrator:
 
     async def execute_run(self, db: Session, automation: Automation) -> Run:
         """Executes a full agent run with self-correction, validation, alerting, and verification."""
-        plan_dict = automation.plan
-        plan = ExecutionPlan(**plan_dict)
+        plan = ExecutionPlan.model_validate(automation.plan)
 
         run = Run(
             automation_id=automation.id,

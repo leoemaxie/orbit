@@ -1,10 +1,10 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import (
     JSON,
     Boolean,
-    Column,
     DateTime,
     Enum,
     ForeignKey,
@@ -12,7 +12,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.db.session import Base
 from core.models.enums import RunStatus
@@ -28,54 +28,57 @@ def _now() -> datetime:
 
 class Automation(Base):
     """Stored goal and dynamic execution plan."""
+
     __tablename__ = "automations"
 
-    id = Column(String, primary_key=True, default=_uuid)
-    raw_goal = Column(Text, nullable=False)
-    plan = Column(JSON, nullable=False)  # stores serialized ExecutionPlan
-    created_at = Column(DateTime(timezone=True), default=_now)
-    next_run_at = Column(DateTime(timezone=True), nullable=True)
-    active = Column(Boolean, default=True)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    raw_goal: Mapped[str] = mapped_column(Text, nullable=False)
+    plan: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)  # stores serialized ExecutionPlan
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    runs = relationship("Run", back_populates="automation", cascade="all, delete-orphan")
+    runs: Mapped[list["Run"]] = relationship("Run", back_populates="automation", cascade="all, delete-orphan")
 
 
 class Run(Base):
     """A single execution of an autonomous web-data automation."""
+
     __tablename__ = "runs"
 
-    id = Column(String, primary_key=True, default=_uuid)
-    automation_id = Column(String, ForeignKey("automations.id"), nullable=False)
-    status = Column(Enum(RunStatus), default=RunStatus.pending, nullable=False)
-    started_at = Column(DateTime(timezone=True), default=_now)
-    finished_at = Column(DateTime(timezone=True), nullable=True)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    automation_id: Mapped[str] = mapped_column(String, ForeignKey("automations.id"), nullable=False)
+    status: Mapped[RunStatus] = mapped_column(Enum(RunStatus), default=RunStatus.pending, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Verification and provenance audit trail
-    sources_found = Column(JSON, nullable=True)        # list of discovered source URLs
-    pages_retrieved = Column(JSON, nullable=True)      # list of successfully retrieved URLs
-    extracted_count = Column(Integer, default=0)
-    validated_count = Column(Integer, default=0)
-    condition_matched = Column(Boolean, nullable=True) # whether user condition was triggered
-    condition_message = Column(Text, nullable=True)    # summary of condition evaluation
-    reasoning_log = Column(JSON, nullable=True)        # self-correction/agent decision log
-    error = Column(Text, nullable=True)
+    sources_found: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    pages_retrieved: Mapped[int | None] = mapped_column(Integer, default=0)
+    extracted_count: Mapped[int] = mapped_column(Integer, default=0)
+    validated_count: Mapped[int] = mapped_column(Integer, default=0)
+    condition_matched: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    condition_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reasoning_log: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    automation = relationship("Automation", back_populates="runs")
-    results = relationship("Result", back_populates="run", cascade="all, delete-orphan")
+    automation: Mapped["Automation"] = relationship("Automation", back_populates="runs")
+    results: Mapped[list["Result"]] = relationship("Result", back_populates="run", cascade="all, delete-orphan")
 
 
 class Result(Base):
     """A single extracted and validated record with dynamic domain-agnostic JSON payload."""
+
     __tablename__ = "results"
 
-    id = Column(String, primary_key=True, default=_uuid)
-    run_id = Column(String, ForeignKey("runs.id"), nullable=False)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    run_id: Mapped[str] = mapped_column(String, ForeignKey("runs.id"), nullable=False)
 
-    url = Column(Text, nullable=True)
-    data = Column(JSON, nullable=False, default=dict)  # domain-agnostic extracted fields
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 
-    valid = Column(Boolean, default=False)
-    validation_errors = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=_now)
+    valid: Mapped[bool] = mapped_column(Boolean, default=False)
+    validation_errors: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
-    run = relationship("Run", back_populates="results")
+    run: Mapped["Run"] = relationship("Run", back_populates="results")

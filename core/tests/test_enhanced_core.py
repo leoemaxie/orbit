@@ -61,14 +61,14 @@ def test_link_extractor():
     markdown = """
     # Search Results
     - [Senior Python Engineer](/jobs/senior-python-engineer)
-    - [2 Bedroom Flat in Lagos](https://propertypro.ng/property/2-bed-ikoyi)
+    - [Staff Backend Engineer](/job/staff-backend-engineer)
     - [Privacy Policy](/privacy)
     - [External Site](https://google.com/about)
     """
     links = extractor.extract_child_links("https://jobsite.com/search", markdown)
     assert len(links) >= 2
     assert any("senior-python-engineer" in l for l in links)
-    assert any("2-bed-ikoyi" in l for l in links)
+    assert any("staff-backend-engineer" in l for l in links)
     assert not any("google.com" in l for l in links)
 
 
@@ -83,6 +83,7 @@ def test_anomaly_detector_multi_domain():
     )
     plan = ExecutionPlan(
         objective="Find flats in Lagos",
+        search_query="apartments in Lagos",
         extraction_schema=schema,
     )
     records = [
@@ -101,6 +102,7 @@ def test_verification_engine():
     engine = VerificationEngine()
     plan = ExecutionPlan(
         objective="Track tech salaries",
+        search_query="software engineer salaries",
         frequency=Frequency.daily,
     )
     sources = ["https://example.com/jobs"]

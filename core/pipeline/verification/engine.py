@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -46,7 +47,7 @@ class VerificationEngine:
         self,
         plan: ExecutionPlan,
         sources: list[str],
-        pages: dict[str, str | None],
+        pages: Mapping[str, str | None],
         extracted_records: list[dict[str, Any]],
         validated_records: list[dict[str, Any]],
         results_persisted: bool,

@@ -25,7 +25,7 @@ def _automation_to_out(a: Automation) -> AutomationOut:
     return AutomationOut(
         id=a.id,
         raw_goal=a.raw_goal,
-        plan=ExecutionPlan(**a.plan),
+        plan=ExecutionPlan.model_validate(a.plan),
         active=a.active,
         created_at=a.created_at.isoformat(),
         next_run_at=a.next_run_at.isoformat() if a.next_run_at else None,
