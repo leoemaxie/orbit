@@ -16,7 +16,7 @@
 		ExternalLink
 	} from '@lucide/svelte';
 	import { orbitStore } from '$lib/state/orbit.svelte';
-
+	import { API_BASE } from '$lib/api/client';
 	import OrbitLogo from '$lib/components/ui/OrbitLogo.svelte';
 
 	let { children } = $props();
@@ -118,7 +118,7 @@
 			<div class="bg-rose-950/80 border-b border-rose-600/30 px-6 py-2.5 text-xs text-rose-200 flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<ShieldAlert size={15} class="text-rose-400" />
-					<span>Orbit Daemon unreachable at <code class="font-mono bg-rose-900/50 px-1.5 py-0.5 rounded">http://localhost:8000/api/v1</code>. Make sure the FastAPI core server is running.</span>
+					<span>Orbit Daemon unreachable at <code class="font-mono bg-rose-900/50 px-1.5 py-0.5 rounded">{API_BASE}</code>. Make sure the FastAPI core server is running.</span>
 				</div>
 				<button
 					onclick={() => orbitStore.checkHealth()}

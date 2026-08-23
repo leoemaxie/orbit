@@ -6,12 +6,12 @@ import type {
 	RunOut
 } from './types';
 
-// Read API URL from Vite import.meta.env or fallback to relative /api/v1
-const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.PUBLIC_API_URL) 
+// Read API URL from Vite import.meta.env, only defaulting to localhost / relative /api/v1 if PUBLIC_API_URL is empty
+export const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.PUBLIC_API_URL && import.meta.env.PUBLIC_API_URL.trim() !== '') 
 	? import.meta.env.PUBLIC_API_URL.replace(/\/+$/, '')
-	: '/api/v1';
+	: (typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:8000/api/v1');
 
-class ApiClient {
+export class ApiClient {
 	private baseUrl: string;
 
 	constructor(baseUrl: string = API_BASE) {
