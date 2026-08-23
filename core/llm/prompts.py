@@ -81,11 +81,11 @@ Context provided:
 - Sources / URLs tried: {sources}
 
 Respond with a JSON object:
-{
+{{
   "diagnosis": "Root cause analysis of what went wrong",
   "can_recover": true | false,
   "action": "retry_with_new_query" | "retry_retrieval" | "loosen_validation" | "abort",
   "new_search_query": "Alternative search query if action is retry_with_new_query, else null",
   "explanation": "Rationale for the autonomous agent decision"
-}
+}}
 """
