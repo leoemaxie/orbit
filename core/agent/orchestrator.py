@@ -161,7 +161,7 @@ class AgentOrchestrator:
                     deduped_targets, country_code=plan.country_code, concurrency=4
                 )
 
-            run.pages_retrieved = len([p for p in pages.values() if p])
+            run.pages_retrieved = [u for u, p in pages.items() if p]
             db.commit()
 
             # ────────────────────────────────────────────────

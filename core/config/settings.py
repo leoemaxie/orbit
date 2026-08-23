@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Domain-agnostic application and pipeline settings with multi-provider alias support."""
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "core/.env"), extra="ignore")
 
     # Application
     app_env: str = "development"

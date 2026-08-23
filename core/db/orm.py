@@ -54,7 +54,7 @@ class Run(Base):
 
     # Verification and provenance audit trail
     sources_found: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    pages_retrieved: Mapped[int | None] = mapped_column(Integer, default=0)
+    pages_retrieved: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     extracted_count: Mapped[int] = mapped_column(Integer, default=0)
     validated_count: Mapped[int] = mapped_column(Integer, default=0)
     condition_matched: Mapped[bool | None] = mapped_column(Boolean, nullable=True)

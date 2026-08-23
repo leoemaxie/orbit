@@ -1,4 +1,8 @@
+import logging
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from core.agent.interpreter import GoalInterpreter
 from core.agent.orchestrator import AgentOrchestrator
@@ -12,8 +16,8 @@ from core.models.schemas import (
     ResultOut,
     RunOut,
 )
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+
+logger = logging.getLogger("core.api.v1.automations")
 
 router = APIRouter(prefix="/automations", tags=["Automations"])
 
@@ -64,7 +68,14 @@ def _run_to_out(r: Run) -> RunOut:
 @router.post("", response_model=AutomationOut)
 async def create_automation(payload: GoalRequest, db: Annotated[Session, Depends(get_db)]):
     """Interprets a natural-language goal into a dynamic execution plan and creates an automation."""
-    plan = await interpreter.interpret(payload.goal)
+    try:
+        plan = await interpreter.interpret(payload.goal)
+    except ValueError as e:
+        logger.error(f"Goal interpretation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("Unexpected error during goal interpretation")
+        raise HTTPException(status_code=500, detail=f"Goal interpretation error: {e}") from e
 
     automation = Automation(
         raw_goal=payload.goal,

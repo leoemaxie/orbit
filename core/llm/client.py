@@ -53,7 +53,16 @@ class DefaultLLMClient:
                 headers=headers,
                 json=payload,
             )
-            resp.raise_for_status()
+            if resp.status_code >= 400:
+                error_msg = resp.text
+                try:
+                    err_json = resp.json()
+                    if "error" in err_json and "message" in err_json["error"]:
+                        error_msg = err_json["error"]["message"]
+                except Exception:  # noqa: BLE001
+                    pass
+                raise ValueError(f"LLM API Error ({resp.status_code}): {error_msg}")
+
             data = resp.json()
 
         choices = data.get("choices", [])
