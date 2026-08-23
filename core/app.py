@@ -1,4 +1,11 @@
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Ensure repository root containing 'core' package is always resolvable in sys.path
+_repo_root = str(Path(__file__).resolve().parent.parent)
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,19 +51,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Mount versioned API
     app.include_router(v1_router, prefix="/api/v1")
-    # Legacy mount for backward compatibility
-    app.include_router(v1_router, prefix="/api")
-
-    @app.get("/")
-    def root():
-        return {
-            "name": "Orbit API",
-            "version": __version__,
-            "docs": "/docs",
-            "principle": "Set the goal. Walk away.",
-        }
 
     return app
 
