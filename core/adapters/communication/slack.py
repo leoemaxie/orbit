@@ -1,4 +1,5 @@
 from typing import Any
+
 import httpx
 
 
@@ -37,5 +38,5 @@ class SlackWebhookAdapter:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.post(self.webhook_url, json={"blocks": blocks})
                 return resp.status_code == 200
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False

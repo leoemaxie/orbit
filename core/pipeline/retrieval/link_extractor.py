@@ -1,4 +1,5 @@
 import re
+from typing import ClassVar
 from urllib.parse import urljoin, urlparse
 
 
@@ -6,7 +7,7 @@ class LinkExtractor:
     """Discovers child detail URLs from listing/catalog/search pages for 2-hop navigation."""
 
     # Keywords commonly found in product/job/detail URLs
-    DETAIL_PATTERNS = [
+    DETAIL_PATTERNS: ClassVar[list[str]] = [
         r"/p/[a-zA-Z0-9_\-]+",             # e-commerce product
         r"/product/[a-zA-Z0-9_\-]+",       # product detail
         r"/item/[a-zA-Z0-9_\-]+",          # item detail
@@ -41,9 +42,7 @@ class LinkExtractor:
                 continue
 
             # Check if matches detail patterns or has informative slug
-            if any(re.search(p, parsed.path, re.IGNORECASE) for p in self.DETAIL_PATTERNS):
-                candidate_urls.append(full_url)
-            elif len(parsed.path.strip("/").split("/")) >= 2 and len(anchor_text.strip()) > 10:
+            if any(re.search(p, parsed.path, re.IGNORECASE) for p in self.DETAIL_PATTERNS) or len(parsed.path.strip("/").split("/")) >= 2 and len(anchor_text.strip()) > 10:
                 candidate_urls.append(full_url)
 
         # Deduplicate

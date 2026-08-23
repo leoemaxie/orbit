@@ -1,5 +1,7 @@
 import re
+
 import httpx
+
 from core.config.settings import get_settings
 from core.models.execution_plan import ExecutionPlan
 
@@ -60,5 +62,5 @@ class BrightDataSerpDiscovery:
                         deduped.append(l)
 
                 return deduped[:max_results]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return []

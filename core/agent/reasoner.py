@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+
 from core.llm.openrouter import OpenRouterLLMClient
 from core.llm.prompts import FAILURE_REASONER_PROMPT
 from core.models.execution_plan import ExecutionPlan
@@ -37,7 +38,7 @@ class AgentReasoner:
             )
             logger.info(f"Agent Reasoner decision for stage '{stage}': {decision}")
             return decision
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Reasoner call failed: {e}")
             return {
                 "diagnosis": f"Failure during {stage}: {error}",

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     enable_scheduler: bool = True
 
     # Notification & Webhooks
-    default_webhook_url: Optional[str] = None
+    default_webhook_url: str | None = None
 
 
 @lru_cache

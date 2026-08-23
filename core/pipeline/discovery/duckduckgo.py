@@ -1,6 +1,8 @@
 import re
 from urllib.parse import parse_qs, unquote, urlparse
+
 import httpx
+
 from core.models.execution_plan import ExecutionPlan
 
 
@@ -42,14 +44,17 @@ class DuckDuckGoDiscovery:
 
                 for link in raw_links:
                     actual_url = self._clean_ddg_url(link)
-                    if actual_url and actual_url.startswith("http"):
-                        if not any(excluded in actual_url for excluded in ["duckduckgo.com", "google.com/search"]):
-                            if plan.source_hints:
-                                if any(domain.lower() in actual_url.lower() for domain in plan.source_hints):
-                                    urls.append(actual_url)
-                            else:
+                    if (
+                        actual_url
+                        and actual_url.startswith("http")
+                        and not any(excluded in actual_url for excluded in ["duckduckgo.com", "google.com/search"])
+                    ):
+                        if plan.source_hints:
+                            if any(domain.lower() in actual_url.lower() for domain in plan.source_hints):
                                 urls.append(actual_url)
-        except Exception:
+                        else:
+                            urls.append(actual_url)
+        except Exception:  # noqa: BLE001
             return []
 
         # Deduplicate preserving order

@@ -1,17 +1,19 @@
 import uuid
 from datetime import datetime, timezone
+
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
     Enum,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
 )
 from sqlalchemy.orm import relationship
+
 from core.db.session import Base
 from core.models.enums import RunStatus
 

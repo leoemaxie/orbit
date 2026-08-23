@@ -1,4 +1,5 @@
 from typing import Any, Protocol
+
 from core.models.execution_plan import ExecutionPlan
 
 

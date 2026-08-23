@@ -1,5 +1,6 @@
 import json
 from typing import Any
+
 from core.llm.openrouter import OpenRouterLLMClient
 from core.llm.prompts import DYNAMIC_EXTRACTION_PROMPT
 from core.models.execution_plan import ExecutionPlan
@@ -45,10 +46,10 @@ class LLMExtractor:
                 "data": data,
                 "notes": raw.get("notes"),
             }
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {
                 "url": url,
                 "extracted": False,
                 "data": {},
-                "notes": f"Extraction error: {str(e)}",
+                "notes": f"Extraction error: {e!s}",
             }

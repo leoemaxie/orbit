@@ -1,6 +1,7 @@
 import asyncio
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
@@ -65,10 +66,10 @@ class SchedulerService:
                     logger.info(f"Triggering scheduled execution for automation {auto.id}...")
                     # Execute asynchronously
                     asyncio.create_task(self._run_single_automation(auto.id))
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to launch task for automation {auto.id}: {e}")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error querying due automations: {e}")
         finally:
             db.close()
@@ -79,7 +80,7 @@ class SchedulerService:
             auto = db.query(Automation).filter(Automation.id == automation_id).first()
             if auto:
                 await self.orchestrator.execute_run(db, auto)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Execution error for scheduled automation {automation_id}: {e}")
         finally:
             db.close()

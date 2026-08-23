@@ -1,4 +1,5 @@
 from typing import Any
+
 from core.models.execution_plan import ExecutionPlan
 
 
@@ -20,10 +21,9 @@ class SchemaValidator:
         for field in schema.fields:
             val = data.get(field.name)
 
-            if field.required:
-                if val is None or (isinstance(val, str) and not val.strip()):
-                    errors.append(f"Missing required field: '{field.name}'")
-                    continue
+            if field.required and (val is None or (isinstance(val, str) and not val.strip())):
+                errors.append(f"Missing required field: '{field.name}'")
+                continue
 
             if val is not None:
                 # Type validation
@@ -35,9 +35,8 @@ class SchemaValidator:
                     except (ValueError, TypeError):
                         errors.append(f"Field '{field.name}' expected number, got '{val}'")
 
-                elif field.type == "boolean":
-                    if not isinstance(val, bool):
-                        errors.append(f"Field '{field.name}' expected boolean, got '{val}'")
+                elif field.type == "boolean" and not isinstance(val, bool):
+                    errors.append(f"Field '{field.name}' expected boolean, got '{val}'")
 
                 # Enum validation
                 if field.enum_values and str(val) not in field.enum_values:

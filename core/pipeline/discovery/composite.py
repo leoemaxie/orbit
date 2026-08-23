@@ -1,4 +1,5 @@
 import logging
+
 from core.config.settings import get_settings
 from core.models.execution_plan import ExecutionPlan
 from core.pipeline.discovery.brightdata_serp import BrightDataSerpDiscovery
@@ -36,7 +37,7 @@ class CompositeDiscovery:
                 if urls:
                     logger.info(f"SerpApi discovery returned {len(urls)} URLs.")
                     return urls
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"SerpApi discovery failed, falling back: {e}")
 
         # 3. DuckDuckGo open web discovery (zero API key required)
@@ -45,7 +46,7 @@ class CompositeDiscovery:
             if urls:
                 logger.info(f"DuckDuckGo zero-key discovery returned {len(urls)} URLs.")
                 return urls
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"DuckDuckGo discovery failed: {e}")
 
         # 4. Bright Data SERP (if configured)
@@ -55,7 +56,7 @@ class CompositeDiscovery:
                 if urls:
                     logger.info(f"Bright Data SERP discovery returned {len(urls)} URLs.")
                     return urls
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Bright Data SERP discovery failed: {e}")
 
         return []

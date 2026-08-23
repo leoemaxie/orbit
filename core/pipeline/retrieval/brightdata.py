@@ -1,5 +1,7 @@
 import asyncio
+
 import httpx
+
 from core.config.settings import get_settings
 
 
@@ -47,7 +49,7 @@ class BrightDataRetrieval:
                 try:
                     content = await self.retrieve_one(u, country_code=country_code)
                     results[u] = content
-                except Exception:
+                except Exception:  # noqa: BLE001
                     results[u] = None
 
         await asyncio.gather(*(fetch(u) for u in urls))

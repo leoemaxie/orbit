@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -10,7 +12,7 @@ router = APIRouter(tags=["Runs"])
 
 
 @router.get("/runs/{run_id}", response_model=RunOut)
-def get_run(run_id: str, db: Session = Depends(get_db)):
+def get_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     """Retrieves detailed execution audit trail and results for a specific run."""
     run = db.query(Run).filter(Run.id == run_id).first()
     if not run:
@@ -19,7 +21,7 @@ def get_run(run_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/automations/{automation_id}/runs", response_model=list[RunOut])
-def list_automation_runs(automation_id: str, db: Session = Depends(get_db)):
+def list_automation_runs(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Lists past execution history for a given automation."""
     runs = (
         db.query(Run)

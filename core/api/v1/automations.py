@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -6,7 +8,13 @@ from core.agent.orchestrator import AgentOrchestrator
 from core.api.dependencies import get_db
 from core.db.orm import Automation, Run
 from core.models.execution_plan import ExecutionPlan
-from core.models.schemas import AutomationListOut, AutomationOut, GoalRequest, ResultOut, RunOut
+from core.models.schemas import (
+    AutomationListOut,
+    AutomationOut,
+    GoalRequest,
+    ResultOut,
+    RunOut,
+)
 
 router = APIRouter(prefix="/automations", tags=["Automations"])
 
@@ -55,7 +63,7 @@ def _run_to_out(r: Run) -> RunOut:
 
 
 @router.post("", response_model=AutomationOut)
-async def create_automation(payload: GoalRequest, db: Session = Depends(get_db)):
+async def create_automation(payload: GoalRequest, db: Annotated[Session, Depends(get_db)]):
     """Interprets a natural-language goal into a dynamic execution plan and creates an automation."""
     plan = await interpreter.interpret(payload.goal)
 
@@ -72,7 +80,7 @@ async def create_automation(payload: GoalRequest, db: Session = Depends(get_db))
 
 
 @router.get("", response_model=AutomationListOut)
-def list_automations(db: Session = Depends(get_db)):
+def list_automations(db: Annotated[Session, Depends(get_db)]):
     """Retrieves all registered automations."""
     records = db.query(Automation).order_by(Automation.created_at.desc()).all()
     items = [_automation_to_out(a) for a in records]
@@ -80,7 +88,7 @@ def list_automations(db: Session = Depends(get_db)):
 
 
 @router.get("/{automation_id}", response_model=AutomationOut)
-def get_automation(automation_id: str, db: Session = Depends(get_db)):
+def get_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Retrieves a single automation by its ID."""
     automation = db.query(Automation).filter(Automation.id == automation_id).first()
     if not automation:
@@ -89,7 +97,7 @@ def get_automation(automation_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{automation_id}/run", response_model=RunOut)
-async def run_automation(automation_id: str, db: Session = Depends(get_db)):
+async def run_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Triggers an on-demand autonomous run for the specified automation."""
     automation = db.query(Automation).filter(Automation.id == automation_id).first()
     if not automation:
@@ -100,7 +108,7 @@ async def run_automation(automation_id: str, db: Session = Depends(get_db)):
 
 
 @router.delete("/{automation_id}")
-def delete_automation(automation_id: str, db: Session = Depends(get_db)):
+def delete_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Deletes an automation and all its associated runs and results."""
     automation = db.query(Automation).filter(Automation.id == automation_id).first()
     if not automation:

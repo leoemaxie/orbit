@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+
 from core.models.enums import Frequency
 
 
@@ -17,7 +18,7 @@ def calculate_next_run(
 
     try:
         tz = ZoneInfo(tz_name)
-    except Exception:
+    except Exception:  # noqa: BLE001
         tz = ZoneInfo("UTC")
 
     now_tz = (now or datetime.now(timezone.utc)).astimezone(tz)
@@ -29,7 +30,7 @@ def calculate_next_run(
             parts = schedule_time.split(":")
             target_hour = int(parts[0])
             target_minute = int(parts[1])
-        except Exception:
+        except (ValueError, IndexError):
             pass
 
     if frequency == Frequency.hourly:

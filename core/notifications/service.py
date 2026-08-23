@@ -1,6 +1,8 @@
 import logging
 from typing import Any
+
 import httpx
+
 from core.config.settings import get_settings
 
 logger = logging.getLogger("core.notifications")
@@ -37,6 +39,6 @@ class NotificationService:
                 resp = await client.post(target_url, json=body)
                 resp.raise_for_status()
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to deliver webhook notification to {target_url}: {e}")
             return False

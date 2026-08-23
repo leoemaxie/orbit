@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from core import __version__
 from core.config.settings import get_settings
 

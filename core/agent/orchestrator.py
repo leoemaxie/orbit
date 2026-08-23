@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 from typing import Any
+
 from sqlalchemy.orm import Session
 
 from core.adapters.storage.local_export import LocalFileExportSink
@@ -280,7 +281,7 @@ class AgentOrchestrator:
             return run
 
         except Exception as e:
-            logger.exception(f"Unexpected error in orchestrator: {e}")
+            logger.exception("Unexpected error in orchestrator")
             run.status = RunStatus.failed
             run.error = str(e)
             run.finished_at = datetime.now(timezone.utc)

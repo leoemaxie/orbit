@@ -1,6 +1,8 @@
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
+
 from core.events.types import OrbitEvent
 
 logger = logging.getLogger("core.events")
@@ -25,7 +27,7 @@ class EventBus:
                     await sub(event)
                 else:
                     sub(event)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error in event subscriber for {event.event_type}: {e}")
 
 

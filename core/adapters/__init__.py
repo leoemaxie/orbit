@@ -4,7 +4,7 @@ from core.adapters.storage.local_export import LocalFileExportSink
 
 __all__ = [
     "DataSink",
-    "NotificationAdapter",
     "LocalFileExportSink",
+    "NotificationAdapter",
     "SlackWebhookAdapter",
 ]

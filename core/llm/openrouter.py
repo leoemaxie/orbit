@@ -1,7 +1,9 @@
 import json
 import re
 from typing import Any
+
 import httpx
+
 from core.config.settings import get_settings
 
 _JSON_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
