@@ -85,10 +85,10 @@
 
 <div class="space-y-4">
 	<!-- Control Bar -->
-	<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface-900 border border-white/10 p-3 rounded-xl">
+	<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-surface-900 border border-white/10 p-3 rounded-xl">
 		<!-- Search & Filters -->
-		<div class="flex items-center gap-2 flex-1 w-full sm:w-auto">
-			<div class="relative flex-1 max-w-sm">
+		<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+			<div class="relative flex-1 min-w-0">
 				<Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
 				<input
 					type="text"
@@ -99,25 +99,25 @@
 			</div>
 
 			<!-- Filter Pills -->
-			<div class="flex items-center gap-1 bg-surface-800 p-0.5 rounded-lg border border-white/5 font-mono text-xs">
+			<div class="flex items-center gap-1 bg-surface-800 p-0.5 rounded-lg border border-white/5 font-mono text-xs overflow-x-auto">
 				<button
 					type="button"
 					onclick={() => (filterMode = 'all')}
-					class="px-2.5 py-1 rounded-md transition-colors {filterMode === 'all' ? 'bg-surface-700 text-white font-medium' : 'text-slate-400 hover:text-slate-200'}"
+					class="px-2.5 py-1 rounded-md transition-colors whitespace-nowrap {filterMode === 'all' ? 'bg-surface-700 text-white font-medium' : 'text-slate-400 hover:text-slate-200'}"
 				>
 					All ({results.length})
 				</button>
 				<button
 					type="button"
 					onclick={() => (filterMode = 'valid')}
-					class="px-2.5 py-1 rounded-md transition-colors {filterMode === 'valid' ? 'bg-emerald-950/80 text-emerald-400 font-medium' : 'text-slate-400 hover:text-slate-200'}"
+					class="px-2.5 py-1 rounded-md transition-colors whitespace-nowrap {filterMode === 'valid' ? 'bg-emerald-950/80 text-emerald-400 font-medium' : 'text-slate-400 hover:text-slate-200'}"
 				>
 					Valid ({results.filter((r) => r.valid).length})
 				</button>
 				<button
 					type="button"
 					onclick={() => (filterMode = 'anomaly')}
-					class="px-2.5 py-1 rounded-md transition-colors {filterMode === 'anomaly' ? 'bg-rose-950/80 text-rose-400 font-medium' : 'text-slate-400 hover:text-slate-200'}"
+					class="px-2.5 py-1 rounded-md transition-colors whitespace-nowrap {filterMode === 'anomaly' ? 'bg-rose-950/80 text-rose-400 font-medium' : 'text-slate-400 hover:text-slate-200'}"
 				>
 					Anomalies ({results.filter((r) => !r.valid).length})
 				</button>
@@ -125,7 +125,7 @@
 		</div>
 
 		<!-- Action Exports -->
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-2 self-end lg:self-auto shrink-0">
 			<Button variant="secondary" size="sm" onclick={exportCSV} disabled={results.length === 0}>
 				<Download size={13} />
 				<span>CSV</span>

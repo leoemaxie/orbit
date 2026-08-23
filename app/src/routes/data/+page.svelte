@@ -48,16 +48,16 @@
 	<!-- Header -->
 	<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 		<div>
-			<h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+			<h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2 font-display">
 				<Database size={22} class="text-orbit-cyan" />
 				<span>Data Warehouse</span>
 			</h1>
-			<p class="text-xs text-slate-400 font-mono mt-1">
+			<p class="text-xs text-slate-400 font-sans mt-1">
 				Unified repository of verified records and anomalies extracted across all orbit missions.
 			</p>
 		</div>
 
-		<Button variant="secondary" size="md" onclick={loadAllData} {loading}>
+		<Button variant="secondary" size="md" onclick={loadAllData} {loading} class="w-full sm:w-auto">
 			<RefreshCw size={14} class={loading ? 'animate-spin' : ''} />
 			<span>Refresh Warehouse</span>
 		</Button>

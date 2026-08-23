@@ -30,9 +30,9 @@
 
 <Card class="space-y-6 border-orbit-cyan/30 shadow-glow-cyan/10">
 	<!-- Header -->
-	<div class="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+	<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
 		<div>
-			<div class="flex items-center gap-2 mb-1">
+			<div class="flex items-center gap-2 mb-1 flex-wrap">
 				<span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase bg-orbit-violet/20 text-orbit-violet border border-orbit-violet/30">
 					{plan.domain || 'GENERAL'} DOMAIN
 				</span>
@@ -42,18 +42,18 @@
 					</span>
 				{/if}
 			</div>
-			<h2 class="text-lg font-semibold text-slate-50">{plan.objective}</h2>
+			<h2 class="text-base sm:text-lg font-semibold text-slate-50 font-display">{plan.objective}</h2>
 			<p class="text-xs text-slate-400 font-mono mt-1">Goal: "{automation.raw_goal}"</p>
 		</div>
 
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-2 w-full sm:w-auto justify-end">
 			{#if onRunNow}
 				<Button
 					variant="primary"
 					size="md"
 					loading={running}
 					onclick={() => onRunNow(automation.id)}
-					class="font-medium"
+					class="font-medium w-full sm:w-auto"
 				>
 					<Play size={15} />
 					<span>Execute Orbit Run</span>
@@ -63,7 +63,7 @@
 	</div>
 
 	<!-- Plan Grid -->
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
 		<!-- Frequency & Schedule -->
 		<div class="p-3.5 rounded-lg bg-surface-850 border border-white/5 space-y-1.5">
 			<div class="flex items-center gap-1.5 text-xs text-slate-400 font-mono uppercase">
@@ -92,7 +92,7 @@
 
 	<!-- Extraction Schema -->
 	<div class="space-y-2.5">
-		<div class="flex items-center justify-between">
+		<div class="flex items-center justify-between flex-wrap gap-1">
 			<div class="flex items-center gap-2 text-xs font-mono text-slate-400 uppercase tracking-wider">
 				<Database size={14} class="text-orbit-emerald" />
 				<span>Dynamic Extraction Schema ({plan.extraction_schema?.fields?.length || 0} fields)</span>
@@ -100,7 +100,7 @@
 			<span class="text-[11px] font-mono text-slate-500">Entity: {plan.extraction_schema?.entity_name || 'item'}</span>
 		</div>
 
-		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
 			{#each plan.extraction_schema?.fields || [] as field}
 				<div class="p-2.5 rounded-lg bg-surface-850 border border-white/5 flex flex-col justify-between">
 					<div class="flex items-center justify-between gap-1">
