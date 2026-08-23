@@ -6,7 +6,7 @@ logger = logging.getLogger("core.agent.condition")
 
 
 class ConditionEvaluator:
-    """Evaluates alert, filter, and historical relative conditions against extracted records."""
+    """Domain-agnostic evaluator for threshold alerts, metric aggregations, and historical relative shifts."""
 
     def evaluate(
         self,
@@ -15,7 +15,7 @@ class ConditionEvaluator:
         previous_records: list[dict[str, Any]] | None = None,
     ) -> tuple[bool, str]:
         """
-        Evaluates a condition string against extracted records, with support for historical comparisons.
+        Evaluates a condition string against extracted records with historical comparison support.
         Returns: (condition_met: bool, message: str)
         """
         if not condition_expr or not condition_expr.strip():
@@ -26,71 +26,106 @@ class ConditionEvaluator:
 
         expr = condition_expr.strip()
 
-        # 1. Historical Relative Percentage Drop Check: e.g. "price drops by 10%" or "price_drop >= 10"
-        hist_match = re.search(
-            r"(?:price[_\s]drop|drop[_\s]by|price[_\s]decrease)\s*(?:by|>=|>|<=|<)?\s*([0-9.]+)\s*%?",
+        # 1. Historical Relative Percentage Shifts:
+        # e.g., "salary drops by 10%", "lowest price drops by 10%", "rent increases by 5%", "drops by 10%"
+        shift_match = re.search(
+            r"(?:(?P<field>[a-zA-Z0-9_]+)\s+)?(?:drops?|decreases?|falls?|down|increases?|rises?|up|changes?)\s*(?:by|>=|>|<=|<)?\s*(?P<pct>[0-9.]+)\s*%?",
             expr,
             re.IGNORECASE,
         )
-        if hist_match:
-            target_pct_drop = float(hist_match.group(1))
+        if shift_match:
+            is_increase = bool(re.search(r"increase|rise|up", expr, re.IGNORECASE))
+            target_pct = float(shift_match.group("pct"))
+            specified_field = shift_match.group("field")
+
+            target_field = specified_field if specified_field and specified_field.lower() not in {"lowest", "highest", "average", "total"} else None
+
+            if not target_field:
+                target_field = self._discover_primary_numeric_field(records)
+
+            if not target_field:
+                return False, f"Could not determine target numeric field for condition '{expr}'"
+
             if not previous_records:
-                return False, f"First run: no historical baseline available to compute {target_pct_drop}% drop."
+                return False, f"First run: no historical baseline available to compute {target_pct}% delta on '{target_field}'."
 
-            curr_prices = self._extract_numeric_values(records, "price")
-            prev_prices = self._extract_numeric_values(previous_records, "price")
+            curr_values = self._extract_numeric_values(records, target_field)
+            prev_values = self._extract_numeric_values(previous_records, target_field)
 
-            if not curr_prices or not prev_prices:
-                return False, "Could not extract price series from current and previous runs to compare."
+            if not curr_values or not prev_values:
+                return False, f"Could not extract numeric values for '{target_field}' across runs."
 
-            prev_min = min(prev_prices)
-            curr_min = min(curr_prices)
+            prev_stat = min(prev_values) if not is_increase else max(prev_values)
+            curr_stat = min(curr_values) if not is_increase else max(curr_values)
 
-            if prev_min <= 0:
-                return False, "Previous price was 0 or invalid."
+            if prev_stat <= 0:
+                return False, f"Previous baseline for '{target_field}' was non-positive ({prev_stat})."
 
-            actual_pct_drop = ((prev_min - curr_min) / prev_min) * 100.0
+            actual_pct_change = ((curr_stat - prev_stat) / prev_stat) * 100.0 if is_increase else ((prev_stat - curr_stat) / prev_stat) * 100.0
 
-            if actual_pct_drop >= target_pct_drop:
+            if actual_pct_change >= target_pct:
+                direction_str = "increased" if is_increase else "dropped"
                 return (
                     True,
-                    f"Lowest price dropped by {actual_pct_drop:.1f}% (from {prev_min:.2f} to {curr_min:.2f}, target: >= {target_pct_drop}%)",
+                    f"Metric '{target_field}' {direction_str} by {actual_pct_change:.1f}% (from {prev_stat:.2f} to {curr_stat:.2f}, target: >= {target_pct}%)",
                 )
             else:
                 return (
                     False,
-                    f"Price change: {actual_pct_drop:+.1f}% (current min: {curr_min:.2f} vs prev min: {prev_min:.2f}, target drop: >= {target_pct_drop}%)",
+                    f"Metric '{target_field}' delta: {actual_pct_change:+.1f}% (current: {curr_stat:.2f} vs prev: {prev_stat:.2f}, target: >= {target_pct}%)",
                 )
 
-        # 2. Aggregation functions: min(field), max(field), count()
+        # 2. Aggregations: min(field), max(field), avg(field), count()
         agg_match = re.match(
-            r"^(min|max|avg|count)\(([a-zA-Z0-9_]*)\)\s*(<=|>=|<|>|==|!=)\s*([0-9.]+)",
+            r"^(?P<func>min|max|avg|count)\((?P<field>[a-zA-Z0-9_]*)\)\s*(?P<op><=|>=|<|>|==|!=)\s*(?P<val>[0-9.]+)",
             expr,
             re.IGNORECASE,
         )
         if agg_match:
-            func, field_name, op, target_str = agg_match.groups()
-            target_val = float(target_str)
-            values = self._extract_numeric_values(records, field_name)
+            func = agg_match.group("func").lower()
+            field_name = agg_match.group("field") or self._discover_primary_numeric_field(records) or "item"
+            op = agg_match.group("op")
+            target_val = float(agg_match.group("val"))
 
-            if not values and func.lower() != "count":
-                return False, f"Could not extract numeric values for field '{field_name}'"
-
-            actual_val = 0.0
-            if func.lower() == "min":
-                actual_val = min(values)
-            elif func.lower() == "max":
-                actual_val = max(values)
-            elif func.lower() == "avg":
-                actual_val = sum(values) / len(values)
-            elif func.lower() == "count":
+            if func == "count":
                 actual_val = float(len(records))
+            else:
+                values = self._extract_numeric_values(records, field_name)
+                if not values:
+                    return False, f"Could not extract numeric values for field '{field_name}'"
+                if func == "min":
+                    actual_val = min(values)
+                elif func == "max":
+                    actual_val = max(values)
+                elif func == "avg":
+                    actual_val = sum(values) / len(values)
+                else:
+                    actual_val = 0.0
 
-            matched = self._compare(actual_val, op, target_val)
+            matched = self._compare_numeric(actual_val, op, target_val)
             msg = f"Aggregation {func}({field_name}) = {actual_val} vs target {op} {target_val} -> Matched: {matched}"
             return matched, msg
 
-        # 3. Simple field comparison: field < value (matches if ANY record satisfies)
+        # 3. Categorical string equality: field == 'value' or field != 'value'
+        cat_match = re.match(
+            r"^([a-zA-Z0-9_]+)\s*(==|!=)\s*['\"]([^'\"]+)['\"]", expr, re.IGNORECASE
+        )
+        if cat_match:
+            field_name, op, target_str = cat_match.groups()
+            matching_records = []
+            for r in records:
+                val = str(r.get("data", {}).get(field_name, "")).strip().lower()
+                target_cmp = target_str.strip().lower()
+                is_match = (val == target_cmp) if op == "==" else (val != target_cmp)
+                if is_match:
+                    matching_records.append(r.get("url"))
+
+            if matching_records:
+                return True, f"Found {len(matching_records)} record(s) matching '{field_name} {op} \"{target_str}\"'"
+            else:
+                return False, f"No records satisfied categorical condition '{expr}'"
+
+        # 4. Simple numeric field comparison: field < value (matches if ANY record satisfies)
         simple_match = re.match(
             r"^([a-zA-Z0-9_]+)\s*(<=|>=|<|>|==|!=)\s*([0-9.]+)", expr
         )
@@ -104,7 +139,7 @@ class ConditionEvaluator:
                 if v is not None:
                     try:
                         num = float(v)
-                        if self._compare(num, op, target_val):
+                        if self._compare_numeric(num, op, target_val):
                             matching_records.append((r.get("url"), num))
                     except (ValueError, TypeError):
                         pass
@@ -118,19 +153,40 @@ class ConditionEvaluator:
 
         return False, f"Unsupported condition format: '{expr}'"
 
+    def _discover_primary_numeric_field(self, records: list[dict[str, Any]]) -> str | None:
+        """Dynamically identifies the primary numeric field present across extracted data payloads."""
+        if not records:
+            return None
+        candidate_counts: dict[str, int] = {}
+        for r in records:
+            data = r.get("data", {})
+            for k, v in data.items():
+                if v is not None and not isinstance(v, bool):
+                    try:
+                        float(v)
+                        candidate_counts[k] = candidate_counts.get(k, 0) + 1
+                    except (ValueError, TypeError):
+                        pass
+
+        if not candidate_counts:
+            return None
+
+        # Return the numeric field appearing most frequently across records
+        return max(candidate_counts, key=lambda k: candidate_counts[k])
+
     def _extract_numeric_values(self, records: list[dict[str, Any]], field: str) -> list[float]:
         values: list[float] = []
         for r in records:
             data = r.get("data", {})
             v = data.get(field)
-            if v is not None:
+            if v is not None and not isinstance(v, bool):
                 try:
                     values.append(float(v))
                 except (ValueError, TypeError):
                     pass
         return values
 
-    def _compare(self, actual: float, op: str, target: float) -> bool:
+    def _compare_numeric(self, actual: float, op: str, target: float) -> bool:
         if op == "<":
             return actual < target
         if op == "<=":

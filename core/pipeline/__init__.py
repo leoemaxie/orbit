@@ -18,6 +18,7 @@ from core.pipeline.retrieval import (
     ProxyRetrieval,
 )
 from core.pipeline.validation import AnomalyDetector, SchemaValidator
+from core.pipeline.verification import VerificationEngine, VerificationReport
 
 __all__ = [
     "AnomalyDetector",
@@ -35,4 +36,6 @@ __all__ = [
     "SearchEngineDiscovery",
     "StaticDiscovery",
     "ValidationStrategy",
+    "VerificationEngine",
+    "VerificationReport",
 ]

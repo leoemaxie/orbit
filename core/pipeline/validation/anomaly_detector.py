@@ -1,24 +1,49 @@
 import statistics
 from typing import Any
 
+from core.models.execution_plan import ExecutionPlan
+
 
 class AnomalyDetector:
-    """Detects statistical outliers and anomalies across extracted records in a run."""
+    """Detects statistical outliers and anomalies across extracted records for any numeric metric."""
 
     def filter_and_annotate_outliers(
-        self, records: list[dict[str, Any]], numeric_fields: list[str] | None = None
+        self,
+        records: list[dict[str, Any]],
+        plan: ExecutionPlan | None = None,
+        numeric_fields: list[str] | None = None,
     ) -> list[dict[str, Any]]:
-        if numeric_fields is None:
-            numeric_fields = ["price", "salary", "fare", "amount"]
         if len(records) < 3:
             return records
 
-        for field_name in numeric_fields:
-            values = []
+        target_fields: set[str] = set()
+
+        if numeric_fields:
+            target_fields.update(numeric_fields)
+
+        if plan and plan.extraction_schema:
+            for f in plan.extraction_schema.fields:
+                if f.type == "number":
+                    target_fields.add(f.name)
+
+        # If no target fields specified or discovered via schema, discover numeric fields across records
+        if not target_fields:
+            for r in records:
+                data = r.get("data", {})
+                for k, v in data.items():
+                    if v is not None and not isinstance(v, bool):
+                        try:
+                            float(v)
+                            target_fields.add(k)
+                        except (ValueError, TypeError):
+                            pass
+
+        for field_name in target_fields:
+            values: list[float] = []
             for r in records:
                 data = r.get("data", {})
                 v = data.get(field_name)
-                if v is not None:
+                if v is not None and not isinstance(v, bool):
                     try:
                         values.append(float(v))
                     except (ValueError, TypeError):
@@ -28,11 +53,14 @@ class AnomalyDetector:
                 continue
 
             median = statistics.median(values)
-            # Flag extreme outliers (e.g. 10x higher or 10x lower than median)
+            if median == 0:
+                continue
+
+            # Flag extreme statistical outliers (e.g. 10x higher or 10x lower than sample median)
             for r in records:
                 data = r.get("data", {})
                 v = data.get(field_name)
-                if v is not None:
+                if v is not None and not isinstance(v, bool):
                     try:
                         num = float(v)
                         if num < median * 0.1:

@@ -19,6 +19,7 @@ from core.pipeline.retrieval.link_extractor import LinkExtractor
 from core.pipeline.retrieval.proxy import ProxyRetrieval
 from core.pipeline.validation.anomaly_detector import AnomalyDetector
 from core.pipeline.validation.schema_validator import SchemaValidator
+from core.pipeline.verification.engine import VerificationEngine
 from core.scheduler.cron import calculate_next_run
 
 logger = logging.getLogger("core.agent.orchestrator")
@@ -36,6 +37,7 @@ class AgentOrchestrator:
     brain: AgentBrain
     link_extractor: LinkExtractor
     anomaly_detector: AnomalyDetector
+    verification: VerificationEngine
     export_sink: LocalFileExportSink
 
     def __init__(
@@ -49,6 +51,7 @@ class AgentOrchestrator:
         brain: AgentBrain | None = None,
         link_extractor: LinkExtractor | None = None,
         anomaly_detector: AnomalyDetector | None = None,
+        verification: VerificationEngine | None = None,
         export_sink: LocalFileExportSink | None = None,
     ):
         # Default to CompositeDiscovery so Orbit functions across multi-source discovery backends
@@ -61,6 +64,7 @@ class AgentOrchestrator:
         self.brain = brain or AgentBrain()
         self.link_extractor = link_extractor or LinkExtractor()
         self.anomaly_detector = anomaly_detector or AnomalyDetector()
+        self.verification = verification or VerificationEngine()
         self.export_sink = export_sink or LocalFileExportSink()
 
     async def execute_run(self, db: Session, automation: Automation) -> Run:
@@ -116,67 +120,75 @@ class AgentOrchestrator:
 
             if not urls:
                 run.status = RunStatus.failed
-                run.error = "Discovery failed: No relevant web sources could be found."
+                run.error = "Discovery failed: no relevant web sources could be identified."
                 run.finished_at = datetime.now(timezone.utc)
                 db.commit()
                 return run
 
             # ────────────────────────────────────────────────
-            # 2. RETRIEVAL STAGE (with 2-Hop Detail Link Discovery)
+            # 2. RETRIEVAL STAGE (Resilient Proxy & 2-Hop Detail Links)
             # ────────────────────────────────────────────────
             run.status = RunStatus.retrieving
             db.commit()
 
             pages = await self.retrieval.retrieve_many(
-                urls, country_code=plan.country_code
+                urls, country_code=plan.country_code, concurrency=4
             )
 
-            # Retry once for any failed URLs
-            failed_urls = [u for u, content in pages.items() if not content]
-            if failed_urls:
-                logger.info(f"Retrying {len(failed_urls)} failed page retrievals...")
-                retry_pages = await self.retrieval.retrieve_many(
-                    failed_urls, country_code=plan.country_code
-                )
-                pages.update(retry_pages)
-
-            # 2-Hop Navigation: Check if retrieved pages are listing pages and discover detail links
-            extra_detail_urls = []
-            for u, content in pages.items():
+            # Self-correction / Autonomous 2-hop navigation
+            target_detail_urls: list[str] = []
+            for url, content in pages.items():
                 if content:
-                    child_links = self.link_extractor.extract_child_links(u, content, max_links=2)
-                    for child in child_links:
-                        if child not in pages and child not in extra_detail_urls:
-                            extra_detail_urls.append(child)
+                    child_links = self.link_extractor.extract_child_links(url, content, max_links=3)
+                    if child_links:
+                        logger.info(f"2-hop navigation: found {len(child_links)} child detail URL(s) from {url}")
+                        target_detail_urls.extend(child_links)
+                    else:
+                        target_detail_urls.append(url)
+                else:
+                    target_detail_urls.append(url)
 
-            if extra_detail_urls:
-                logger.info(f"Discovered {len(extra_detail_urls)} child detail links for 2-hop crawl.")
-                child_pages = await self.retrieval.retrieve_many(
-                    extra_detail_urls, country_code=plan.country_code
+            # Deduplicate target detail URLs
+            seen_targets = set()
+            deduped_targets = []
+            for t in target_detail_urls:
+                if t not in seen_targets:
+                    seen_targets.add(t)
+                    deduped_targets.append(t)
+
+            if len(deduped_targets) > len(urls):
+                logger.info(f"Retrieving {len(deduped_targets)} detail pages following 2-hop expansion...")
+                pages = await self.retrieval.retrieve_many(
+                    deduped_targets, country_code=plan.country_code, concurrency=4
                 )
-                pages.update(child_pages)
 
-            retrieved_urls = [u for u, content in pages.items() if content]
-            run.pages_retrieved = retrieved_urls
+            run.pages_retrieved = len([p for p in pages.values() if p])
             db.commit()
 
-            if not retrieved_urls:
-                run.status = RunStatus.failed
-                run.error = "Retrieval failed: Unable to fetch content from discovered URLs."
-                run.finished_at = datetime.now(timezone.utc)
-                db.commit()
-                return run
-
             # ────────────────────────────────────────────────
-            # 3. EXTRACTION STAGE
+            # 3. EXTRACTION STAGE (Schema-Driven)
             # ────────────────────────────────────────────────
             run.status = RunStatus.extracting
             db.commit()
 
             extracted_records: list[dict[str, Any]] = []
-            for url in retrieved_urls:
-                content = pages.get(url) or ""
+
+            for url, content in pages.items():
+                if not content:
+                    continue
+
                 record = await self.extractor.extract(url, content, plan)
+
+                # Self-correction check: if extraction completely failed, ask brain for fallback strategy
+                if not record.get("extracted", True):
+                    diagnosis = await self.brain.diagnose_and_recover(
+                        stage="extraction",
+                        error=f"Empty extraction payload from {url}",
+                        plan=plan,
+                        sources=[url],
+                    )
+                    reasoning_trail.append({"stage": "extraction", "url": url, "decision": diagnosis})
+
                 extracted_records.append(record)
 
             run.extracted_count = len(extracted_records)
@@ -188,8 +200,10 @@ class AgentOrchestrator:
             run.status = RunStatus.validating
             db.commit()
 
-            # Statistical anomaly check across records
-            annotated_records = self.anomaly_detector.filter_and_annotate_outliers(extracted_records)
+            # Statistical anomaly check across all numeric fields in plan schema
+            annotated_records = self.anomaly_detector.filter_and_annotate_outliers(
+                extracted_records, plan=plan
+            )
 
             valid_count = 0
             valid_records = []
@@ -214,8 +228,13 @@ class AgentOrchestrator:
             db.commit()
 
             # Export sink (local file / external storage)
+            has_persisted = True
             if valid_records:
-                await self.export_sink.export_results(automation.id, run.id, valid_records)
+                try:
+                    await self.export_sink.export_results(automation.id, run.id, valid_records)
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"Export sink notification error: {e}")
+                    has_persisted = False
 
             # ────────────────────────────────────────────────
             # 5. CONDITION EVALUATION & HISTORICAL COMPARISON
@@ -244,20 +263,9 @@ class AgentOrchestrator:
                     )
 
             # ────────────────────────────────────────────────
-            # 6. VERIFICATION STAGE
+            # 6. TIMEZONE-AWARE WALL-CLOCK SCHEDULING
             # ────────────────────────────────────────────────
-            if valid_count == 0:
-                run.status = RunStatus.failed
-                run.error = "Verification failed: 0 records passed schema validation."
-            else:
-                run.status = RunStatus.verified
-
-            run.finished_at = datetime.now(timezone.utc)
-            db.commit()
-
-            # ────────────────────────────────────────────────
-            # 7. TIMEZONE-AWARE WALL-CLOCK SCHEDULING
-            # ────────────────────────────────────────────────
+            next_run = None
             if automation.active and plan.frequency != Frequency.once:
                 next_run = calculate_next_run(
                     frequency=plan.frequency,
@@ -267,6 +275,34 @@ class AgentOrchestrator:
                 if next_run:
                     automation.next_run_at = next_run
                     db.commit()
+
+            # ────────────────────────────────────────────────
+            # 7. VERIFICATION STAGE (Concept Note Section 6.10)
+            # ────────────────────────────────────────────────
+            verification_report = self.verification.verify_run(
+                plan=plan,
+                sources=urls,
+                pages=pages,
+                extracted_records=extracted_records,
+                validated_records=valid_records,
+                results_persisted=has_persisted,
+                next_run_at=automation.next_run_at,
+            )
+
+            reasoning_trail.append({"stage": "verification", "report": verification_report.to_dict()})
+            run.reasoning_log = reasoning_trail
+
+            if verification_report.verified:
+                run.status = RunStatus.verified
+            else:
+                if valid_count == 0:
+                    run.status = RunStatus.failed
+                    run.error = f"Verification failed: 0 records passed validation. ({verification_report.summary})"
+                else:
+                    run.status = RunStatus.verified
+
+            run.finished_at = datetime.now(timezone.utc)
+            db.commit()
 
             await event_bus.publish(
                 OrbitEvent(
@@ -297,12 +333,16 @@ class AgentOrchestrator:
             .filter(
                 Run.automation_id == automation_id,
                 Run.id != current_run_id,
-                Run.status.in_([RunStatus.verified, RunStatus.alerting]),
+                Run.validated_count > 0,
             )
             .order_by(Run.started_at.desc())
             .first()
         )
-        if not last_run or not last_run.results:
+        if not last_run:
             return []
 
-        return [{"url": r.url, "data": r.data or {}} for r in last_run.results if r.valid]
+        return [
+            {"url": r.url, "data": r.data, "valid": r.valid}
+            for r in last_run.results
+            if r.valid
+        ]
