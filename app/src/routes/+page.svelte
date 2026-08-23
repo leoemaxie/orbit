@@ -35,7 +35,7 @@
 			<Sparkles size={13} class="animate-pulse" />
 			<span>Set the goal. Walk away.</span>
 		</div>
-		<h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white font-sans">
+		<h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white font-display">
 			Autonomous Web Data Operations
 		</h1>
 		<p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">

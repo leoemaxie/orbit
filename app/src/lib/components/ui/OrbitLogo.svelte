@@ -135,7 +135,7 @@
 	{#if showWordmark}
 		<div class="flex flex-col">
 			<div class="flex items-center gap-1.5 leading-none">
-				<span class="font-extrabold text-white font-sans {wordmarkSizes[size]}">
+				<span class="font-extrabold text-white font-display {wordmarkSizes[size]}">
 					ORBIT
 				</span>
 				<span class="w-1.5 h-1.5 rounded-full bg-orbit-emerald animate-pulse"></span>
