@@ -32,28 +32,30 @@ Orbit interprets your objective, derives structured extraction schemas, discover
 Orbit operates as a modular platform consisting of an autonomous execution daemon, a cross-platform command-line client, a modern telemetry web application, and extensible protocol adapters:
 
 ```mermaid
-graph TD
-    User["User / Developer"] -->|Goal via Web, CLI, or API| Core["Orbit Core Engine (Python)"]
-    
-    subgraph "Orbit Platform Ecosystem"
-        Web["Web App: Orbit UI (SvelteKit)"] -->|REST / HTTP| API["FastAPI Gateway"]
-        CLI["CLI: orbc (Go)"] -->|REST / HTTP| API
-        MCP["MCP Server"] -->|Tool Protocol| API
+flowchart TD
+    User["User / Developer"] --> Web["Web App: Orbit UI (SvelteKit)"]
+    User --> CLI["CLI: orbc (Go)"]
+    User --> MCP["MCP Server"]
+
+    subgraph Ecosystem ["Orbit Platform Ecosystem"]
+        Web -->|REST / HTTP| API["REST API Gateway"]
+        CLI -->|REST / HTTP| API
+        MCP -->|Tool Protocol| API
         
-        subgraph Core ["Orbit Core Engine"]
+        subgraph Engine ["Orbit Core Engine"]
             API --> Orchestrator["Agent Orchestrator"]
+            Scheduler["Scheduler Daemon"] --> Orchestrator
             Orchestrator --> LLM["Goal Interpreter & Agent Brain"]
             Orchestrator --> Discovery["Multi-Source Discovery Engine"]
             Orchestrator --> Retrieval["Resilient Proxy Retrieval"]
             Orchestrator --> Extraction["Schema Extractor & Validator"]
             Orchestrator --> Condition["Condition Evaluator"]
-            Orchestrator --> DB[(PostgreSQL Store)]
-            Scheduler["APScheduler Daemon"] --> Orchestrator
+            Orchestrator --> DB[("PostgreSQL Store")]
         end
     end
 
-    Orchestrator -->|Alerts| Sinks["Notification Sinks (Slack / Webhooks)"]
-    Orchestrator -->|Exports| DataStore["Local / Remote Data Sinks"]
+    Orchestrator -->|Alerts| Sinks["Notification Sinks (Webhooks / Slack)"]
+    Orchestrator -->|Exports| DataStore["Data Sinks (CSV / JSON)"]
 ```
 
 ---
