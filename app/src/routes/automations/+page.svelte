@@ -37,19 +37,19 @@
 	<!-- Header -->
 	<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 		<div>
-			<h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+			<h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2 font-display">
 				<Layers size={22} class="text-orbit-cyan" />
 				<span>Automation Fleet</span>
 			</h1>
-			<p class="text-xs text-slate-400 font-mono mt-1">
-				Manage scheduled background missions, monitor execution cadence, and trigger on-demand runs.
+			<p class="text-xs text-slate-400 font-sans mt-1">
+				Your active automated data pipelines. Monitor recurring data extraction schedules, inspect data schemas, and execute runs on demand.
 			</p>
 		</div>
 
 		<a href="/">
 			<Button variant="primary" size="md">
 				<Plus size={16} />
-				<span>New Goal Mission</span>
+				<span>New Mission</span>
 			</Button>
 		</a>
 	</div>

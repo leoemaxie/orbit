@@ -78,7 +78,7 @@
 		<!-- Bottom Telemetry & Daemon Status -->
 		<div class="p-4 border-t border-white/10 bg-surface-850 space-y-3">
 			<div class="flex items-center justify-between">
-				<span class="text-[11px] font-mono text-slate-400">Daemon Gateway</span>
+				<span class="text-[11px] font-mono text-slate-400">Daemon</span>
 				<span
 					class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border {orbitStore.daemonConnected
 						? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30'
@@ -123,7 +123,7 @@
 			<div class="bg-rose-950/80 border-b border-rose-600/30 px-6 py-2.5 text-xs text-rose-200 flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<ShieldAlert size={15} class="text-rose-400" />
-					<span>Orbit Daemon unreachable at <code class="font-mono bg-rose-900/50 px-1.5 py-0.5 rounded">{API_BASE}</code>. Make sure the Orbit core service is running.</span>
+					<span>Orbit Daemon unreachable. Make sure the Orbit core service is running.</span>
 				</div>
 				<button
 					onclick={() => orbitStore.checkHealth()}
