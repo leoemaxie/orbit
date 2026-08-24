@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { Radio, Layers, Database, Activity, RefreshCw } from '@lucide/svelte';
+	import { Radio, Layers, Database, GitBranch, Activity, RefreshCw } from '@lucide/svelte';
 	import { orbitStore } from '$lib/state/orbit.svelte';
 	import DesktopSidebar from '$lib/components/layout/DesktopSidebar.svelte';
 	import MobileNav from '$lib/components/layout/MobileNav.svelte';
@@ -24,6 +24,7 @@
 	const navItems = [
 		{ href: '/', label: 'Overview', icon: Radio },
 		{ href: '/automations', label: 'Automation Fleet', icon: Layers },
+		{ href: '/workflows', label: 'Workflows', icon: GitBranch },
 		{ href: '/data', label: 'Data Warehouse', icon: Database }
 	];
 </script>
