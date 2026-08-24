@@ -26,14 +26,31 @@ var workflowCmd = &cobra.Command{
 }
 
 func renderWorkflow() error {
-	adapters := []AdapterInfo{
-		{Stage: "1. Inbound Ingestion", Adapter: "LayoutParser", Type: "Document", Status: "ACTIVE", Description: "Semantic layout & table deconstruction"},
-		{Stage: "2. Ingestion Normalize", Adapter: "FormatConverter", Type: "Document", Status: "ACTIVE", Description: "DOCX/XLSX to PDF/A conversion & OCR"},
-		{Stage: "3. Schema Extraction", Adapter: "LLMExtractor", Type: "Agentic", Status: "ACTIVE", Description: "Structured record parsing & anomaly check"},
-		{Stage: "4. Dossier Generation", Adapter: "HtmlDossierGenerator", Type: "Dossier", Status: "ACTIVE", Description: "Responsive executive HTML/PDF briefs"},
-		{Stage: "5. Privacy Redactor", Adapter: "PiiRedactor", Type: "Compliance", Status: "ACTIVE", Description: "Automated PII masking (SSN, Email, Card)"},
-		{Stage: "6. Object Storage", Adapter: "S3ExportSink", Type: "Storage", Status: "ACTIVE", Description: "Presigned URL & cloud bucket archival"},
-		{Stage: "7. Notification Sink", Adapter: "SlackWebhookAdapter", Type: "Communication", Status: "ACTIVE", Description: "Telemetry alerts with signed dossier links"},
+	var adapters []AdapterInfo
+
+	// Fetch live adapter topology from the server if available
+	serverNodes, err := client.GetWorkflowTopology()
+	if err == nil && len(serverNodes) > 0 {
+		for _, n := range serverNodes {
+			adapters = append(adapters, AdapterInfo{
+				Stage:       fmt.Sprintf("[%s] %s", n.Category, n.Label),
+				Adapter:     n.Label,
+				Type:        n.Category,
+				Status:      n.Status,
+				Description: n.Description,
+			})
+		}
+	} else {
+		// Offline fallback display
+		adapters = []AdapterInfo{
+			{Stage: "1. Inbound Ingestion", Adapter: "LayoutParser", Type: "Document", Status: "ACTIVE", Description: "Semantic layout & table deconstruction"},
+			{Stage: "2. Ingestion Normalize", Adapter: "FormatConverter", Type: "Document", Status: "ACTIVE", Description: "DOCX/XLSX to PDF/A conversion & OCR"},
+			{Stage: "3. Schema Extraction", Adapter: "LLMExtractor", Type: "Agentic", Status: "ACTIVE", Description: "Structured record parsing & anomaly check"},
+			{Stage: "4. Dossier Generation", Adapter: "HtmlDossierGenerator", Type: "Dossier", Status: "ACTIVE", Description: "Responsive executive HTML/PDF briefs"},
+			{Stage: "5. Privacy Redactor", Adapter: "PiiRedactor", Type: "Compliance", Status: "ACTIVE", Description: "Automated PII masking (SSN, Email, Card)"},
+			{Stage: "6. Object Storage", Adapter: "S3ExportSink", Type: "Storage", Status: "ACTIVE", Description: "Presigned URL & cloud bucket archival"},
+			{Stage: "7. Notification Sink", Adapter: "SlackWebhookAdapter", Type: "Communication", Status: "ACTIVE", Description: "Telemetry alerts with signed dossier links"},
+		}
 	}
 
 	if jsonFlag {
@@ -41,7 +58,7 @@ func renderWorkflow() error {
 	}
 
 	fmt.Printf("\n%s\n", ui.Cyan("🛰️ Orbit Adapter Workflow Pipeline"))
-	fmt.Println(ui.Gray("Visual pipeline topology from inbound ingestion to multi-sink dispatch:"))
+	fmt.Println(ui.Gray("Live pipeline topology fetched from server:"))
 	fmt.Println()
 
 	fmt.Printf("  %s\n", ui.White("[Trigger] ──► [Discovery] ──► [LayoutParser] ──► [Extractor] ──► [DossierGen] ──► [S3/Slack]"))

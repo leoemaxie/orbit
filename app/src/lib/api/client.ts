@@ -1,11 +1,5 @@
 import { PUBLIC_API_URL } from '$env/static/public';
-import type {
-	AutomationListOut,
-	AutomationOut,
-	GoalRequest,
-	HealthStatus,
-	RunOut
-} from './types';
+import type { AutomationListOut, AutomationOut, GoalRequest, HealthStatus, RunOut } from './types';
 
 export class ApiClient {
 	private baseUrl: string;
@@ -17,78 +11,45 @@ export class ApiClient {
 	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 		const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 		const url = `${this.baseUrl}${cleanEndpoint}`;
+		const headers: HeadersInit = { 'Content-Type': 'application/json', Accept: 'application/json', ...options.headers };
 
-		const headers: HeadersInit = {
-			'Content-Type': 'application/json',
-			Accept: 'application/json',
-			...options.headers
-		};
-
-		const response = await fetch(url, {
-			...options,
-			headers
-		});
-
+		const response = await fetch(url, { ...options, headers });
 		if (!response.ok) {
 			let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 			try {
 				const errorJson = await response.json();
 				if (errorJson.detail) {
-					errorMessage = typeof errorJson.detail === 'string' 
-						? errorJson.detail 
-						: JSON.stringify(errorJson.detail);
+					errorMessage = typeof errorJson.detail === 'string' ? errorJson.detail : JSON.stringify(errorJson.detail);
 				}
-			} catch {
-				// use default errorMessage
-			}
+			} catch {}
 			throw new Error(errorMessage);
 		}
-
-		// Check for empty responses (e.g. 204 or DELETE)
 		const text = await response.text();
 		return text ? JSON.parse(text) : ({} as T);
 	}
 
-	// Health check
-	async getHealth(): Promise<HealthStatus> {
-		return this.request<HealthStatus>('/health');
-	}
-
-	// Automations
-	async listAutomations(): Promise<AutomationListOut> {
-		return this.request<AutomationListOut>('/automations');
-	}
-
-	async getAutomation(id: string): Promise<AutomationOut> {
-		return this.request<AutomationOut>(`/automations/${id}`);
-	}
-
+	async getHealth(): Promise<HealthStatus> { return this.request<HealthStatus>('/health'); }
+	async listAutomations(): Promise<AutomationListOut> { return this.request<AutomationListOut>('/automations'); }
+	async getAutomation(id: string): Promise<AutomationOut> { return this.request<AutomationOut>(`/automations/${id}`); }
 	async createAutomation(payload: GoalRequest): Promise<AutomationOut> {
-		return this.request<AutomationOut>('/automations', {
-			method: 'POST',
-			body: JSON.stringify(payload)
-		});
+		return this.request<AutomationOut>('/automations', { method: 'POST', body: JSON.stringify(payload) });
 	}
-
 	async deleteAutomation(id: string): Promise<{ message: string }> {
-		return this.request<{ message: string }>(`/automations/${id}`, {
-			method: 'DELETE'
-		});
+		return this.request<{ message: string }>(`/automations/${id}`, { method: 'DELETE' });
 	}
-
 	async runAutomation(id: string): Promise<RunOut> {
-		return this.request<RunOut>(`/automations/${id}/run`, {
-			method: 'POST'
-		});
+		return this.request<RunOut>(`/automations/${id}/run`, { method: 'POST' });
 	}
-
-	// Runs
-	async getRun(runId: string): Promise<RunOut> {
-		return this.request<RunOut>(`/runs/${runId}`);
-	}
-
+	async getRun(runId: string): Promise<RunOut> { return this.request<RunOut>(`/runs/${runId}`); }
 	async listAutomationRuns(automationId: string): Promise<RunOut[]> {
 		return this.request<RunOut[]>(`/automations/${automationId}/runs`);
+	}
+	async getWorkflowTopology(): Promise<any[]> { return this.request<any[]>('/workflows/topology'); }
+	async deployWorkflow(nodes: any[]): Promise<{ status: string; message: string }> {
+		return this.request<{ status: string; message: string }>('/workflows/deploy', {
+			method: 'POST',
+			body: JSON.stringify({ nodes })
+		});
 	}
 }
 

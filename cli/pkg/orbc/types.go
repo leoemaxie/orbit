@@ -1,6 +1,5 @@
 package orbc
 
-// ExtractionField defines a single dynamic field in an extraction schema.
 type ExtractionField struct {
 	Name        string   `json:"name"`
 	Type        string   `json:"type"`
@@ -9,14 +8,12 @@ type ExtractionField struct {
 	EnumValues  []string `json:"enum_values,omitempty"`
 }
 
-// DynamicExtractionSchema describes the dynamic entity schema produced by the Goal Interpreter.
 type DynamicExtractionSchema struct {
 	EntityName  string            `json:"entity_name"`
 	Fields      []ExtractionField `json:"fields"`
 	Description string            `json:"description,omitempty"`
 }
 
-// ExecutionPlan is the structured representation of a goal.
 type ExecutionPlan struct {
 	Objective           string                  `json:"objective"`
 	Domain              string                  `json:"domain"`
@@ -32,12 +29,10 @@ type ExecutionPlan struct {
 	NotificationChannel string                  `json:"notification_channel,omitempty"`
 }
 
-// GoalRequest is sent when creating an automation.
 type GoalRequest struct {
 	Goal string `json:"goal"`
 }
 
-// AutomationOut represents a registered automation.
 type AutomationOut struct {
 	ID        string        `json:"id"`
 	RawGoal   string        `json:"raw_goal"`
@@ -47,13 +42,11 @@ type AutomationOut struct {
 	NextRunAt *string       `json:"next_run_at,omitempty"`
 }
 
-// AutomationListOut is the paginated/list response.
 type AutomationListOut struct {
 	Items []AutomationOut `json:"items"`
 	Total int             `json:"total"`
 }
 
-// ResultOut represents a single extracted data row.
 type ResultOut struct {
 	ID               string                 `json:"id"`
 	URL              string                 `json:"url,omitempty"`
@@ -63,7 +56,6 @@ type ResultOut struct {
 	CreatedAt        string                 `json:"created_at"`
 }
 
-// RunOut represents a single execution of an automation.
 type RunOut struct {
 	ID               string                   `json:"id"`
 	AutomationID     string                   `json:"automation_id"`
@@ -81,10 +73,19 @@ type RunOut struct {
 	Results          []ResultOut              `json:"results,omitempty"`
 }
 
-// HealthResponse represents the health probe response.
 type HealthResponse struct {
 	Status           string `json:"status"`
 	Version          string `json:"version"`
 	Environment      string `json:"environment"`
 	SchedulerEnabled bool   `json:"scheduler_enabled"`
+}
+
+type WorkflowNodeOut struct {
+	ID          string                 `json:"id"`
+	Label       string                 `json:"label"`
+	Category    string                 `json:"category"`
+	IconName    string                 `json:"iconName"`
+	Description string                 `json:"description"`
+	Status      string                 `json:"status"`
+	Config      map[string]interface{} `json:"config"`
 }
