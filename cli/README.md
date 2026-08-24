@@ -8,6 +8,23 @@ A single-binary operator CLI for **Orbit — Autonomous Goal-Driven Web Data Ope
 
 ---
 
+### Target Backend & Production Connection
+
+By default, the CLI can connect to the public hosted production instance, a self-hosted cluster, or a local development daemon:
+
+```bash
+# 1. Connect to Hosted Production Daemon (Persistent Config)
+orbc config set api_url https://orbit-wtsx.onrender.com/api/v1
+
+# 2. Connect to Hosted Production Daemon (One-off Command Flag)
+orbc --api-url https://orbit-wtsx.onrender.com/api/v1 list
+
+# 3. Connect via Environment Variable
+export ORBC_API_URL=https://orbit-wtsx.onrender.com/api/v1
+```
+
+---
+
 ## Installation & Build
 
 ### Build from Source
@@ -16,8 +33,8 @@ Requires Go 1.23+:
 
 ```bash
 cd cli
-make build
-# Output binary is generated at bin/orbc
+go build -ldflags "-s -w -X github.com/leoemaxie/orbit/cli/internal/config.DefaultAPIURL=https://orbit-wtsx.onrender.com/api/v1" -o bin/orbc ./cmd/orbc
+# Output binary is generated at bin/orbc with production URL baked in
 ```
 
 ### Install to System PATH
