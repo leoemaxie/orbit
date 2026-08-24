@@ -34,7 +34,7 @@
 	onMount(() => {
 		loadRunDetails();
 		const interval = setInterval(() => {
-			if (run?.status === 'running' || run?.status === 'pending' || run?.status === 'discovering' || run?.status === 'retrieving' || run?.status === 'extracting') {
+			if (run && run.status !== 'verified' && run.status !== 'failed') {
 				loadRunDetails();
 			}
 		}, 1500);

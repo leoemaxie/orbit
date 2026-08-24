@@ -80,18 +80,21 @@ class AgentOrchestrator:
                 logger.error(f"Commit retry failed: {retry_err}")
                 raise
 
-    async def execute_run(self, db: Session, automation: Automation) -> Run:
+    async def execute_run(
+        self, db: Session, automation: Automation, run: Run | None = None
+    ) -> Run:
         """Executes a full agent run with self-correction, validation, alerting, and verification."""
         plan = ExecutionPlan.model_validate(automation.plan)
 
-        run = Run(
-            automation_id=automation.id,
-            status=RunStatus.discovering,
-            reasoning_log=[],
-        )
-        db.add(run)
-        self._safe_commit(db)
-        db.refresh(run)
+        if run is None:
+            run = Run(
+                automation_id=automation.id,
+                status=RunStatus.discovering,
+                reasoning_log=[],
+            )
+            db.add(run)
+            self._safe_commit(db)
+            db.refresh(run)
 
         await event_bus.publish(
             OrbitEvent(

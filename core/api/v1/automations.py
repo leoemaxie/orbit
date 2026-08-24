@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Annotated
 
@@ -8,7 +9,9 @@ from core.agent.interpreter import GoalInterpreter
 from core.agent.orchestrator import AgentOrchestrator
 from core.api.dependencies import get_db
 from core.api.serializers import automation_to_out, run_to_out
-from core.db.orm import Automation
+from core.db.orm import Automation, Run
+from core.db.session import SessionLocal
+from core.models.enums import RunStatus
 from core.models.schemas import AutomationListOut, AutomationOut, GoalRequest, RunOut
 
 logger = logging.getLogger("core.api.v1.automations")
@@ -68,20 +71,34 @@ def get_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
 
 @router.post("/{automation_id}/run", response_model=RunOut)
 async def run_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
-    """Triggers an on-demand autonomous run for the specified automation."""
+    """Triggers an on-demand autonomous run immediately in background and returns initial run metadata."""
     automation = db.query(Automation).filter(Automation.id == automation_id).first()
     if not automation:
         raise HTTPException(status_code=404, detail="Automation not found")
 
-    try:
-        run = await orchestrator.execute_run(db, automation)
-        return run_to_out(run)
-    except Exception as e:
-        logger.exception("Orchestrator failed during execution of automation %s", automation_id)
-        raise HTTPException(
-            status_code=500,
-            detail="The automation run could not be completed. Please try again shortly.",
-        ) from e
+    # 1. Create run record in discovering status
+    run = Run(
+        automation_id=automation.id,
+        status=RunStatus.discovering,
+        reasoning_log=[],
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+
+    # 2. Async background executor with isolated session
+    async def _execute_pipeline(auto_id: str, r_id: str):
+        with SessionLocal() as bg_db:
+            bg_auto = bg_db.query(Automation).filter(Automation.id == auto_id).first()
+            bg_run = bg_db.query(Run).filter(Run.id == r_id).first()
+            if bg_auto and bg_run:
+                try:
+                    await orchestrator.execute_run(bg_db, bg_auto, run=bg_run)
+                except Exception as err:
+                    logger.exception("Background execution error for run %s: %s", r_id, err)
+
+    asyncio.create_task(_execute_pipeline(automation.id, run.id))
+    return run_to_out(run)
 
 
 @router.delete("/{automation_id}")
