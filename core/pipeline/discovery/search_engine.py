@@ -5,7 +5,7 @@ from core.models.execution_plan import ExecutionPlan
 
 
 class SearchEngineDiscovery:
-    """Domain-agnostic web source discovery using search engine API."""
+    """Domain-agnostic web source discovery using search engine API (SerpApi / Google)."""
 
     SEARCH_ENGINE_URL = "https://serpapi.com/search.json"
 
@@ -16,24 +16,18 @@ class SearchEngineDiscovery:
         if not self.settings.search_engine_api_key:
             raise ValueError("SEARCH_ENGINE_API_KEY (or SERPAPI_API_KEY) is not configured in settings or environment.")
 
-        # Build search query
         query = plan.search_query.strip()
-        if plan.source_hints:
-            site_filters = " OR ".join(f"site:{d.strip()}" for d in plan.source_hints if d.strip())
-            if site_filters:
-                query = f"{query} ({site_filters})"
 
         params: dict[str, str | int] = {
             "engine": "google",
             "q": query,
-            "num": max_results,
+            "num": max_results * 2,
             "api_key": self.settings.search_engine_api_key,
         }
 
         if plan.country_code:
             params["gl"] = plan.country_code.lower()
-        if plan.geography:
-            params["location"] = plan.geography
+            params["hl"] = "en"
 
         endpoint = self.settings.search_engine_base_url or self.SEARCH_ENGINE_URL
 
@@ -42,21 +36,28 @@ class SearchEngineDiscovery:
             resp.raise_for_status()
             data = resp.json()
 
-        urls: list[str] = []
+        raw_links: list[str] = []
         for item in data.get("organic_results", []):
             link = item.get("link")
             if link and link.startswith("http"):
-                # If specific source hints were requested, filter to them; otherwise accept open web link
-                if plan.source_hints:
-                    if any(domain.lower() in link.lower() for domain in plan.source_hints):
-                        urls.append(link)
-                else:
-                    urls.append(link)
+                raw_links.append(link)
+
+        # Prioritize source hints if present, but retain other organic results
+        prioritized: list[str] = []
+        other_links: list[str] = []
+
+        for link in raw_links:
+            if plan.source_hints and any(domain.lower() in link.lower() for domain in plan.source_hints if domain):
+                prioritized.append(link)
+            else:
+                other_links.append(link)
+
+        combined = prioritized + other_links
 
         # Deduplicate preserving order
         seen = set()
         deduped: list[str] = []
-        for u in urls:
+        for u in combined:
             if u not in seen:
                 seen.add(u)
                 deduped.append(u)

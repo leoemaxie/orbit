@@ -16,10 +16,6 @@ class OpenWebSearchDiscovery:
 
     async def discover(self, plan: ExecutionPlan, max_results: int = 10) -> list[str]:
         query = plan.search_query.strip()
-        if plan.source_hints:
-            site_filters = " OR ".join(f"site:{d.strip()}" for d in plan.source_hints if d.strip())
-            if site_filters:
-                query = f"{query} ({site_filters})"
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -29,7 +25,7 @@ class OpenWebSearchDiscovery:
 
         data = {"q": query, "b": ""}
 
-        urls: list[str] = []
+        raw_urls: list[str] = []
         try:
             async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as client:
                 resp = await client.post(self.SEARCH_ENDPOINT, data=data, headers=headers)
@@ -49,30 +45,45 @@ class OpenWebSearchDiscovery:
                         and actual_url.startswith("http")
                         and not any(excluded in actual_url for excluded in ["duckduckgo.com", "google.com/search"])
                     ):
-                        if plan.source_hints:
-                            if any(domain.lower() in actual_url.lower() for domain in plan.source_hints):
-                                urls.append(actual_url)
-                        else:
-                            urls.append(actual_url)
+                        raw_urls.append(actual_url)
         except Exception:  # noqa: BLE001
             return []
+
+        # Prioritize source hints if present, but retain other organic results
+        prioritized: list[str] = []
+        other_links: list[str] = []
+
+        for link in raw_urls:
+            if plan.source_hints and any(domain.lower() in link.lower() for domain in plan.source_hints if domain):
+                prioritized.append(link)
+            else:
+                other_links.append(link)
+
+        combined = prioritized + other_links
 
         # Deduplicate preserving order
         seen = set()
         deduped: list[str] = []
-        for u in urls:
+        for u in combined:
             if u not in seen:
                 seen.add(u)
                 deduped.append(u)
 
         return deduped[:max_results]
 
-    def _clean_search_url(self, link: str) -> str:
+    def _clean_search_url(self, link: str) -> str | None:
+        """Extracts and unquotes the direct target URL from search engine redirect links."""
         if "uddg=" in link:
             parsed = urlparse(link)
-            qs = parse_qs(parsed.query)
-            if "uddg" in qs:
-                return unquote(qs["uddg"][0])
+            params = parse_qs(parsed.query)
+            uddg = params.get("uddg")
+            if uddg:
+                return unquote(uddg[0])
+
         if link.startswith("//"):
             return "https:" + link
+
+        if link.startswith("/"):
+            return None
+
         return link
