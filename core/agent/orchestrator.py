@@ -317,10 +317,16 @@ class AgentOrchestrator:
 
         except Exception as e:
             logger.exception("Unexpected error in orchestrator")
-            run.status = RunStatus.failed
-            run.error = str(e)
-            run.finished_at = datetime.now(timezone.utc)
-            db.commit()
+            try:
+                db.rollback()
+                run.status = RunStatus.failed
+                run.error = str(e)
+                run.finished_at = datetime.now(timezone.utc)
+                db.add(run)
+                db.commit()
+            except Exception as persist_err:
+                logger.exception(f"Failed to persist run failure state: {persist_err}")
+                db.rollback()
             return run
 
     def _get_previous_run_records(
