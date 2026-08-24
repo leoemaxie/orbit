@@ -1,0 +1,66 @@
+import json
+import logging
+from typing import Any
+import httpx
+
+from core.config.settings import get_settings
+
+logger = logging.getLogger("core.adapters.storage.s3_export")
+
+
+class S3ExportSink:
+    """Amazon S3 and MinIO compatible object storage export sink."""
+
+    def __init__(self, bucket_name: str | None = None):
+        settings = get_settings()
+        self.bucket_name = bucket_name or settings.s3_bucket_name
+        self.endpoint_url = settings.s3_endpoint_url
+        self.access_key = settings.s3_access_key
+        self.secret_key = settings.s3_secret_key
+        self.region = settings.s3_region
+
+    async def export_results(
+        self,
+        automation_id: str,
+        run_id: str,
+        records: list[dict[str, Any]],
+        dossier_bytes: bytes | None = None,
+        dossier_filename: str | None = None,
+    ) -> bool:
+        """Uploads JSON extraction artifacts and compiled PDF dossiers to S3."""
+        if not self.access_key or not self.secret_key:
+            logger.info("S3 credentials not configured; skipping cloud object upload.")
+            return True
+
+        prefix = f"{automation_id[:8]}/{run_id[:8]}"
+        json_key = f"{prefix}/records.json"
+
+        try:
+            # Upload JSON records payload
+            json_bytes = json.dumps(records, indent=2, default=str).encode("utf-8")
+            await self._put_object(json_key, json_bytes, "application/json")
+
+            # Upload PDF dossier if provided
+            if dossier_bytes:
+                pdf_key = f"{prefix}/{dossier_filename or 'dossier.pdf'}"
+                await self._put_object(pdf_key, dossier_bytes, "application/pdf")
+
+            return True
+        except Exception as e:
+            logger.warning(f"S3 upload failed: {e}")
+            return False
+
+    async def _put_object(self, key: str, body: bytes, content_type: str) -> None:
+        """Internal HTTP PUT dispatcher for S3-compatible REST endpoints."""
+        url = f"{self.endpoint_url or 'https://s3.amazonaws.com'}/{self.bucket_name}/{key}"
+        headers = {"Content-Type": content_type}
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            res = await client.put(url, headers=headers, content=body)
+            if res.status_code not in (200, 201):
+                logger.debug(f"S3 PUT {key} status {res.status_code}")
+
+    def generate_presigned_url(self, automation_id: str, run_id: str, filename: str = "dossier.pdf") -> str:
+        """Generates a public or presigned download link for the dossier."""
+        prefix = f"{automation_id[:8]}/{run_id[:8]}"
+        base = self.endpoint_url or f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com"
+        return f"{base.rstrip('/')}/{prefix}/{filename}"

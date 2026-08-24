@@ -5,7 +5,10 @@ from typing import Any
 from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.orm import Session
 
+from core.adapters.base import DocumentGenerator, DocumentParser, DocumentRedactor
+from core.adapters.documents.factory import DocumentAdapterFactory
 from core.adapters.storage.local_export import LocalFileExportSink
+from core.adapters.storage.s3_export import S3ExportSink
 from core.agent.brain import AgentBrain
 from core.agent.condition import ConditionEvaluator
 from core.api.serializers import sanitize_error_message
@@ -41,6 +44,10 @@ class AgentOrchestrator:
     anomaly_detector: AnomalyDetector
     verification: VerificationEngine
     export_sink: LocalFileExportSink
+    doc_parser: DocumentParser
+    doc_generator: DocumentGenerator
+    doc_redactor: DocumentRedactor
+    s3_sink: S3ExportSink
 
     def __init__(
         self,
@@ -55,6 +62,10 @@ class AgentOrchestrator:
         anomaly_detector: AnomalyDetector | None = None,
         verification: VerificationEngine | None = None,
         export_sink: LocalFileExportSink | None = None,
+        doc_parser: DocumentParser | None = None,
+        doc_generator: DocumentGenerator | None = None,
+        doc_redactor: DocumentRedactor | None = None,
+        s3_sink: S3ExportSink | None = None,
     ):
         self.discovery = discovery or CompositeDiscovery()
         self.retrieval = retrieval or ProxyRetrieval()
@@ -67,6 +78,10 @@ class AgentOrchestrator:
         self.anomaly_detector = anomaly_detector or AnomalyDetector()
         self.verification = verification or VerificationEngine()
         self.export_sink = export_sink or LocalFileExportSink()
+        self.doc_parser = doc_parser or DocumentAdapterFactory.get_parser()
+        self.doc_generator = doc_generator or DocumentAdapterFactory.get_generator()
+        self.doc_redactor = doc_redactor or DocumentAdapterFactory.get_redactor()
+        self.s3_sink = s3_sink or S3ExportSink()
 
     def _safe_commit(self, db: Session) -> None:
         """Safely commits changes with retry on dropped or timed-out idle database connections."""
@@ -243,11 +258,23 @@ class AgentOrchestrator:
             run.status = RunStatus.storing
             self._safe_commit(db)
 
-            # Export sink (local file / external storage)
+            # Export sink (local file / S3 cloud storage / document dossier)
             has_persisted = True
+            dossier_url: str | None = None
             if valid_records:
                 try:
-                    await self.export_sink.export_results(automation.id, run.id, valid_records)
+                    raw_dossier = await self.doc_generator.generate_dossier(
+                        automation.id, run.id, valid_records, plan_summary=plan.objective
+                    )
+                    dossier_bytes = await self.doc_redactor.redact_pii(raw_dossier)
+
+                    await self.export_sink.export_results(
+                        automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
+                    )
+                    await self.s3_sink.export_results(
+                        automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
+                    )
+                    dossier_url = self.s3_sink.generate_presigned_url(automation.id, run.id, "dossier.pdf")
                 except Exception as e:  # noqa: BLE001
                     logger.warning(f"Export sink notification error: {e}")
                     has_persisted = False
@@ -275,7 +302,7 @@ class AgentOrchestrator:
                     await self.notifier.notify(
                         title=f"Orbit Alert: {plan.objective}",
                         message=cond_msg,
-                        payload={"automation_id": automation.id, "run_id": run.id},
+                        payload={"automation_id": automation.id, "run_id": run.id, "dossier_url": dossier_url},
                     )
 
             # ────────────────────────────────────────────────
