@@ -20,9 +20,9 @@
 	--color-orbit-amber: #F59E0B;
 	--color-orbit-rose: #EF4444;
 
-	--font-display: 'Space Grotesk', system-ui, sans-serif;
-	--font-sans: 'Sora', system-ui, sans-serif;
-	--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+	--font-display: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+	--font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
 	--shadow-glow-cyan: 0 0 25px -5px rgba(56, 189, 248, 0.3);
 	--shadow-glow-violet: 0 0 25px -5px rgba(139, 92, 246, 0.3);

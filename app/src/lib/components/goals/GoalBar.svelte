@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sparkles, ArrowRight, CornerDownLeft, Bot, Globe, Shield } from '@lucide/svelte';
+	import { Sparkles, ArrowRight } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
 	interface Props {
@@ -11,7 +11,7 @@
 	let {
 		onSubmit,
 		loading = false,
-		placeholder = 'Enter natural language objective (e.g. "Daily at 6 AM, monitor pricing and inventory across enterprise cloud vendors")'
+		placeholder = 'e.g. Daily at 6 AM, monitor SaaS pricing changes across enterprise vendors and alert on drops above 10%'
 	}: Props = $props();
 
 	let goalText = $state('');
@@ -34,54 +34,51 @@
 	}
 </script>
 
-<div class="w-full max-w-4xl mx-auto space-y-4">
+<div class="w-full space-y-3">
 	<form onsubmit={handleSubmit} class="relative group">
-		<!-- Pulsing ambient border glow -->
+		<!-- Ambient glow border -->
 		<div
-			class="absolute -inset-0.5 bg-gradient-to-r from-orbit-cyan via-orbit-violet to-orbit-emerald rounded-2xl opacity-30 group-focus-within:opacity-75 blur-sm transition duration-300 pointer-events-none"
+			class="absolute -inset-px bg-gradient-to-r from-orbit-cyan via-orbit-violet to-orbit-emerald rounded-2xl opacity-20 group-focus-within:opacity-60 blur-sm transition-all duration-300 pointer-events-none"
 		></div>
 
-		<div class="relative bg-surface-900 border border-white/10 rounded-2xl p-2 sm:p-2.5 shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 overflow-hidden">
-			<div class="hidden sm:flex pl-2 text-orbit-cyan shrink-0">
-				<Sparkles size={20} class="animate-pulse" />
-			</div>
+		<div class="relative bg-surface-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3">
+			<Sparkles size={18} class="text-orbit-cyan shrink-0 opacity-70" />
 
 			<input
 				type="text"
 				bind:value={goalText}
 				{placeholder}
 				disabled={loading}
-				class="min-w-0 flex-1 bg-transparent text-slate-100 text-sm sm:text-base placeholder-slate-500 focus:outline-none px-2 sm:px-0 py-1.5 font-sans selection:bg-orbit-cyan/30"
+				class="min-w-0 flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
 			/>
 
-			<div class="shrink-0 flex justify-end">
-				<Button
-					type="submit"
-					variant="primary"
-					size="md"
-					{loading}
-					disabled={!goalText.trim()}
-					class="font-medium whitespace-nowrap w-full sm:w-auto"
-				>
-					<span>Interpret Goal</span>
-					<ArrowRight size={16} />
-				</Button>
-			</div>
+			<Button
+				type="submit"
+				variant="primary"
+				size="sm"
+				{loading}
+				disabled={!goalText.trim()}
+				class="shrink-0 font-medium"
+			>
+				<span>Create Mission</span>
+				<ArrowRight size={14} />
+			</Button>
 		</div>
 	</form>
 
-	<!-- High-Stake Mission Templates -->
-	<div class="flex items-center gap-2 flex-wrap text-xs text-slate-400">
-		<span class="font-mono text-slate-500 uppercase tracking-wider text-[10px]">Example Missions:</span>
-		{#each templates as tmpl}
-			<button
-				type="button"
-				onclick={() => selectTemplate(tmpl)}
-				class="px-2.5 py-1 rounded-md bg-surface-800/80 hover:bg-surface-700/80 text-slate-300 hover:text-orbit-cyan border border-white/5 transition-all text-left truncate max-w-sm hover:border-orbit-cyan/30"
-				title={tmpl}
-			>
-				{tmpl}
-			</button>
-		{/each}
+	<!-- Example missions grid -->
+	<div class="space-y-2">
+		<p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-1">Example missions</p>
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+			{#each templates as tmpl}
+				<button
+					type="button"
+					onclick={() => selectTemplate(tmpl)}
+					class="text-left px-3 py-2.5 rounded-lg bg-surface-900 hover:bg-surface-800 border border-white/8 hover:border-orbit-cyan/30 text-xs text-slate-400 hover:text-slate-200 transition-all leading-relaxed"
+				>
+					{tmpl}
+				</button>
+			{/each}
+		</div>
 	</div>
 </div>

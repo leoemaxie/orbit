@@ -27,7 +27,7 @@
 
 	<!-- Navigation Links -->
 	<nav class="p-3 space-y-1 flex-1">
-		<div class="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+		<div class="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
 			Operations Hub
 		</div>
 
@@ -51,24 +51,25 @@
 	</nav>
 
 	<!-- Bottom Telemetry & Daemon Status -->
-	<div class="p-4 border-t border-white/10 bg-surface-850 space-y-3">
-		<div class="flex items-center justify-between">
-			<span class="text-[11px] font-mono text-slate-400">Daemon</span>
+	<div class="p-3 border-t border-white/10">
+		<div
+			class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border {orbitStore.daemonConnected
+				? 'bg-emerald-950/30 border-emerald-500/20'
+				: 'bg-rose-950/40 border-rose-500/25'}"
+		>
 			<span
-				class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border {orbitStore.daemonConnected
-					? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30'
-					: 'bg-rose-950/60 text-rose-400 border-rose-500/30'}"
-			>
-				<span class="w-1.5 h-1.5 rounded-full {orbitStore.daemonConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}"></span>
-				{orbitStore.daemonConnected ? 'ONLINE' : 'OFFLINE'}
-			</span>
-		</div>
-
-		{#if orbitStore.health}
-			<div class="text-[10px] font-mono text-slate-500 space-y-0.5">
-				<div>Env: {orbitStore.health.environment}</div>
-				<div>Scheduler: {orbitStore.health.scheduler_enabled ? 'Active' : 'Disabled'}</div>
+				class="w-2 h-2 rounded-full shrink-0 {orbitStore.daemonConnected
+					? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.6)]'
+					: 'bg-rose-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]'}"
+			></span>
+			<div class="flex-1 min-w-0">
+				<p class="text-xs font-medium {orbitStore.daemonConnected ? 'text-emerald-300' : 'text-rose-300'}">
+					{orbitStore.daemonConnected ? 'Daemon online' : 'Daemon offline'}
+				</p>
+				{#if orbitStore.health}
+					<p class="text-[10px] text-slate-500 font-mono mt-0.5">{orbitStore.health.environment} · scheduler {orbitStore.health.scheduler_enabled ? 'on' : 'off'}</p>
+				{/if}
 			</div>
-		{/if}
+		</div>
 	</div>
 </aside>
