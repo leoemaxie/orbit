@@ -69,3 +69,18 @@ async def get_automation_tool(automation_id: str, client: OrbitBackendClient) ->
         return {"success": True, "automation": data}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+async def delete_automation_tool(automation_id: str, client: OrbitBackendClient) -> dict[str, Any]:
+    """
+    Deletes an automation and all its associated runs and results.
+
+    Args:
+        automation_id: The UUID of the automation to delete.
+    """
+    try:
+        data = await client.delete_automation(automation_id)
+        return {"success": True, "automation_id": automation_id, "message": data.get("message", "Automation deleted successfully")}
+    except Exception as e:
+        return {"success": False, "automation_id": automation_id, "error": str(e)}
+

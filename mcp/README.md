@@ -19,6 +19,7 @@ Through standard MCP tools, resources, and prompts, AI agents can formulate data
 | `execute_goal` | `goal: str` | **One-shot pipeline execution**: Interprets the goal, creates the plan, executes extraction, and returns validated records in a single tool call. |
 | `list_automations` | *none* | Lists all registered data automations and active schedules. |
 | `get_automation` | `automation_id: str` | Retrieves the dynamic extraction schema, objective, and schedule details for a specific automation. |
+| `delete_automation` | `automation_id: str` | Deletes an automation and all its associated historical runs and records. |
 | `get_run_details` | `run_id: str` | Returns end-to-end execution audit logs, discovered endpoints, HTTP retrieval states, and agent self-healing decisions. |
 | `query_extracted_data` | `run_id: str`, `valid_only: bool = true` | Queries extracted structured records with optional validation filtering. |
 | `list_recurring_schedules` | *none* | Lists all active recurring scheduler jobs and next scheduled execution timestamps. |

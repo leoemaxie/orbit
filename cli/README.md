@@ -67,7 +67,16 @@ orbc list
 orbc list --json | jq .
 ```
 
-### 4. Inspect Execution History
+### 4. Delete an Automation
+
+Remove an automation and all its associated execution history:
+
+```bash
+orbc delete <automation_id>
+# Aliases: orbc del <automation_id>, orbc rm <automation_id>
+```
+
+### 5. Inspect Execution History
 
 View past runs, status codes, and record counts for an automation:
 

@@ -8,6 +8,7 @@ from orbit.prompts.templates import AUDIT_FAILURE_PROMPT, WORKFLOW_DESIGN_PROMPT
 from orbit.resources.provider import OrbitResourceProvider
 from orbit.tools.automations import (
     create_automation_tool,
+    delete_automation_tool,
     get_automation_tool,
     list_automations_tool,
 )
@@ -38,8 +39,7 @@ async def create_automation(goal: str) -> dict[str, Any]:
     The goal is interpreted into a domain-agnostic execution plan with a dynamic extraction schema.
 
     Args:
-        goal: Plain English objective (e.g. 'Daily at 8AM, find cheapest PS5 in Nigeria and alert if < 400000 NGN',
-              'Find remote Python developer jobs paying > $150k')
+        goal: Plain English objective (e.g. 'Daily at 6 AM, monitor pricing and availability across cloud GPU providers')
     """
     return await create_automation_tool(goal, client)
 
@@ -85,6 +85,18 @@ async def get_automation(automation_id: str) -> dict[str, Any]:
         automation_id: The UUID of the automation.
     """
     return await get_automation_tool(automation_id, client)
+
+
+@mcp.tool()
+async def delete_automation(automation_id: str) -> dict[str, Any]:
+    """
+    Deletes an automation and all its associated historical runs and extracted records.
+
+    Args:
+        automation_id: The UUID of the automation to delete.
+    """
+    return await delete_automation_tool(automation_id, client)
+
 
 
 @mcp.tool()
