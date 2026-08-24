@@ -1,6 +1,6 @@
 # Orbit Web Application
 
-The Orbit Web Application is an operational telemetry interface and mission control dashboard for the Orbit autonomous web data operations platform. It provides a visual interface for natural-language goal submission, execution plan inspection, real-time provenance tracking, and data auditing.
+The Orbit Web Application is the operational mission control console and telemetry interface for the Orbit autonomous data operations platform. Built for engineering and data teams, it provides real-time visibility into pipeline executions, schema derivation, data lineage DAGs, and anomaly verification.
 
 ---
 
@@ -8,18 +8,19 @@ The Orbit Web Application is an operational telemetry interface and mission cont
 
 - **Framework**: SvelteKit with Svelte 5 Runes (`$state`, `$derived`, `$effect`)
 - **Styling**: Tailwind CSS v4
+- **Typography**: Plus Jakarta Sans (UI Chrome) & JetBrains Mono (Telemetry & Schema types)
 - **Icons**: `@lucide/svelte`
 - **Deployment Adapter**: `@sveltejs/adapter-vercel`
 - **Package Manager**: `pnpm`
 
 ---
 
-## Features
+## Core Capabilities
 
-- **Goal Studio**: Natural-language objective submission with live synthesis of execution plans, Cron schedules, and dynamic extraction schemas.
-- **Execution Provenance DAG**: Interactive visual pipeline graph tracing every stage (Goal Synthesis, Source Discovery, Proxy Retrieval, Schema Extraction, Data Verification, and Condition Alerts) with slide-over log inspection.
-- **Data Warehouse**: High-density tabular data viewer with validity filtering, anomaly inspection, and one-click CSV and JSON export capabilities.
-- **Automation Fleet**: Centralized dashboard to monitor scheduled background jobs, view execution history, and trigger on-demand runs.
+- **Operator Mission Studio**: Submit natural-language data extraction objectives and inspect real-time synthesized execution plans, Cron intervals, and typed JSON schemas.
+- **Execution Lineage & Provenance DAG**: Visual DAG tracing each stage of the data pipeline (Goal Synthesis → Source Discovery → Proxy Retrieval → Schema Extraction → Anomaly Verification → Condition Evaluation) with slide-over telemetry and raw log inspection.
+- **Data Warehouse Viewer**: High-density tabular dataset explorer supporting schema validity filtering, record anomaly inspection, and one-click CSV/JSON exports.
+- **Automation Fleet Control**: Monitor recurring background pipelines, inspect execution success rates, manage schedule states, and trigger ad-hoc runs.
 
 ---
 
@@ -27,7 +28,7 @@ The Orbit Web Application is an operational telemetry interface and mission cont
 
 - **Node.js**: v20.x, v22.x, or v24.x (LTS recommended)
 - **Package Manager**: `pnpm` (v9 or later)
-- **Orbit Core API**: Backend daemon running on `http://localhost:8000` (optional for offline preview)
+- **Orbit Core Daemon**: Backend server running on `http://localhost:8000`
 
 ---
 
@@ -35,7 +36,7 @@ The Orbit Web Application is an operational telemetry interface and mission cont
 
 ### 1. Environment Configuration
 
-Copy the example environment file and adjust the backend URL if necessary:
+Copy the example environment configuration:
 
 ```bash
 cp .env.example .env
@@ -58,13 +59,13 @@ pnpm install
 pnpm dev
 ```
 
-The application will be accessible at `http://localhost:5173`. Requests to `/api/v1` are automatically proxied to the Orbit Core backend configured in your `.env`.
+The application will launch at `http://localhost:5173`. API calls to `/api/v1` are proxied to the configured Orbit Core backend.
 
 ---
 
-## Production Build
+## Production Build & Quality Checks
 
-### 1. Type Checking and Validation
+### 1. Type Checking
 
 ```bash
 pnpm check
@@ -76,8 +77,6 @@ pnpm check
 pnpm build
 ```
 
-The build output will be generated according to the `@sveltejs/adapter-vercel` specification.
-
 ### 3. Preview Production Build
 
 ```bash
@@ -88,22 +87,28 @@ pnpm preview
 
 ## Project Structure
 
-```
+```text
 app/
 ├── src/
-│   ├── app.css              # Global styles and Tailwind v4 theme definitions
-│   ├── app.html             # Root HTML template and web manifest links
+│   ├── app.css              # Global tokens, Tailwind v4 theme, and glass styles
+│   ├── app.html             # Root HTML template and web font imports
 │   ├── lib/
-│   │   ├── api/             # Typed API client and TypeScript schema definitions
-│   │   ├── components/      # UI primitives, Goal Studio, DAG visualizer, and Data Table
+│   │   ├── api/             # Typed API client and TypeScript interface definitions
+│   │   ├── components/      # UI primitives, Goal Studio, Lineage DAG, and Data Table
+│   │   │   ├── automations/ # Fleet management and run cards
+│   │   │   ├── dashboard/   # Operator cards and summary metrics
+│   │   │   ├── goals/       # Command bar and execution plan preview studio
+│   │   │   ├── layout/      # Sidebar, top navigation, and daemon alert banners
+│   │   │   ├── runs/        # Lineage DAG graph and stage drawer
+│   │   │   └── ui/          # Buttons, Badges, Tabs, and Orbit Mark
 │   │   └── state/           # Svelte 5 reactive stores and telemetry state
 │   └── routes/              # SvelteKit file-based routes
-│       ├── +layout.svelte   # Main application shell and sidebar navigation
-│       ├── +page.svelte     # Dashboard overview and Goal Omnibar
-│       ├── automations/     # Automation fleet management and run history
-│       ├── runs/            # Real-time execution DAG and telemetry inspection
-│       └── data/            # Cross-automation data warehouse
-├── static/                  # Static assets, vector icons, and web manifest
+│       ├── +layout.svelte   # Application shell and responsive sidebar
+│       ├── +page.svelte     # Operator workspace and mission command bar
+│       ├── automations/     # Fleet management and historical execution metrics
+│       ├── runs/            # Real-time lineage DAG and telemetry inspection
+│       └── data/            # High-density data warehouse viewer
+├── static/                  # Static assets, SVG marks, and web manifest
 ├── svelte.config.js         # SvelteKit adapter configuration
-└── vite.config.ts           # Vite build configuration and API proxy
+└── vite.config.ts           # Vite build pipeline and proxy settings
 ```

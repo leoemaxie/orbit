@@ -1,6 +1,6 @@
 # Orbit
 
-**Autonomous Goal-Driven Web Data Operations**
+**Autonomous Goal-Driven Web Data Operations Platform**
 
 > *"Set the goal. Walk away."*
 
@@ -9,42 +9,43 @@
 [![Python Version](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)](core/)
 [![SvelteKit Version](https://img.shields.io/badge/SvelteKit-2.0+-FF3E00?logo=svelte)](app/)
 
-Orbit is an autonomous web-data operations platform. Instead of hand-crafting brittle web scrapers, reverse-engineering dynamic page selectors, or constantly maintaining bespoke crawling pipelines, you specify data requirements in plain natural language.
+Orbit is an autonomous web data operations and extraction platform designed for **data engineers, quantitative analysts, and AI/LLM engineering teams**. Instead of hand-crafting fragile web scrapers, reverse-engineering dynamic DOM selectors, managing proxy rotation pools, or repairing constant schema drift, you define data extraction objectives in natural language.
 
-Orbit interprets your objective, derives structured extraction schemas, discovers relevant web sources, retrieves content via resilient proxy infrastructure, extracts typed records, performs anomaly and schema validation, evaluates condition triggers, and runs automatically on a recurring schedule with end-to-end provenance.
+Orbit synthesizes execution plans, derives typed JSON schemas, discovers authoritative web sources, navigates resilient proxy infrastructure, extracts typed records, performs statistical anomaly and schema verification, evaluates condition triggers, and runs on scheduled intervals with complete, immutable data provenance.
 
 ---
 
 ## Core Capabilities
 
-- **Natural-Language Goal Interpretation**: Provide goals such as *"Every morning at 8 AM, find the cheapest flights from Lagos to London in December and alert me if under $800"*. Orbit synthesizes domain plans, extraction schemas, and search queries automatically.
-- **Universal and Domain Agnostic**: Operates across e-commerce, real estate, job listings, travel, financial data, and news without requiring domain-specific scrapers.
-- **Agentic Self-Correction**: When discovery yields empty results or page structures change, an autonomous Agent Brain diagnoses the issue and refines search queries or retrieval strategies in real time.
-- **Verification and Anomaly Detection**: Extracted datasets are validated against dynamically generated JSON schemas and inspected for anomalies, ensuring verified data reaches downstream systems.
-- **Condition Triggers and Alerts**: Evaluates expressions (such as `min(price) < 400000` or `salary >= 150000`) and dispatches instant notifications via webhooks or notification sinks.
-- **Daemonized Scheduling**: Configures recurring intervals (`hourly`, `daily`, `weekly`, `monthly`) powered by a persistent background scheduler.
-- **Immutable Provenance Trail**: Complete audit trail for every run, including search queries, discovered URLs, raw HTML/markdown snapshots, validation errors, and LLM reasoning steps.
+- **Natural-Language Objective Compilation**: Translate high-level data requirements into structured execution plans, search vectors, typed extraction schemas, and Cron schedules automatically.
+- **Dynamic Typed Schema Derivation**: Automatically infers strongly typed JSON schemas with validation rules, enum constraints, and field requirements tailored to the target domain without manual selector maintenance.
+- **Multi-Source Discovery & Resilient Retrieval**: Combines search APIs, domain discovery heuristics, and anti-bot unlocker proxies to retrieve dynamic, JavaScript-rendered web content reliably.
+- **Agentic Self-Healing & Adaptive Recovery**: When page layouts change or initial queries yield empty sets, the Agent Brain autonomously diagnoses failure modes, adjusts search parameters, and re-executes retrieval paths.
+- **Data Quality Verification & Anomaly Detection**: Validates extracted datasets against derived schemas and checks for statistical outliers, structural anomalies, and null invariants before downstream ingestion.
+- **Condition Triggers & Webhook Alerts**: Evaluates scalar and aggregate expressions (e.g., `min(price_per_hour) < 2.50` or `rate_change_percent >= 5.0`) and dispatches structured event payloads to downstream webhooks and notification channels.
+- **Persistent Scheduling Daemon**: Built-in background scheduling engine supporting recurring intervals (`hourly`, `daily`, `weekly`, `monthly`, custom Cron) with concurrency control and state persistence.
+- **End-to-End Lineage & Provenance DAG**: Audits every stage of execution—from discovery queries and HTTP response headers to raw DOM snapshots, LLM reasoning traces, and verification logs.
 
 ---
 
 ## System Architecture
 
-Orbit operates as a modular platform consisting of an autonomous execution daemon, a cross-platform command-line client, a modern telemetry web application, and extensible protocol adapters:
+Orbit is architected as a modular data platform consisting of an autonomous execution engine, a single-binary operator CLI, a mission control web dashboard, and extensible protocol adapters:
 
 ```mermaid
 flowchart TD
-    User["User / Developer"] --> Web["Web App: Orbit UI (SvelteKit)"]
+    User["Engineering & Data Teams / AI Agents"] --> Web["Web Console: Orbit UI (SvelteKit)"]
     User --> CLI["CLI: orbc (Go)"]
-    User --> MCP["MCP Server"]
+    User --> MCP["MCP Server (Model Context Protocol)"]
 
     subgraph Ecosystem ["Orbit Platform Ecosystem"]
         Web -->|REST / HTTP| API["REST API Gateway"]
         CLI -->|REST / HTTP| API
         MCP -->|Tool Protocol| API
         
-        subgraph Engine ["Orbit Core Engine"]
+        subgraph Engine ["Orbit Core Daemon"]
             API --> Orchestrator["Agent Orchestrator"]
-            Scheduler["Scheduler Daemon"] --> Orchestrator
+            Scheduler["Scheduler Daemon (APScheduler)"] --> Orchestrator
             Orchestrator --> LLM["Goal Interpreter & Agent Brain"]
             Orchestrator --> Discovery["Multi-Source Discovery Engine"]
             Orchestrator --> Retrieval["Resilient Proxy Retrieval"]
@@ -55,21 +56,21 @@ flowchart TD
     end
 
     Orchestrator -->|Alerts| Sinks["Notification Sinks (Webhooks / Slack)"]
-    Orchestrator -->|Exports| DataStore["Data Sinks (CSV / JSON)"]
+    Orchestrator -->|Exports| DataStore["Downstream Data Sinks (CSV / JSON / Data Lake)"]
 ```
 
 ---
 
 ## Repository Structure
 
-The Orbit repository is structured as a monorepo containing:
+The Orbit repository is structured as a monorepo:
 
 | Component | Directory | Description | Documentation |
-|-----------|-----------|-------------|---------------|
-| **Core Engine** | [`core/`](./core) | Python backend daemon: Agent Orchestrator, LLM pipeline, APScheduler, PostgreSQL ORM, and FastAPI REST API. | [Core Docs](./core/README.md) |
-| **Web Application** | [`app/`](./app) | Mission control web dashboard built with SvelteKit, Tailwind CSS, and Svelte 5 Runes. | [App Docs](./app/README.md) |
-| **CLI (`orbc`)** | [`cli/`](./cli) | High-performance Go CLI for interactive goal submission, manual runs, data exports, and daemon management. | [CLI Docs](./cli/README.md) |
-| **MCP Server** | [`mcp/`](./mcp) | Model Context Protocol adapter enabling AI agents (Claude Desktop, Cursor, Zed) to operate Orbit. | [MCP Docs](./mcp/README.md) |
+|---|---|---|---|
+| **Core Engine** | [`core/`](./core) | Python backend daemon: Agent Orchestrator, LLM pipeline, APScheduler, PostgreSQL ORM, and FastAPI REST API. | [Core Documentation](./core/README.md) |
+| **Web Console** | [`app/`](./app) | Operational telemetry console built with SvelteKit, Tailwind CSS v4, and Svelte 5 Runes. | [App Documentation](./app/README.md) |
+| **Operator CLI (`orbc`)** | [`cli/`](./cli) | High-performance Go CLI for headless operations, pipeline triggers, dataset exports, and telemetry inspection. | [CLI Documentation](./cli/README.md) |
+| **MCP Server** | [`mcp/`](./mcp) | Model Context Protocol adapter enabling AI agents (Claude, Cursor, Antigravity, VS Code) to orchestrate Orbit. | [MCP Documentation](./mcp/README.md) |
 
 ---
 
@@ -77,7 +78,7 @@ The Orbit repository is structured as a monorepo containing:
 
 ### 1. Launch the Orbit Core Daemon
 
-Follow the [Core Setup Guide](./core/README.md) to start the database and backend:
+Follow the [Core Setup Guide](./core/README.md) to start PostgreSQL and the backend daemon:
 
 ```bash
 # 1. Start PostgreSQL
@@ -86,14 +87,14 @@ docker run --name orbit-pg -e POSTGRES_USER=orbit -e POSTGRES_PASSWORD=orbit -e 
 # 2. Configure environment
 cp core/.env.example .env
 
-# 3. Launch Core server
+# 3. Initialize virtual environment and start Core
 python -m venv core/venv
 source core/venv/bin/activate  # Windows: .\core\venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-uvicorn core.app:app --reload --port 8000
+pip install -e "core/.[dev]"
+uvicorn core.app:app --host 0.0.0.0 --port 8000
 ```
 
-### 2. Launch the Web Application
+### 2. Launch the Web Console
 
 ```bash
 cd app
@@ -101,7 +102,7 @@ pnpm install
 pnpm dev
 ```
 
-The web dashboard will be available at `http://localhost:5173`.
+The operator console will be available at `http://localhost:5173`.
 
 ### 3. Install and Use the `orbc` CLI
 
@@ -110,31 +111,32 @@ The web dashboard will be available at `http://localhost:5173`.
 cd cli
 make build
 
-# Create an automation from a natural language goal
-orbc goal "Every day at 8 AM, find the cheapest PlayStation 5 in Nigeria and alert if price < 400000 NGN"
+# Synthesize and register an autonomous mission
+orbc goal "Daily at 6 AM, monitor pricing, SKU availability, and inventory changes across top 5 enterprise cloud hardware vendors"
 
-# Run an automation immediately
+# Trigger an immediate pipeline run
 orbc run <automation_id>
 
-# View extracted results in aligned tables or export to CSV/JSON
+# Export validated structured records to CSV or JSON
 orbc data <run_id> --format table
-orbc data <run_id> --format csv > ps5_prices.csv
+orbc data <run_id> --format csv > cloud_hardware_pricing.csv
+orbc data <run_id> --format json --valid-only | jq .
 
-# Inspect full provenance and verification audit trail
+# Inspect full provenance DAG and verification audit logs
 orbc show <run_id>
 ```
 
 ---
 
-## Example Goals
+## Production Workflows & Use Cases
 
-| Objective | Natural Language Goal |
+| Operational Domain | Objective Specification |
 |---|---|
-| **E-Commerce and Arbitrage** | `"Daily at 9 AM, track prices for Sony WH-1000XM5 headphones across top retailers and alert me if price drops below $300"` |
-| **Tech Hiring and Job Market** | `"Weekly on Monday, find remote Principal Go Engineer roles offering over $180,000 and export to CSV"` |
-| **Travel and Flights** | `"Every 12 hours, find round-trip flights from New York to Tokyo under $900 for dates in November"` |
-| **Real Estate Monitoring** | `"Every morning, find 2-bedroom apartments for rent in Lekki Phase 1 under 4,000,000 NGN/yr"` |
-| **Regulatory and News Tracking**| `"Every 6 hours, monitor news mentions of 'open source AI regulations' across primary tech news portals"` |
+| **Enterprise Cloud & Hardware Telemetry** | `"Daily at 6 AM, monitor pricing, SKU availability, and GPU instance specs across top 5 cloud infrastructure providers and alert if H100 spot rate < $2.80/hr"` |
+| **Regulatory & Energy Compliance** | `"Every 4 hours, scan regional energy regulatory portals for policy updates on renewable grid tariffs and extract structured docket numbers, filing dates, and rate adjustments"` |
+| **AI Research & Ingestion Pipelines** | `"Daily at midnight, extract and structure AI research preprints mentioning sparse attention architectures with author affiliations, dataset links, and benchmark claims"` |
+| **Compensation & Labor Market Analytics** | `"Weekly on Monday, aggregate median tech compensation bands, level distributions, and hiring volume across Tier 1 fintechs and export structured records"` |
+| **Competitive SaaS Pricing Matrices** | `"Weekly, scan enterprise security vendor pricing pages, extract tier limits, add-on costs, and seat minimums into a unified schema"` |
 
 ---
 
