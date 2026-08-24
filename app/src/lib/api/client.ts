@@ -1,3 +1,4 @@
+import { PUBLIC_API_URL } from '$env/static/public';
 import type {
 	AutomationListOut,
 	AutomationOut,
@@ -6,16 +7,11 @@ import type {
 	RunOut
 } from './types';
 
-// Read API URL from Vite import.meta.env, only defaulting to localhost / relative /api/v1 if PUBLIC_API_URL is empty
-export const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.PUBLIC_API_URL && import.meta.env.PUBLIC_API_URL.trim() !== '') 
-	? import.meta.env.PUBLIC_API_URL.replace(/\/+$/, '')
-	: (typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:8000/api/v1');
-
 export class ApiClient {
 	private baseUrl: string;
 
-	constructor(baseUrl: string = API_BASE) {
-		this.baseUrl = baseUrl;
+	constructor(baseUrl: string = PUBLIC_API_URL || 'http://localhost:8000/api/v1') {
+		this.baseUrl = baseUrl.replace(/\/+$/, '');
 	}
 
 	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
