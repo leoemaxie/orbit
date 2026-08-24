@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.orm import Session
 
 from core.adapters.storage.local_export import LocalFileExportSink
@@ -54,7 +55,6 @@ class AgentOrchestrator:
         verification: VerificationEngine | None = None,
         export_sink: LocalFileExportSink | None = None,
     ):
-        # Default to CompositeDiscovery so Orbit functions across multi-source discovery backends
         self.discovery = discovery or CompositeDiscovery()
         self.retrieval = retrieval or ProxyRetrieval()
         self.extractor = extractor or LLMExtractor()
@@ -67,6 +67,19 @@ class AgentOrchestrator:
         self.verification = verification or VerificationEngine()
         self.export_sink = export_sink or LocalFileExportSink()
 
+    def _safe_commit(self, db: Session) -> None:
+        """Safely commits changes with retry on dropped or timed-out idle database connections."""
+        try:
+            db.commit()
+        except (OperationalError, DBAPIError) as e:
+            logger.warning(f"Database connection interrupted during async task: {e}. Reconnecting...")
+            try:
+                db.rollback()
+                db.commit()
+            except Exception as retry_err:
+                logger.error(f"Commit retry failed: {retry_err}")
+                raise
+
     async def execute_run(self, db: Session, automation: Automation) -> Run:
         """Executes a full agent run with self-correction, validation, alerting, and verification."""
         plan = ExecutionPlan.model_validate(automation.plan)
@@ -77,7 +90,7 @@ class AgentOrchestrator:
             reasoning_log=[],
         )
         db.add(run)
-        db.commit()
+        self._safe_commit(db)
         db.refresh(run)
 
         await event_bus.publish(
@@ -115,20 +128,20 @@ class AgentOrchestrator:
 
             run.sources_found = urls
             run.reasoning_log = reasoning_trail
-            db.commit()
+            self._safe_commit(db)
 
             if not urls:
                 run.status = RunStatus.failed
                 run.error = "Discovery failed: no relevant web sources could be identified."
                 run.finished_at = datetime.now(timezone.utc)
-                db.commit()
+                self._safe_commit(db)
                 return run
 
             # ────────────────────────────────────────────────
             # 2. RETRIEVAL STAGE (Resilient Proxy & 2-Hop Detail Links)
             # ────────────────────────────────────────────────
             run.status = RunStatus.retrieving
-            db.commit()
+            self._safe_commit(db)
 
             pages = await self.retrieval.retrieve_many(
                 urls, country_code=plan.country_code, concurrency=4
@@ -162,13 +175,13 @@ class AgentOrchestrator:
                 )
 
             run.pages_retrieved = [u for u, p in pages.items() if p]
-            db.commit()
+            self._safe_commit(db)
 
             # ────────────────────────────────────────────────
             # 3. EXTRACTION STAGE (Schema-Driven)
             # ────────────────────────────────────────────────
             run.status = RunStatus.extracting
-            db.commit()
+            self._safe_commit(db)
 
             extracted_records: list[dict[str, Any]] = []
 
@@ -191,13 +204,13 @@ class AgentOrchestrator:
                 extracted_records.append(record)
 
             run.extracted_count = len(extracted_records)
-            db.commit()
+            self._safe_commit(db)
 
             # ────────────────────────────────────────────────
             # 4. VALIDATION & ANOMALY DETECTION
             # ────────────────────────────────────────────────
             run.status = RunStatus.validating
-            db.commit()
+            self._safe_commit(db)
 
             # Statistical anomaly check across all numeric fields in plan schema
             annotated_records = self.anomaly_detector.filter_and_annotate_outliers(
@@ -224,7 +237,7 @@ class AgentOrchestrator:
 
             run.validated_count = valid_count
             run.status = RunStatus.storing
-            db.commit()
+            self._safe_commit(db)
 
             # Export sink (local file / external storage)
             has_persisted = True
@@ -240,7 +253,7 @@ class AgentOrchestrator:
             # ────────────────────────────────────────────────
             if plan.condition and valid_records:
                 run.status = RunStatus.evaluating
-                db.commit()
+                self._safe_commit(db)
 
                 # Fetch previous run records for historical delta calculations
                 previous_records = self._get_previous_run_records(db, automation.id, run.id)
@@ -250,11 +263,11 @@ class AgentOrchestrator:
                 )
                 run.condition_matched = matched
                 run.condition_message = cond_msg
-                db.commit()
+                self._safe_commit(db)
 
                 if matched:
                     run.status = RunStatus.alerting
-                    db.commit()
+                    self._safe_commit(db)
                     await self.notifier.notify(
                         title=f"Orbit Alert: {plan.objective}",
                         message=cond_msg,
@@ -273,7 +286,7 @@ class AgentOrchestrator:
                 )
                 if next_run:
                     automation.next_run_at = next_run
-                    db.commit()
+                    self._safe_commit(db)
 
             # ────────────────────────────────────────────────
             # 7. VERIFICATION STAGE (Concept Note Section 6.10)
@@ -301,7 +314,7 @@ class AgentOrchestrator:
                     run.status = RunStatus.verified
 
             run.finished_at = datetime.now(timezone.utc)
-            db.commit()
+            self._safe_commit(db)
 
             await event_bus.publish(
                 OrbitEvent(
