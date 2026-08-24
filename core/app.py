@@ -53,6 +53,14 @@ def create_app() -> FastAPI:
 
     app.include_router(v1_router, prefix="/api/v1")
 
+    @app.get("/", tags=["Health"])
+    def root():
+        return {
+            "status": "ok",
+            "service": "orbit-core",
+            "version": __version__,
+        }
+
     return app
 
 
