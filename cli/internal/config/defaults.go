@@ -2,7 +2,7 @@ package config
 
 import "time"
 
-const (
+var (
 	DefaultAPIURL  = "http://localhost:8000"
 	DefaultTimeout = 120 * time.Second
 	DefaultFormat  = "table"

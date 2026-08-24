@@ -67,5 +67,8 @@ func SetKey(key, value string) error {
 	configFile := filepath.Join(configDir, "config.yaml")
 
 	viper.Set(key, value)
+	if _, err := os.Stat(configFile); err == nil {
+		return viper.WriteConfig()
+	}
 	return viper.WriteConfigAs(configFile)
 }

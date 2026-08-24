@@ -13,3 +13,5 @@ venv/
 bin/
 **/bin/
 .zed/
+BUILD.txt
+**/BUILD.txt
