@@ -90,12 +90,27 @@
 				</div>
 				<div class="bg-surface-950 border border-white/10 rounded-xl p-3 space-y-2.5 font-mono text-xs max-h-64 overflow-y-auto">
 					{#each run.reasoning_log || [] as entry}
-						<div class="border-b border-white/5 pb-2 last:border-0 last:pb-0 space-y-1">
+						<div class="border-b border-white/5 pb-2.5 last:border-0 last:pb-0 space-y-1">
 							<div class="flex items-center justify-between text-[11px] text-slate-400">
-								<span class="text-orbit-cyan">{entry.step || 'Step'}</span>
+								<span class="text-orbit-cyan font-semibold">{entry.stage ? entry.stage.toUpperCase() : (entry.step || 'AGENT')}</span>
 								<span>{entry.timestamp || ''}</span>
 							</div>
-							<p class="text-slate-200">{entry.message || JSON.stringify(entry)}</p>
+							{#if entry.decision}
+								<p class="text-purple-200 text-xs font-sans">
+									<strong class="text-purple-300">Self-Correction:</strong> {entry.decision.diagnosis}
+								</p>
+								{#if entry.decision.new_search_query}
+									<p class="text-[11px] text-slate-400 font-mono">
+										→ Retried with: <code class="text-orbit-cyan">"{entry.decision.new_search_query}"</code>
+									</p>
+								{/if}
+							{:else if entry.report}
+								<p class="text-emerald-300 text-xs font-sans">
+									<strong>Verification:</strong> {entry.report.summary || 'Completed verification'}
+								</p>
+							{:else}
+								<p class="text-slate-200 text-xs font-sans">{entry.message || JSON.stringify(entry)}</p>
+							{/if}
 						</div>
 					{:else}
 						<div class="text-slate-600 italic">No agent log events recorded.</div>

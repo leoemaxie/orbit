@@ -27,9 +27,26 @@
 		if (run.reasoning_log) {
 			run.reasoning_log.forEach((entry) => {
 				const time = entry.timestamp || start;
-				const tag = (entry.stage || entry.step || 'AGENT').toUpperCase();
-				const msg = entry.decision ? JSON.stringify(entry.decision) : entry.message || JSON.stringify(entry);
-				lines.push({ time, tag, msg, type: 'agent' });
+				if (entry.decision) {
+					const dec = entry.decision;
+					lines.push({
+						time,
+						tag: 'HEALING',
+						msg: `[Self-Correction] ${dec.diagnosis || 'Refining discovery'} — Action: ${dec.action || 'retry'}${dec.new_search_query ? ` (Query: "${dec.new_search_query}")` : ''}`,
+						type: 'agent'
+					});
+				} else if (entry.report) {
+					lines.push({
+						time,
+						tag: 'VERIFY',
+						msg: `[Quality Verification] ${entry.report.summary || (entry.report.verified ? 'All verification checks passed' : 'Verification completed with warnings')}`,
+						type: entry.report.verified ? 'success' : 'warning'
+					});
+				} else {
+					const tag = (entry.stage || entry.step || 'AGENT').toUpperCase();
+					const msg = entry.message || (typeof entry === 'string' ? entry : JSON.stringify(entry));
+					lines.push({ time, tag, msg, type: 'agent' });
+				}
 			});
 		}
 		if (run.extracted_count !== undefined && run.extracted_count > 0) {
@@ -91,15 +108,15 @@
 				<span class="px-1.5 py-0.5 rounded text-[10px] shrink-0 font-semibold {line.type === 'error' ? 'bg-rose-950 text-rose-300 border border-rose-500/30' : line.type === 'warning' ? 'bg-amber-950 text-amber-300 border border-amber-500/30' : line.type === 'agent' ? 'bg-purple-950 text-purple-300 border border-purple-500/30' : line.type === 'success' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-surface-800 text-orbit-cyan border border-orbit-cyan/30'}">
 					{line.tag}
 				</span>
-				<span class="break-all {line.type === 'error' ? 'text-rose-300' : line.type === 'dim' ? 'text-slate-500' : 'text-slate-200'}">
+				<span class="break-all {line.type === 'error' ? 'text-rose-300' : line.type === 'dim' ? 'text-slate-500' : line.type === 'agent' ? 'text-purple-200' : 'text-slate-200'}">
 					{line.msg}
 				</span>
 			</div>
 		{/each}
 		{#if run.status === 'running' || run.status === 'pending' || run.status === 'discovering' || run.status === 'retrieving' || run.status === 'extracting'}
 			<div class="flex items-center gap-2 text-orbit-cyan pt-2 animate-pulse">
-				<span class="w-2 h-2 rounded-full bg-orbit-cyan"></span>
-				<span>Executing pipeline stages...</span>
+				<span class="inline-block w-2 h-2 rounded-full bg-orbit-cyan"></span>
+				<span class="text-[11px]">Executing pipeline stage ({run.status})...</span>
 			</div>
 		{/if}
 	</div>
