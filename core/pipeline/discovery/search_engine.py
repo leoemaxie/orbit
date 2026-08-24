@@ -31,10 +31,14 @@ class SearchEngineDiscovery:
 
         endpoint = self.settings.search_engine_base_url or self.SEARCH_ENGINE_URL
 
-        async with httpx.AsyncClient(timeout=35.0) as client:
-            resp = await client.get(endpoint, params=params)
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=35.0) as client:
+                resp = await client.get(endpoint, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.HTTPError as err:
+            status = getattr(err, "response", None) and err.response.status_code
+            raise RuntimeError(f"Search API request failed (status: HTTP {status or 'error'})") from None
 
         raw_links: list[str] = []
         for item in data.get("organic_results", []):

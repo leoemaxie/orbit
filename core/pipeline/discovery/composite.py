@@ -37,8 +37,8 @@ class CompositeDiscovery:
                 if urls:
                     logger.info(f"Search engine discovery returned {len(urls)} URLs.")
                     return urls
-            except Exception as e:  # noqa: BLE001
-                logger.warning(f"Search engine discovery failed, falling back: {e}")
+            except Exception:  # noqa: BLE001
+                logger.warning("Search engine discovery attempt failed, falling back to open web search.")
 
         # 3. Open web search discovery (zero API key required)
         try:
@@ -46,8 +46,8 @@ class CompositeDiscovery:
             if urls:
                 logger.info(f"Open web search discovery returned {len(urls)} URLs.")
                 return urls
-        except Exception as e:  # noqa: BLE001
-            logger.warning(f"Open web search discovery failed: {e}")
+        except Exception:  # noqa: BLE001
+            logger.warning("Open web search discovery attempt failed.")
 
         # 4. Proxy-routed search (if configured)
         if self.settings.retrieval_api_key and self.settings.retrieval_zone:
@@ -56,7 +56,7 @@ class CompositeDiscovery:
                 if urls:
                     logger.info(f"Proxy search discovery returned {len(urls)} URLs.")
                     return urls
-            except Exception as e:  # noqa: BLE001
-                logger.warning(f"Proxy search discovery failed: {e}")
+            except Exception:  # noqa: BLE001
+                logger.warning("Proxy search discovery attempt failed.")
 
         return []

@@ -23,8 +23,8 @@ class NotificationService:
     ) -> bool:
         target_url = webhook_url or self.settings.default_webhook_url
 
-        # Always log the notification
-        logger.info(f"🔔 [ORBIT ALERT] {title}: {message} | data={payload}")
+        # Log notification summary without raw sensitive parameters
+        logger.info(f"🔔 [ORBIT ALERT] {title}: {message}")
 
         if not target_url:
             return True
@@ -39,6 +39,7 @@ class NotificationService:
                 resp = await client.post(target_url, json=body)
                 resp.raise_for_status()
                 return True
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Failed to deliver webhook notification to {target_url}: {e}")
+        except Exception:  # noqa: BLE001
+            masked_host = target_url.split("://")[-1].split("/")[0] if "://" in target_url else "configured-webhook"
+            logger.error(f"Failed to deliver webhook notification to host {masked_host}")
             return False

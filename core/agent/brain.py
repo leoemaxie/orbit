@@ -38,8 +38,8 @@ class AgentBrain:
             )
             logger.info(f"Agent Brain decision for stage '{stage}': {decision}")
             return decision
-        except Exception as e:  # noqa: BLE001
-            logger.warning(f"Brain call failed: {e}")
+        except Exception:  # noqa: BLE001
+            logger.warning(f"Agent brain cognition step was unavailable for stage '{stage}'.")
             return {
                 "diagnosis": f"Failure during {stage}: {error}",
                 "can_recover": False,

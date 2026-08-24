@@ -46,10 +46,10 @@ class LLMExtractor:
                 "data": data,
                 "notes": raw.get("notes"),
             }
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             return {
                 "url": url,
                 "extracted": False,
                 "data": {},
-                "notes": f"Extraction error: {e!s}",
+                "notes": "Extraction could not parse entity schema from page content.",
             }

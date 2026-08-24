@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from core.adapters.storage.local_export import LocalFileExportSink
 from core.agent.brain import AgentBrain
 from core.agent.condition import ConditionEvaluator
+from core.api.serializers import sanitize_error_message
 from core.db.orm import Automation, Result, Run
 from core.events.bus import event_bus
 from core.events.types import OrbitEvent
@@ -71,13 +72,13 @@ class AgentOrchestrator:
         """Safely commits changes with retry on dropped or timed-out idle database connections."""
         try:
             db.commit()
-        except (OperationalError, DBAPIError) as e:
-            logger.warning(f"Database connection interrupted during async task: {e}. Reconnecting...")
+        except (OperationalError, DBAPIError):
+            logger.warning("Database connection was interrupted during async task. Reconnecting and retrying commit...")
             try:
                 db.rollback()
                 db.commit()
-            except Exception as retry_err:
-                logger.error(f"Commit retry failed: {retry_err}")
+            except Exception:
+                logger.error("Database commit retry failed.")
                 raise
 
     async def execute_run(
@@ -336,7 +337,7 @@ class AgentOrchestrator:
             try:
                 db.rollback()
                 run.status = RunStatus.failed
-                run.error = str(e)
+                run.error = sanitize_error_message(str(e))
                 run.finished_at = datetime.now(timezone.utc)
                 db.add(run)
                 db.commit()

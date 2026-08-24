@@ -3,6 +3,20 @@ from core.models.execution_plan import ExecutionPlan
 from core.models.schemas import AutomationOut, ResultOut, RunOut
 
 
+def sanitize_error_message(error: str | None) -> str | None:
+    """Sanitizes internal driver/database exceptions to avoid leaking SQL or internal parameters."""
+    if not error:
+        return None
+    err_str = str(error)
+    if "OperationalError" in err_str or "server closed the connection" in err_str or "connection refused" in err_str:
+        return "Database connectivity error: the connection was closed or timed out. Please retry the run."
+    if "SQLAlchemyError" in err_str or "[SQL:" in err_str or "psycopg2" in err_str:
+        return "A database transaction error occurred during pipeline execution."
+    if "IntegrityError" in err_str:
+        return "Data integrity constraint violated during record storage."
+    return err_str
+
+
 def automation_to_out(a: Automation) -> AutomationOut:
     return AutomationOut(
         id=a.id,
@@ -28,7 +42,7 @@ def run_to_out(r: Run) -> RunOut:
         condition_matched=r.condition_matched,
         condition_message=r.condition_message,
         reasoning_log=r.reasoning_log,
-        error=r.error,
+        error=sanitize_error_message(r.error),
         results=[
             ResultOut(
                 id=res.id,
