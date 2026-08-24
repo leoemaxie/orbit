@@ -6,18 +6,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deleteCmd = &cobra.Command{
-	Use:     "delete <automation-id>",
-	Aliases: []string{"del", "rm"},
-	Short:   "Delete an automation and its associated runs",
+var rmCmd = &cobra.Command{
+	Use:     "rm <automation-id>",
+	Aliases: []string{"delete"},
+	Short:   "Remove an automation and all associated runs",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		automationID := args[0]
-		return executeDelete(automationID)
+		return executeRm(automationID)
 	},
 }
 
-func executeDelete(automationID string) error {
+func executeRm(automationID string) error {
 	err := client.DeleteAutomation(automationID)
 	if err != nil {
 		if jsonFlag {
@@ -26,7 +26,7 @@ func executeDelete(automationID string) error {
 				"error":   err.Error(),
 			})
 		}
-		ui.Error("Failed to delete automation: %v", err)
+		ui.Error("Failed to remove automation: %v", err)
 		return err
 	}
 
@@ -34,10 +34,10 @@ func executeDelete(automationID string) error {
 		return formatters.PrintJSON(map[string]any{
 			"success":       true,
 			"automation_id": automationID,
-			"message":       "Automation deleted successfully",
+			"message":       "Automation removed successfully",
 		})
 	}
 
-	ui.Success("Automation %s and all associated runs deleted successfully.", ui.Cyan(automationID))
+	ui.Success("Automation %s and all associated runs removed successfully.", ui.Cyan(automationID))
 	return nil
 }

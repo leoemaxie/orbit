@@ -67,13 +67,13 @@ orbc list
 orbc list --json | jq .
 ```
 
-### 4. Delete an Automation
+### 4. Remove an Automation
 
 Remove an automation and all its associated execution history:
 
 ```bash
-orbc delete <automation_id>
-# Aliases: orbc del <automation_id>, orbc rm <automation_id>
+orbc rm <automation_id>
+# Alias: orbc delete <automation_id>
 ```
 
 ### 5. Inspect Execution History
