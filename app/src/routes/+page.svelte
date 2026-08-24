@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { Sparkles, Radio, Layers, Play, ArrowRight, ShieldCheck, Clock } from '@lucide/svelte';
+	import { Layers, ArrowRight } from '@lucide/svelte';
 	import { orbitStore } from '$lib/state/orbit.svelte';
 	import GoalBar from '$lib/components/goals/GoalBar.svelte';
 	import PlanPreviewCard from '$lib/components/goals/PlanPreviewCard.svelte';
-	import StatusBadge from '$lib/components/ui/StatusBadge.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import OrbitLogo from '$lib/components/ui/OrbitLogo.svelte';
+	import HeroSection from '$lib/components/dashboard/HeroSection.svelte';
+	import AutomationGridCard from '$lib/components/dashboard/AutomationGridCard.svelte';
 	import type { AutomationOut } from '$lib/api/types';
 
 	let previewAutomation = $state<AutomationOut | null>(null);
@@ -29,18 +27,7 @@
 
 <div class="max-w-5xl mx-auto space-y-12 pb-12">
 	<!-- Hero Section -->
-	<div class="text-center space-y-5 pt-8 flex flex-col items-center">
-		<OrbitLogo size="lg" showWordmark={false} animated={true} class="mb-2 hover:scale-105 transition-transform" />
-		<div class="inline-flex items-center px-3.5 py-1 rounded-full bg-orbit-cyan/10 border border-orbit-cyan/30 text-orbit-cyan text-xs font-mono shadow-glow-cyan/20">
-			<span>Set the goal. Walk away.</span>
-		</div>
-		<h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white font-display">
-			Autonomous Web Data Operations
-		</h1>
-		<p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
-			Define your data extraction objectives in plain language. Orbit discovers web sources, extracts verified structured data, and runs continuously on schedule with complete audit trails.
-		</p>
-	</div>
+	<HeroSection />
 
 	<!-- Goal Omnibar -->
 	<GoalBar
@@ -56,6 +43,7 @@
 					✦ Synthesized Execution Plan Ready
 				</span>
 				<button
+					type="button"
 					onclick={() => (previewAutomation = null)}
 					class="text-xs text-slate-500 hover:text-slate-300 font-mono"
 				>
@@ -91,45 +79,11 @@
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 			{#each orbitStore.automations.slice(0, 6) as auto}
-				<Card class="flex flex-col justify-between space-y-4 hover:border-orbit-cyan/40">
-					<div class="space-y-2">
-						<div class="flex items-center justify-between">
-							<span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface-800 text-orbit-violet border border-orbit-violet/30">
-								{auto.plan?.domain || 'GENERAL'}
-							</span>
-							<StatusBadge
-								status={auto.active ? 'success' : 'paused'}
-								label={auto.active ? 'ACTIVE' : 'PAUSED'}
-							/>
-						</div>
-						<h3 class="text-sm font-medium text-slate-100 line-clamp-2">
-							{auto.plan?.objective || auto.raw_goal}
-						</h3>
-						<p class="text-xs text-slate-400 font-mono line-clamp-1">
-							Cadence: {auto.plan?.frequency}
-						</p>
-					</div>
-
-					<div class="flex items-center justify-between border-t border-white/5 pt-3">
-						<a
-							href={`/automations/${auto.id}`}
-							class="text-xs text-slate-400 hover:text-white font-mono flex items-center gap-1"
-						>
-							<span>Inspector</span>
-							<ArrowRight size={11} />
-						</a>
-
-						<Button
-							variant="primary"
-							size="sm"
-							loading={orbitStore.runningAutomation && orbitStore.selectedAutomation?.id === auto.id}
-							onclick={() => handleRunNow(auto.id)}
-						>
-							<Play size={12} />
-							<span>Run</span>
-						</Button>
-					</div>
-				</Card>
+				<AutomationGridCard
+					automation={auto}
+					running={orbitStore.runningAutomation && orbitStore.selectedAutomation?.id === auto.id}
+					onRun={handleRunNow}
+				/>
 			{:else}
 				<div class="col-span-full text-center py-12 bg-surface-900 border border-white/10 rounded-xl space-y-2">
 					<p class="text-sm text-slate-400">No active automations in orbit.</p>
