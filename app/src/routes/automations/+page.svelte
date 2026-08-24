@@ -4,8 +4,10 @@
 	import { orbitStore } from '$lib/state/orbit.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import AutomationTable from '$lib/components/automations/AutomationTable.svelte';
+	import AutomationCard from '$lib/components/automations/AutomationCard.svelte';
 
 	let searchQuery = $state('');
+	let runningId = $state<string | null>(null);
 
 	const filteredAutomations = $derived.by(() => {
 		if (!searchQuery.trim()) return orbitStore.automations;
@@ -19,9 +21,14 @@
 	});
 
 	async function handleRun(id: string) {
-		const run = await orbitStore.triggerRun(id);
-		if (run) {
-			goto(`/runs/${run.id}`);
+		runningId = id;
+		try {
+			const run = await orbitStore.triggerRun(id);
+			if (run) {
+				goto(`/runs/${run.id}`);
+			}
+		} finally {
+			runningId = null;
 		}
 	}
 
@@ -66,11 +73,29 @@
 		</div>
 	</div>
 
-	<!-- Automations Table -->
-	<AutomationTable
-		automations={filteredAutomations}
-		runningAutomationId={orbitStore.runningAutomation && orbitStore.selectedAutomation ? orbitStore.selectedAutomation.id : null}
-		onRun={handleRun}
-		onDelete={handleDelete}
-	/>
+	<!-- Desktop View: Automations Table -->
+	<div class="hidden md:block">
+		<AutomationTable
+			automations={filteredAutomations}
+			runningAutomationId={runningId}
+			onRun={handleRun}
+			onDelete={handleDelete}
+		/>
+	</div>
+
+	<!-- Mobile View: Automation Cards -->
+	<div class="md:hidden space-y-3">
+		{#each filteredAutomations as auto (auto.id)}
+			<AutomationCard
+				automation={auto}
+				running={runningId === auto.id}
+				onRun={handleRun}
+				onDelete={handleDelete}
+			/>
+		{:else}
+			<div class="border border-white/10 rounded-xl p-8 text-center bg-surface-900 text-slate-500 font-mono text-xs">
+				No matching automations found.
+			</div>
+		{/each}
+	</div>
 </div>
