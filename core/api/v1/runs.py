@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from core.api.dependencies import get_db
-from core.api.v1.automations import _run_to_out
-from core.db.orm import Run
-from core.models.schemas import RunOut
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
+from core.api.dependencies import get_db
+from core.api.serializers import run_to_out
+from core.db.orm import Run
+from core.models.schemas import RunOut
 
 router = APIRouter(tags=["Runs"])
 
@@ -16,7 +17,7 @@ def get_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     run = db.query(Run).filter(Run.id == run_id).first()
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    return _run_to_out(run)
+    return run_to_out(run)
 
 
 @router.get("/automations/{automation_id}/runs", response_model=list[RunOut])
@@ -28,4 +29,4 @@ def list_automation_runs(automation_id: str, db: Annotated[Session, Depends(get_
         .order_by(Run.started_at.desc())
         .all()
     )
-    return [_run_to_out(r) for r in runs]
+    return [run_to_out(r) for r in runs]

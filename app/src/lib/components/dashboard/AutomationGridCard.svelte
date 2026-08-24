@@ -14,10 +14,10 @@
 	let { automation, running = false, onRun }: Props = $props();
 </script>
 
-<Card class="flex flex-col justify-between space-y-4 hover:border-orbit-cyan/40">
+<Card class="flex flex-col justify-between space-y-3 hover:border-white/20 transition-all">
 	<div class="space-y-2">
-		<div class="flex items-center justify-between">
-			<span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface-800 text-orbit-violet border border-orbit-violet/30">
+		<div class="flex items-center justify-between gap-2">
+			<span class="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-surface-800 text-orbit-violet border border-orbit-violet/20">
 				{automation.plan?.domain || 'GENERAL'}
 			</span>
 			<StatusBadge
@@ -25,20 +25,23 @@
 				label={automation.active ? 'ACTIVE' : 'PAUSED'}
 			/>
 		</div>
-		<h3 class="text-sm font-medium text-slate-100 line-clamp-2">
+		<h3 class="text-sm font-medium text-slate-100 leading-snug line-clamp-2">
 			{automation.plan?.objective || automation.raw_goal}
 		</h3>
-		<p class="text-xs text-slate-400 font-mono line-clamp-1">
-			Cadence: {automation.plan?.frequency}
+		<p class="text-[11px] text-slate-500">
+			<span class="uppercase font-semibold text-slate-400">{automation.plan?.frequency}</span>
+			{#if automation.plan?.schedule_time}
+				<span class="font-mono"> · {automation.plan.schedule_time}</span>
+			{/if}
 		</p>
 	</div>
 
 	<div class="flex items-center justify-between border-t border-white/5 pt-3">
 		<a
 			href={`/automations/${automation.id}`}
-			class="text-xs text-slate-400 hover:text-white font-mono flex items-center gap-1"
+			class="text-xs font-medium text-slate-400 hover:text-white transition-colors flex items-center gap-1"
 		>
-			<span>Inspector</span>
+			<span>Inspect</span>
 			<ArrowRight size={11} />
 		</a>
 
@@ -49,7 +52,7 @@
 			onclick={() => onRun(automation.id)}
 		>
 			<Play size={12} />
-			<span>Run</span>
+			<span>Run now</span>
 		</Button>
 	</div>
 </Card>

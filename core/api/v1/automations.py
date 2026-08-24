@@ -7,15 +7,9 @@ from sqlalchemy.orm import Session
 from core.agent.interpreter import GoalInterpreter
 from core.agent.orchestrator import AgentOrchestrator
 from core.api.dependencies import get_db
-from core.db.orm import Automation, Run
-from core.models.execution_plan import ExecutionPlan
-from core.models.schemas import (
-    AutomationListOut,
-    AutomationOut,
-    GoalRequest,
-    ResultOut,
-    RunOut,
-)
+from core.api.serializers import automation_to_out, run_to_out
+from core.db.orm import Automation
+from core.models.schemas import AutomationListOut, AutomationOut, GoalRequest, RunOut
 
 logger = logging.getLogger("core.api.v1.automations")
 
@@ -25,57 +19,23 @@ interpreter = GoalInterpreter()
 orchestrator = AgentOrchestrator()
 
 
-def _automation_to_out(a: Automation) -> AutomationOut:
-    return AutomationOut(
-        id=a.id,
-        raw_goal=a.raw_goal,
-        plan=ExecutionPlan.model_validate(a.plan),
-        active=a.active,
-        created_at=a.created_at.isoformat(),
-        next_run_at=a.next_run_at.isoformat() if a.next_run_at else None,
-    )
-
-
-def _run_to_out(r: Run) -> RunOut:
-    return RunOut(
-        id=r.id,
-        automation_id=r.automation_id,
-        status=r.status.value if hasattr(r.status, "value") else str(r.status),
-        started_at=r.started_at.isoformat(),
-        finished_at=r.finished_at.isoformat() if r.finished_at else None,
-        sources_found=r.sources_found,
-        pages_retrieved=r.pages_retrieved,
-        extracted_count=r.extracted_count,
-        validated_count=r.validated_count,
-        condition_matched=r.condition_matched,
-        condition_message=r.condition_message,
-        reasoning_log=r.reasoning_log,
-        error=r.error,
-        results=[
-            ResultOut(
-                id=res.id,
-                url=res.url,
-                data=res.data or {},
-                valid=res.valid,
-                validation_errors=res.validation_errors,
-                created_at=res.created_at.isoformat(),
-            )
-            for res in r.results
-        ],
-    )
-
-
 @router.post("", response_model=AutomationOut)
 async def create_automation(payload: GoalRequest, db: Annotated[Session, Depends(get_db)]):
     """Interprets a natural-language goal into a dynamic execution plan and creates an automation."""
     try:
         plan = await interpreter.interpret(payload.goal)
     except ValueError as e:
-        logger.error(f"Goal interpretation failed: {e}")
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        logger.warning("Goal interpretation validation failed: %s", e)
+        raise HTTPException(
+            status_code=400,
+            detail="The provided goal could not be processed into an execution plan. Please provide a more descriptive objective.",
+        ) from e
     except Exception as e:
         logger.exception("Unexpected error during goal interpretation")
-        raise HTTPException(status_code=500, detail=f"Goal interpretation error: {e}") from e
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while synthesizing the execution plan. Please try again.",
+        ) from e
 
     automation = Automation(
         raw_goal=payload.goal,
@@ -86,14 +46,14 @@ async def create_automation(payload: GoalRequest, db: Annotated[Session, Depends
     db.commit()
     db.refresh(automation)
 
-    return _automation_to_out(automation)
+    return automation_to_out(automation)
 
 
 @router.get("", response_model=AutomationListOut)
 def list_automations(db: Annotated[Session, Depends(get_db)]):
     """Retrieves all registered automations."""
     records = db.query(Automation).order_by(Automation.created_at.desc()).all()
-    items = [_automation_to_out(a) for a in records]
+    items = [automation_to_out(a) for a in records]
     return AutomationListOut(items=items, total=len(items))
 
 
@@ -103,7 +63,7 @@ def get_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     automation = db.query(Automation).filter(Automation.id == automation_id).first()
     if not automation:
         raise HTTPException(status_code=404, detail="Automation not found")
-    return _automation_to_out(automation)
+    return automation_to_out(automation)
 
 
 @router.post("/{automation_id}/run", response_model=RunOut)
@@ -113,8 +73,15 @@ async def run_automation(automation_id: str, db: Annotated[Session, Depends(get_
     if not automation:
         raise HTTPException(status_code=404, detail="Automation not found")
 
-    run = await orchestrator.execute_run(db, automation)
-    return _run_to_out(run)
+    try:
+        run = await orchestrator.execute_run(db, automation)
+        return run_to_out(run)
+    except Exception as e:
+        logger.exception("Orchestrator failed during execution of automation %s", automation_id)
+        raise HTTPException(
+            status_code=500,
+            detail="The automation run could not be completed. Please try again shortly.",
+        ) from e
 
 
 @router.delete("/{automation_id}")
