@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { Terminal, Database, GitFork } from '@lucide/svelte';
 	import { api } from '$lib/api/client';
+	import { orbitStore } from '$lib/state/orbit.svelte';
 	import type { RunOut } from '$lib/api/types';
 	import ProvenanceGraph from '$lib/components/provenance/ProvenanceGraph.svelte';
 	import LogDrawer from '$lib/components/provenance/LogDrawer.svelte';
@@ -14,6 +16,7 @@
 
 	let run = $state<RunOut | null>(null);
 	let loading = $state(true);
+	let rerunning = $state(false);
 	let activeTab = $state<'live' | 'data' | 'dag'>('live');
 	let drawerOpen = $state(false);
 	let selectedNode = $state<string | null>(null);
@@ -28,6 +31,19 @@
 			console.error(err);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function handleRerun() {
+		if (!run?.automation_id || rerunning) return;
+		rerunning = true;
+		try {
+			const newRun = await orbitStore.triggerRun(run.automation_id);
+			if (newRun) {
+				goto(`/runs/${newRun.id}`);
+			}
+		} finally {
+			rerunning = false;
 		}
 	}
 
@@ -46,8 +62,10 @@
 	<RunHeader
 		automationId={run?.automation_id}
 		{loading}
+		{rerunning}
 		onRefresh={loadRunDetails}
 		onOpenLogs={() => { selectedNode = 'all'; drawerOpen = true; }}
+		onRerun={handleRerun}
 	/>
 
 	{#if loading && !run}
