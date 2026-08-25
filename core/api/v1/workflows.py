@@ -31,13 +31,13 @@ class WorkflowDeployResponse(BaseModel):
 
 @router.get("/topology", response_model=list[AdapterTopologyOut])
 def get_workflow_topology() -> list[AdapterTopologyOut]:
-    """Returns the live configuration and status of all pipeline adapters."""
+    """Returns live configuration of all pipeline adapters for data engineering workflows."""
     s = get_settings()
 
     return [
         AdapterTopologyOut(
             id="1",
-            label="Mission Trigger",
+            label="Schedule Trigger",
             category="trigger",
             iconName="Play",
             description="Cron schedule & webhook trigger",
@@ -46,55 +46,55 @@ def get_workflow_topology() -> list[AdapterTopologyOut]:
         ),
         AdapterTopologyOut(
             id="2",
-            label="Proxy Discovery",
+            label="Source Discovery",
             category="discovery",
             iconName="Search",
-            description="Multi-engine search & proxy retrieval",
+            description="Search engine and web proxy retrieval",
             status="active" if bool(s.retrieval_api_key or s.search_engine_api_key) else "optional",
             config={"search_depth": 2, "max_sources": 8, "proxy_zone": s.retrieval_zone or "default"},
         ),
         AdapterTopologyOut(
             id="3",
-            label="Document Parser",
+            label="Document & Table Parser",
             category="parsing",
             iconName="FileText",
-            description="Layout analysis & OCR normalization",
+            description="Document layout analysis and table extraction",
             status="active" if bool(s.document_converter_api_key) else "optional",
             config={"layout_analysis": True, "ocr_enabled": bool(s.document_converter_api_key)},
         ),
         AdapterTopologyOut(
             id="4",
-            label="Schema Extractor",
+            label="LLM Schema Extraction",
             category="extraction",
             iconName="Database",
-            description="LLM structured extraction & anomaly check",
+            description="Structured JSON record extraction & validation",
             status="active" if bool(s.llm_api_key) else "optional",
             config={"model": s.llm_model, "anomaly_detection": True},
         ),
         AdapterTopologyOut(
             id="5",
-            label="Dossier & Redaction",
+            label="PDF Report Generator",
             category="dossier",
             iconName="ShieldCheck",
-            description="Executive PDF dossier & PII masking",
+            description="Automated PDF reports with PII data masking",
             status="active" if bool(s.document_generator_api_key) else "optional",
             config={"format": "pdf", "pii_redaction": bool(s.document_redactor_api_key)},
         ),
         AdapterTopologyOut(
             id="6",
-            label="S3 Cloud Storage",
+            label="Amazon S3 Storage",
             category="storage",
             iconName="Cloud",
-            description="Presigned URL & bucket archival",
+            description="S3 bucket archival and presigned download links",
             status="active" if bool(s.s3_access_key and s.s3_secret_key) else "optional",
             config={"bucket_name": s.s3_bucket_name, "region": s.s3_region},
         ),
         AdapterTopologyOut(
             id="7",
-            label="Slack Alert Sink",
+            label="Slack Notifications",
             category="notify",
             iconName="MessageSquare",
-            description="Alert blocks with dossier links",
+            description="Slack alert webhook with report links",
             status="active" if bool(s.default_webhook_url) else "optional",
             config={"webhook_enabled": bool(s.default_webhook_url), "channel": "#orbit-alerts"},
         ),
@@ -103,11 +103,11 @@ def get_workflow_topology() -> list[AdapterTopologyOut]:
 
 @router.post("/deploy", response_model=WorkflowDeployResponse)
 def deploy_workflow(payload: WorkflowDeployPayload) -> WorkflowDeployResponse:
-    """Validates and deploys the adapter workflow configuration."""
+    """Validates and deploys the adapter pipeline configuration."""
     from datetime import datetime, timezone
 
     return WorkflowDeployResponse(
         status="deployed",
-        message=f"Successfully deployed workflow pipeline with {len(payload.nodes)} active adapter stages.",
+        message=f"Pipeline updated with {len(payload.nodes)} active adapter stages.",
         deployed_at=datetime.now(timezone.utc).isoformat(),
     )

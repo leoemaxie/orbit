@@ -13,10 +13,10 @@ func TestCommand_Workflow(t *testing.T) {
 			t.Fatalf("workflow command failed: %v", err)
 		}
 
-		if !strings.Contains(out, "Orbit Adapter Workflow Pipeline") {
+		if !strings.Contains(out, "Orbit Pipeline Studio Topology") {
 			t.Errorf("expected workflow header in output: %s", out)
 		}
-		if !strings.Contains(out, "LayoutParser") || !strings.Contains(out, "S3ExportSink") {
+		if !strings.Contains(out, "Schedule Trigger") || !strings.Contains(out, "Amazon S3 Storage") {
 			t.Errorf("expected adapters in output: %s", out)
 		}
 	})
@@ -35,7 +35,7 @@ func TestCommand_Workflow(t *testing.T) {
 		if len(adapters) == 0 {
 			t.Fatalf("expected at least 1 adapter, got %d", len(adapters))
 		}
-		if adapters[0].Adapter != "LayoutParser" {
+		if adapters[0].Adapter != "Schedule Trigger" {
 			t.Errorf("unexpected first adapter: %s", adapters[0].Adapter)
 		}
 	})

@@ -16,6 +16,18 @@ func (c *Client) RunAutomation(id string) (*RunOut, error) {
 	return &out, nil
 }
 
+func (c *Client) RetryRun(runID string) (*RunOut, error) {
+	var out RunOut
+	r, err := c.http.R().SetResult(&out).Post(fmt.Sprintf("/api/v1/runs/%s/retry", runID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to retry run %s: %w", runID, err)
+	}
+	if r.IsError() {
+		return nil, fmt.Errorf("failed to retry run: %s (status %d)", r.String(), r.StatusCode())
+	}
+	return &out, nil
+}
+
 func (c *Client) GetRun(id string) (*RunOut, error) {
 	var out RunOut
 	r, err := c.http.R().SetResult(&out).Get(fmt.Sprintf("/api/v1/runs/%s", id))

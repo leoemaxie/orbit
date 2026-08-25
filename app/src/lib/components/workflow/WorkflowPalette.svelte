@@ -1,0 +1,83 @@
+<script lang="ts">
+	import { Search, Plus, Play, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Sparkles, ChevronLeft } from '@lucide/svelte';
+	import type { NodeTemplate } from './types';
+
+	interface Props {
+		onAddNode: (template: NodeTemplate) => void;
+		onClose: () => void;
+	}
+
+	let { onAddNode, onClose }: Props = $props();
+	let searchQuery = $state('');
+
+	const nodeTemplates: NodeTemplate[] = [
+		{ typeId: 'trigger_cron', label: 'Schedule Trigger', category: 'trigger', iconName: 'Play', description: 'Cron schedule & webhook trigger', defaultConfig: { frequency: 'daily', schedule_time: '08:00', timezone: 'UTC' } },
+		{ typeId: 'proxy_discovery', label: 'Source Discovery', category: 'discovery', iconName: 'Globe', description: 'Multi-engine search & proxy retrieval', defaultConfig: { search_depth: 2, max_sources: 8, proxy_zone: 'datacenter' } },
+		{ typeId: 'doc_parser', label: 'Document & Table Parser', category: 'parsing', iconName: 'FileText', description: 'Document layout and table deconstruction', defaultConfig: { layout_analysis: true, table_format: 'markdown' } },
+		{ typeId: 'format_converter', label: 'Format Normalization & OCR', category: 'parsing', iconName: 'FileText', description: 'Convert DOCX/XLSX to PDF & run OCR', defaultConfig: { source_format: 'docx', ocr_enabled: true } },
+		{ typeId: 'schema_extractor', label: 'LLM Schema Extraction', category: 'extraction', iconName: 'Database', description: 'Structured JSON extraction & validation', defaultConfig: { temperature: 0.1, anomaly_detection: true } },
+		{ typeId: 'html_dossier', label: 'PDF Report Builder', category: 'dossier', iconName: 'Sparkles', description: 'Styled PDF summary & briefing generation', defaultConfig: { format: 'pdf', page_size: 'A4' } },
+		{ typeId: 'template_generator', label: 'Template Document Merger', category: 'dossier', iconName: 'FileText', description: 'Merge records into Word/PDF templates', defaultConfig: { template_id: 'default-report' } },
+		{ typeId: 'pii_redactor', label: 'PII Data Masking', category: 'compliance', iconName: 'ShieldCheck', description: 'Mask sensitive PII (SSN, emails, cards)', defaultConfig: { entities: 'EMAIL,SSN,CREDIT_CARD' } },
+		{ typeId: 's3_storage', label: 'Amazon S3 Storage', category: 'storage', iconName: 'Cloud', description: 'Upload JSON and reports to S3 bucket', defaultConfig: { bucket_name: 'orbit-exports', region: 'us-east-1' } },
+		{ typeId: 'slack_alert', label: 'Slack Notifications', category: 'notify', iconName: 'MessageSquare', description: 'Slack channel alerts with report links', defaultConfig: { webhook_enabled: true, channel: '#orbit-alerts' } }
+	];
+
+	const filteredTemplates = $derived(
+		nodeTemplates.filter((t) => t.label.toLowerCase().includes(searchQuery.toLowerCase()) || t.description.toLowerCase().includes(searchQuery.toLowerCase()))
+	);
+
+	function handleDragStart(e: DragEvent, template: NodeTemplate) {
+		if (e.dataTransfer) {
+			e.dataTransfer.setData('application/json', JSON.stringify(template));
+			e.dataTransfer.effectAllowed = 'copy';
+		}
+	}
+</script>
+
+<aside class="w-72 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 shadow-xl shrink-0 h-[640px]">
+	<div class="flex items-center justify-between">
+		<h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">Adapter Library</h2>
+		<button
+			type="button"
+			onclick={onClose}
+			class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-surface-800 transition-colors"
+			title="Collapse sidebar"
+		>
+			<ChevronLeft size={16} />
+		</button>
+	</div>
+
+	<div class="relative">
+		<Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+		<input
+			type="text"
+			placeholder="Search adapters..."
+			bind:value={searchQuery}
+			class="w-full pl-8 pr-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-orbit-cyan"
+		/>
+	</div>
+
+	<div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+		{#each filteredTemplates as template}
+			<div
+				draggable="true"
+				ondragstart={(e) => handleDragStart(e, template)}
+				class="group p-2.5 bg-surface-800/80 hover:bg-surface-800 border border-white/5 hover:border-orbit-cyan/40 rounded-xl cursor-grab active:cursor-grabbing transition-all select-none relative flex items-center justify-between gap-2"
+			>
+				<div class="min-w-0 flex-1">
+					<span class="text-xs font-semibold text-slate-200 group-hover:text-orbit-cyan transition-colors truncate block">{template.label}</span>
+					<p class="text-[11px] font-mono text-slate-400 line-clamp-1 mt-0.5">{template.description}</p>
+				</div>
+				<button
+					type="button"
+					onclick={() => onAddNode(template)}
+					class="p-1 rounded bg-surface-700 hover:bg-orbit-cyan hover:text-void text-slate-300 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+					title="Add to canvas"
+				>
+					<Plus size={13} />
+				</button>
+			</div>
+		{/each}
+	</div>
+</aside>

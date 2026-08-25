@@ -1,4 +1,12 @@
-export type NodeCategory = 'trigger' | 'discovery' | 'parsing' | 'extraction' | 'dossier' | 'storage' | 'notify';
+export type NodeCategory =
+	| 'trigger'
+	| 'discovery'
+	| 'parsing'
+	| 'extraction'
+	| 'dossier'
+	| 'compliance'
+	| 'storage'
+	| 'notify';
 
 export interface WorkflowNodeData {
 	id: string;
@@ -13,15 +21,16 @@ export interface WorkflowNodeData {
 }
 
 export interface WorkflowEdge {
+	id: string;
 	from: string;
 	to: string;
 }
 
-export interface AdapterConfigField {
-	key: string;
+export interface NodeTemplate {
+	typeId: string;
 	label: string;
-	type: 'text' | 'select' | 'boolean' | 'number';
-	options?: string[];
-	defaultVal: any;
+	category: NodeCategory;
+	iconName: string;
 	description: string;
+	defaultConfig: Record<string, any>;
 }

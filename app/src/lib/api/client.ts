@@ -40,6 +40,9 @@ export class ApiClient {
 	async runAutomation(id: string): Promise<RunOut> {
 		return this.request<RunOut>(`/automations/${id}/run`, { method: 'POST' });
 	}
+	async retryRun(runId: string): Promise<RunOut> {
+		return this.request<RunOut>(`/runs/${runId}/retry`, { method: 'POST' });
+	}
 	async getRun(runId: string): Promise<RunOut> { return this.request<RunOut>(`/runs/${runId}`); }
 	async listAutomationRuns(automationId: string): Promise<RunOut[]> {
 		return this.request<RunOut[]>(`/automations/${automationId}/runs`);

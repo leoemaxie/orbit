@@ -51,6 +51,7 @@ func init() {
 	// Add subcommands
 	RootCmd.AddCommand(goalCmd)
 	RootCmd.AddCommand(runCmd)
+	RootCmd.AddCommand(retryCmd)
 	RootCmd.AddCommand(listCmd)
 	RootCmd.AddCommand(runsCmd)
 	RootCmd.AddCommand(showCmd)

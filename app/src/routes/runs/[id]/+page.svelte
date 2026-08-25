@@ -35,12 +35,13 @@
 	}
 
 	async function handleRerun() {
-		if (!run?.automation_id || rerunning) return;
+		if (!run?.id || rerunning) return;
 		rerunning = true;
 		try {
-			const newRun = await orbitStore.triggerRun(run.automation_id);
-			if (newRun) {
-				goto(`/runs/${newRun.id}`);
+			const updated = await orbitStore.retryRun(run.id);
+			if (updated) {
+				run = updated;
+				loadRunDetails();
 			}
 		} finally {
 			rerunning = false;

@@ -18,8 +18,8 @@ type AdapterInfo struct {
 
 var workflowCmd = &cobra.Command{
 	Use:   "workflow",
-	Short: "Inspect active adapter workflow pipeline and multi-sink topology",
-	Long:  "Displays the end-to-end adapter pipeline (Parser, Converter, Generator, Redactor, S3, Slack).",
+	Short: "Inspect active adapter pipeline and storage/notification topology",
+	Long:  "Displays the end-to-end pipeline (Parsers, LLM Extractor, PDF Report Generator, S3, Slack).",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return renderWorkflow()
 	},
@@ -28,7 +28,6 @@ var workflowCmd = &cobra.Command{
 func renderWorkflow() error {
 	var adapters []AdapterInfo
 
-	// Fetch live adapter topology from the server if available
 	serverNodes, err := client.GetWorkflowTopology()
 	if err == nil && len(serverNodes) > 0 {
 		for _, n := range serverNodes {
@@ -43,13 +42,13 @@ func renderWorkflow() error {
 	} else {
 		// Offline fallback display
 		adapters = []AdapterInfo{
-			{Stage: "1. Inbound Ingestion", Adapter: "LayoutParser", Type: "Document", Status: "ACTIVE", Description: "Semantic layout & table deconstruction"},
-			{Stage: "2. Ingestion Normalize", Adapter: "FormatConverter", Type: "Document", Status: "ACTIVE", Description: "DOCX/XLSX to PDF/A conversion & OCR"},
-			{Stage: "3. Schema Extraction", Adapter: "LLMExtractor", Type: "Agentic", Status: "ACTIVE", Description: "Structured record parsing & anomaly check"},
-			{Stage: "4. Dossier Generation", Adapter: "HtmlDossierGenerator", Type: "Dossier", Status: "ACTIVE", Description: "Responsive executive HTML/PDF briefs"},
-			{Stage: "5. Privacy Redactor", Adapter: "PiiRedactor", Type: "Compliance", Status: "ACTIVE", Description: "Automated PII masking (SSN, Email, Card)"},
-			{Stage: "6. Object Storage", Adapter: "S3ExportSink", Type: "Storage", Status: "ACTIVE", Description: "Presigned URL & cloud bucket archival"},
-			{Stage: "7. Notification Sink", Adapter: "SlackWebhookAdapter", Type: "Communication", Status: "ACTIVE", Description: "Telemetry alerts with signed dossier links"},
+			{Stage: "1. Trigger", Adapter: "Schedule Trigger", Type: "Trigger", Status: "ACTIVE", Description: "Cron schedule & webhook trigger"},
+			{Stage: "2. Discovery", Adapter: "Source Discovery", Type: "Retrieval", Status: "ACTIVE", Description: "Search engine & web proxy retrieval"},
+			{Stage: "3. Parser", Adapter: "Document & Table Parser", Type: "Document", Status: "ACTIVE", Description: "Document layout analysis & table extraction"},
+			{Stage: "4. Extraction", Adapter: "LLM Schema Extraction", Type: "Extraction", Status: "ACTIVE", Description: "Structured JSON record extraction & validation"},
+			{Stage: "5. Reports", Adapter: "PDF Report Generator", Type: "Reports", Status: "ACTIVE", Description: "Automated PDF reports with PII data masking"},
+			{Stage: "6. Storage", Adapter: "Amazon S3 Storage", Type: "Storage", Status: "ACTIVE", Description: "S3 bucket archival & presigned download links"},
+			{Stage: "7. Notifications", Adapter: "Slack Notifications", Type: "Alerts", Status: "ACTIVE", Description: "Slack alert webhook with report links"},
 		}
 	}
 
@@ -57,11 +56,11 @@ func renderWorkflow() error {
 		return formatters.PrintJSON(adapters)
 	}
 
-	fmt.Printf("\n%s\n", ui.Cyan("🛰️ Orbit Adapter Workflow Pipeline"))
-	fmt.Println(ui.Gray("Live pipeline topology fetched from server:"))
+	fmt.Printf("\n%s\n", ui.Cyan("🛰️ Orbit Pipeline Studio Topology"))
+	fmt.Println(ui.Gray("Data pipeline topology from source ingestion to S3 and Slack sinks:"))
 	fmt.Println()
 
-	fmt.Printf("  %s\n", ui.White("[Trigger] ──► [Discovery] ──► [LayoutParser] ──► [Extractor] ──► [DossierGen] ──► [S3/Slack]"))
+	fmt.Printf("  %s\n", ui.White("[Trigger] ──► [Discovery] ──► [DocParser] ──► [LLMExtractor] ──► [ReportGen] ──► [S3 / Slack]"))
 	fmt.Println()
 
 	headers := []string{"Stage", "Active Adapter", "Category", "Status", "Description"}

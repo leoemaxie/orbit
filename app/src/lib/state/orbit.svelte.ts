@@ -80,6 +80,22 @@ export class OrbitStore {
 		}
 	}
 
+	async retryRun(runId: string): Promise<RunOut | null> {
+		this.runningAutomation = true;
+		this.errorMessage = null;
+		try {
+			const run = await api.retryRun(runId);
+			this.activeRun = run;
+			this.runsHistory = this.runsHistory.map((r) => (r.id === run.id ? run : r));
+			return run;
+		} catch (err: any) {
+			this.errorMessage = err.message || 'Failed to retry run';
+			return null;
+		} finally {
+			this.runningAutomation = false;
+		}
+	}
+
 	async loadRun(runId: string) {
 		this.loading = true;
 		try {

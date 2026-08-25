@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -31,7 +32,7 @@ logger = logging.getLogger("core.agent.orchestrator")
 
 
 class AgentOrchestrator:
-    """The central agentic execution engine that executes goal-driven web data operations."""
+    """The central agentic execution engine that executes goal-driven web data operations with checkpointing & self-healing."""
 
     discovery: CompositeDiscovery
     retrieval: ProxyRetrieval
@@ -88,7 +89,7 @@ class AgentOrchestrator:
         try:
             db.commit()
         except (OperationalError, DBAPIError):
-            logger.warning("Database connection was interrupted during async task. Reconnecting and retrying commit...")
+            logger.warning("Database connection was interrupted during async task. Reconnecting...")
             try:
                 db.rollback()
                 db.commit()
@@ -97,9 +98,13 @@ class AgentOrchestrator:
                 raise
 
     async def execute_run(
-        self, db: Session, automation: Automation, run: Run | None = None
+        self,
+        db: Session,
+        automation: Automation,
+        run: Run | None = None,
+        resume: bool = False,
     ) -> Run:
-        """Executes a full agent run with self-correction, validation, alerting, and verification."""
+        """Executes or resumes an agent run with checkpointing, self-correction, validation, alerting, and verification."""
         plan = ExecutionPlan.model_validate(automation.plan)
 
         if run is None:
@@ -111,60 +116,111 @@ class AgentOrchestrator:
             db.add(run)
             self._safe_commit(db)
             db.refresh(run)
+        else:
+            # If resuming an existing run, reset error and finish timestamps
+            run.error = None
+            run.finished_at = None
+            self._safe_commit(db)
 
         await event_bus.publish(
             OrbitEvent(
-                event_type="run.started",
+                event_type="run.started" if not resume else "run.resumed",
                 run_id=run.id,
                 automation_id=automation.id,
-                message=f"Starting autonomous run for goal: {automation.raw_goal}",
+                message=f"{'Resuming' if resume else 'Starting'} autonomous run for goal: {automation.raw_goal}",
             )
         )
 
-        reasoning_trail: list[dict[str, Any]] = []
+        reasoning_trail: list[dict[str, Any]] = list(run.reasoning_log or [])
 
         try:
             # ────────────────────────────────────────────────
-            # 1. DISCOVERY STAGE (Decoupled & Multi-Engine)
+            # 1. DISCOVERY STAGE (Checkpoint + Autonomous Retries)
             # ────────────────────────────────────────────────
-            urls = await self.discovery.discover(plan, max_results=8)
-
-            # Self-correction check: if no URLs discovered, ask brain to rephrase query
+            urls: list[str] = list(run.sources_found or [])
             if not urls:
-                logger.info("0 sources found, invoking Agent Brain for recovery...")
-                diagnosis = await self.brain.diagnose_and_recover(
-                    stage="discovery",
-                    error="No search results returned for query across available engines",
-                    plan=plan,
-                )
-                reasoning_trail.append({"stage": "discovery", "decision": diagnosis})
-
-                if diagnosis.get("can_recover") and diagnosis.get("new_search_query"):
-                    adjusted_plan = plan.model_copy(
-                        update={"search_query": diagnosis["new_search_query"]}
-                    )
-                    urls = await self.discovery.discover(adjusted_plan, max_results=8)
-
-            run.sources_found = urls
-            run.reasoning_log = reasoning_trail
-            self._safe_commit(db)
-
-            if not urls:
-                run.status = RunStatus.failed
-                run.error = "Discovery failed: no relevant web sources could be identified."
-                run.finished_at = datetime.now(timezone.utc)
+                run.status = RunStatus.discovering
                 self._safe_commit(db)
-                return run
+
+                current_query = plan.search_query
+                max_discovery_retries = 3
+                for attempt in range(1, max_discovery_retries + 1):
+                    search_plan = plan.model_copy(update={"search_query": current_query})
+                    urls = await self.discovery.discover(search_plan, max_results=8)
+                    if urls:
+                        break
+
+                    logger.info(f"Discovery attempt {attempt}/{max_discovery_retries} yielded 0 sources. Consulting Agent Brain...")
+                    diagnosis = await self.brain.diagnose_and_recover(
+                        stage="discovery",
+                        error=f"No search results returned for query '{current_query}' (attempt {attempt})",
+                        plan=plan,
+                    )
+                    reasoning_trail.append({"stage": "discovery", "attempt": attempt, "decision": diagnosis})
+                    run.reasoning_log = reasoning_trail
+                    self._safe_commit(db)
+
+                    if diagnosis.get("can_recover") and diagnosis.get("new_search_query"):
+                        current_query = diagnosis["new_search_query"]
+
+                    if attempt < max_discovery_retries:
+                        await asyncio.sleep(2 * attempt)
+
+                run.sources_found = urls
+                run.reasoning_log = reasoning_trail
+                self._safe_commit(db)
+
+                if not urls:
+                    run.status = RunStatus.failed
+                    run.error = "Discovery failed: no relevant web sources could be identified after multiple self-healing attempts."
+                    run.finished_at = datetime.now(timezone.utc)
+                    self._safe_commit(db)
+                    return run
+            else:
+                logger.info(f"Resuming run {run.id}: reusing {len(urls)} checkpointed discovery source(s).")
+                reasoning_trail.append({
+                    "stage": "discovery",
+                    "step": "checkpoint_reused",
+                    "message": f"Reused {len(urls)} checkpointed source URLs from previous execution state.",
+                })
+                run.reasoning_log = reasoning_trail
+                self._safe_commit(db)
 
             # ────────────────────────────────────────────────
-            # 2. RETRIEVAL STAGE (Resilient Proxy & 2-Hop Detail Links)
+            # 2. RETRIEVAL STAGE (Resilient Proxy, Checkpointing & 2-Hop Detail Links)
             # ────────────────────────────────────────────────
             run.status = RunStatus.retrieving
             self._safe_commit(db)
 
-            pages = await self.retrieval.retrieve_many(
-                urls, country_code=plan.country_code, concurrency=4
-            )
+            pages: dict[str, str | None] = {}
+            max_retrieval_retries = 3
+            target_urls = list(urls)
+
+            for attempt in range(1, max_retrieval_retries + 1):
+                missing_urls = [u for u in target_urls if not pages.get(u)]
+                if not missing_urls:
+                    break
+
+                new_pages = await self.retrieval.retrieve_many(
+                    missing_urls, country_code=plan.country_code, concurrency=4
+                )
+                pages.update(new_pages)
+
+                successful = [u for u, p in pages.items() if p]
+                if successful or attempt == max_retrieval_retries:
+                    break
+
+                logger.warning(f"Retrieval attempt {attempt}/{max_retrieval_retries} retrieved 0 pages. Pausing before self-healing retry...")
+                diagnosis = await self.brain.diagnose_and_recover(
+                    stage="retrieval",
+                    error="All target web sources failed to load or were blocked by target hosts",
+                    plan=plan,
+                    sources=target_urls,
+                )
+                reasoning_trail.append({"stage": "retrieval", "attempt": attempt, "decision": diagnosis})
+                run.reasoning_log = reasoning_trail
+                self._safe_commit(db)
+                await asyncio.sleep(3 * attempt)
 
             # Self-correction / Autonomous 2-hop navigation
             target_detail_urls: list[str] = []
@@ -189,15 +245,18 @@ class AgentOrchestrator:
 
             if len(deduped_targets) > len(urls):
                 logger.info(f"Retrieving {len(deduped_targets)} detail pages following 2-hop expansion...")
-                pages = await self.retrieval.retrieve_many(
-                    deduped_targets, country_code=plan.country_code, concurrency=4
+                new_detail_pages = await self.retrieval.retrieve_many(
+                    [u for u in deduped_targets if u not in pages or not pages.get(u)],
+                    country_code=plan.country_code,
+                    concurrency=4,
                 )
+                pages.update(new_detail_pages)
 
             run.pages_retrieved = [u for u, p in pages.items() if p]
             self._safe_commit(db)
 
             # ────────────────────────────────────────────────
-            # 3. EXTRACTION STAGE (Schema-Driven)
+            # 3. EXTRACTION STAGE (Schema-Driven & Self-Correcting)
             # ────────────────────────────────────────────────
             run.status = RunStatus.extracting
             self._safe_commit(db)
@@ -239,6 +298,9 @@ class AgentOrchestrator:
             valid_count = 0
             valid_records = []
 
+            # If resuming, clear old results for this run before saving refreshed results
+            db.query(Result).filter(Result.run_id == run.id).delete()
+
             for rec in annotated_records:
                 is_valid, errors = self.validator.validate(rec, plan)
                 if is_valid:
@@ -258,7 +320,7 @@ class AgentOrchestrator:
             run.status = RunStatus.storing
             self._safe_commit(db)
 
-            # Export sink (local file / S3 cloud storage / document dossier)
+            # Export sinks (local file / S3 cloud storage / document dossier)
             has_persisted = True
             dossier_url: str | None = None
             if valid_records:
