@@ -77,6 +77,9 @@ class SchedulerService:
             for auto in due_automations:
                 try:
                     logger.info(f"Triggering scheduled execution for automation {auto.id}...")
+                    # Advance or clear next_run_at in DB immediately to prevent duplicate triggers on next tick
+                    auto.next_run_at = None
+                    db.commit()
                     # Execute asynchronously
                     asyncio.create_task(self._run_single_automation(auto.id))
                 except Exception as e:  # noqa: BLE001
