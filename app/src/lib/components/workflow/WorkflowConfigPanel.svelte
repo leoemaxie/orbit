@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X, Sliders, Activity } from '@lucide/svelte';
+	import { X, Sliders, Activity, Save } from '@lucide/svelte';
 	import { api } from '$lib/api/client';
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { WorkflowNodeData } from './types';
@@ -38,27 +38,25 @@
 </script>
 
 {#if node}
-	<aside class="w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 shadow-2xl shrink-0 h-[640px]">
-		<!-- Header -->
-		<div class="flex items-center justify-between border-b border-white/10 pb-3">
+	<aside class="w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl shrink-0 max-h-[640px] h-fit">
+		<!-- Header with Title & Mode -->
+		<div class="flex items-center justify-between border-b border-white/10 pb-2.5">
 			<div class="flex items-center gap-2 min-w-0">
-				<Sliders size={15} class="text-orbit-cyan shrink-0" />
+				<Sliders size={14} class="text-orbit-cyan shrink-0" />
 				<h3 class="text-xs font-bold text-white uppercase tracking-wider truncate font-mono">{node.label}</h3>
+				<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface-800 text-orbit-cyan border border-white/10">
+					{node.config.mode || 'both'}
+				</span>
 			</div>
 			<button type="button" onclick={onClose} class="p-1 rounded text-slate-400 hover:text-white hover:bg-surface-800 transition-colors" title="Close inspector">
-				<X size={15} />
+				<X size={14} />
 			</button>
 		</div>
 
-		<div class="flex items-center justify-between gap-2">
-			<span class="text-[10px] font-mono text-slate-400 truncate">{node.description}</span>
-			<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-800 text-orbit-cyan border border-white/10 shrink-0">
-				{node.config.mode || 'both'}
-			</span>
-		</div>
+		<p class="text-[11px] font-mono text-slate-400 leading-tight">{node.description}</p>
 
-		<!-- Form Fields Scroll Area -->
-		<div class="flex-1 overflow-y-auto space-y-3 font-mono text-xs pr-1 custom-scrollbar">
+		<!-- Form Fields Compact Area -->
+		<div class="overflow-y-auto max-h-[380px] space-y-2.5 font-mono text-xs pr-1 custom-scrollbar">
 			{#each Object.entries(configState) as [key, value]}
 				{#if key !== 'mode'}
 					<div class="space-y-1">
@@ -87,14 +85,15 @@
 			</div>
 		{/if}
 
-		<!-- Footer Action Buttons -->
-		<div class="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+		<!-- Action Buttons Directly Beneath Fields -->
+		<div class="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
 			<Button variant="secondary" size="sm" loading={testing} onclick={handleTestConnection}>
 				<Activity size={12} />
 				<span>Test Probe</span>
 			</Button>
 			<Button variant="primary" size="sm" onclick={() => onSave(configState)}>
-				Save Settings
+				<Save size={12} />
+				<span>Save Settings</span>
 			</Button>
 		</div>
 	</aside>

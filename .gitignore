@@ -17,3 +17,7 @@ BUILD.txt
 **/BUILD.txt
 exports/
 **/exports/
+deps.sh
+**/deps.sh
+deploy.sh
+**/deploy.sh
