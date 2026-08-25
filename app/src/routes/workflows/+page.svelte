@@ -76,8 +76,6 @@
 	<WorkflowHeader
 		onDeploy={handleDeploy}
 		onReset={() => (nodes = JSON.parse(JSON.stringify(initialNodes)))}
-		onTogglePalette={() => (paletteOpen = !paletteOpen)}
-		{paletteOpen}
 		{deploying}
 	/>
 
@@ -91,6 +89,8 @@
 				{nodes}
 				{edges}
 				{selectedNode}
+				{paletteOpen}
+				onTogglePalette={() => (paletteOpen = !paletteOpen)}
 				onSelectNode={(n) => (selectedNode = n)}
 				onDeleteNode={handleDeleteNode}
 				onDropNewNode={handleDropNewNode}

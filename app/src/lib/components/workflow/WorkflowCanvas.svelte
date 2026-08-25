@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { PanelLeftOpen } from '@lucide/svelte';
 	import WorkflowNode from './WorkflowNode.svelte';
 	import WorkflowConnections from './WorkflowConnections.svelte';
 	import type { WorkflowNodeData, WorkflowEdge, NodeTemplate } from './types';
@@ -7,13 +8,15 @@
 		nodes: WorkflowNodeData[];
 		edges: WorkflowEdge[];
 		selectedNode: WorkflowNodeData | null;
+		paletteOpen?: boolean;
+		onTogglePalette?: () => void;
 		onSelectNode: (node: WorkflowNodeData) => void;
 		onDeleteNode: (id: string) => void;
 		onDropNewNode: (template: NodeTemplate, x: number, y: number) => void;
 		onUpdateNodePosition: (id: string, x: number, y: number) => void;
 	}
 
-	let { nodes, edges, selectedNode, onSelectNode, onDeleteNode, onDropNewNode, onUpdateNodePosition }: Props = $props();
+	let { nodes, edges, selectedNode, paletteOpen = true, onTogglePalette, onSelectNode, onDeleteNode, onDropNewNode, onUpdateNodePosition }: Props = $props();
 
 	let canvasEl: HTMLDivElement;
 	let draggingNodeId = $state<string | null>(null);
@@ -68,13 +71,22 @@
 	aria-label="Workflow Canvas"
 	class="relative flex-1 min-h-[640px] h-[640px] bg-surface-950/90 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md select-none"
 >
-	<!-- Blueprint Grid Backdrop -->
 	<div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
 
-	<!-- SVG Curve Connections Layer -->
+	<!-- Floating In-Canvas Open Library Dock Button -->
+	{#if !paletteOpen && onTogglePalette}
+		<button
+			type="button"
+			onclick={onTogglePalette}
+			class="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl bg-surface-900/90 hover:bg-surface-800 border border-white/15 hover:border-orbit-cyan/60 text-xs font-mono text-slate-200 shadow-xl backdrop-blur-md flex items-center gap-2 transition-all hover:scale-105"
+		>
+			<PanelLeftOpen size={14} class="text-orbit-cyan" />
+			<span>Adapter Library</span>
+		</button>
+	{/if}
+
 	<WorkflowConnections {nodes} {edges} />
 
-	<!-- Interactive Placed Nodes -->
 	{#each nodes as node (node.id)}
 		<WorkflowNode
 			{node}
@@ -84,11 +96,4 @@
 			onDragNodeStart={handleDragNodeStart}
 		/>
 	{/each}
-
-	{#if nodes.length === 0}
-		<div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 pointer-events-none">
-			<p class="text-sm font-medium">Canvas is empty</p>
-			<p class="text-xs font-mono text-slate-600 mt-1">Drag adapters from the sidebar to assemble your pipeline</p>
-		</div>
-	{/if}
 </div>

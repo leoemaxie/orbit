@@ -3,39 +3,45 @@ import asyncio
 import httpx
 
 from core.config.settings import get_settings
+from core.pipeline.retrieval.direct import DirectHttpRetrieval
 
 
 class ProxyRetrieval:
-    """Resilient proxy and unlocker-based page retrieval (returns clean markdown)."""
+    """Resilient proxy and unlocker-based page retrieval with automatic direct HTTP fallback."""
 
     def __init__(self):
         self.settings = get_settings()
+        self.direct_fallback = DirectHttpRetrieval()
 
     async def retrieve_one(self, url: str, country_code: str | None = None) -> str | None:
-        if not self.settings.retrieval_api_key or not self.settings.retrieval_zone:
-            raise ValueError("RETRIEVAL_API_KEY (or BRIGHTDATA_API_KEY) or RETRIEVAL_ZONE is not configured.")
+        if self.settings.retrieval_api_key and self.settings.retrieval_zone:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {self.settings.retrieval_api_key}",
+                    "Content-Type": "application/json",
+                }
 
-        headers = {
-            "Authorization": f"Bearer {self.settings.retrieval_api_key}",
-            "Content-Type": "application/json",
-        }
+                payload = {
+                    "zone": self.settings.retrieval_zone,
+                    "url": url,
+                    "format": "raw",
+                    "data_format": "markdown",
+                }
 
-        payload = {
-            "zone": self.settings.retrieval_zone,
-            "url": url,
-            "format": "raw",
-            "data_format": "markdown",
-        }
+                if country_code:
+                    payload["country"] = country_code.lower()
 
-        if country_code:
-            payload["country"] = country_code.lower()
+                request_url = f"{self.settings.retrieval_base_url}/request"
 
-        request_url = f"{self.settings.retrieval_base_url}/request"
+                async with httpx.AsyncClient(timeout=45.0) as client:
+                    resp = await client.post(request_url, headers=headers, json=payload)
+                    if resp.status_code == 200 and resp.text:
+                        return resp.text
+            except Exception:  # noqa: BLE001
+                pass
 
-        async with httpx.AsyncClient(timeout=75.0) as client:
-            resp = await client.post(request_url, headers=headers, json=payload)
-            resp.raise_for_status()
-            return resp.text
+        # Automatic resilient fallback to Direct HTTP retrieval
+        return await self.direct_fallback.retrieve_one(url, country_code=country_code)
 
     async def retrieve_many(
         self, urls: list[str], country_code: str | None = None, concurrency: int = 5
