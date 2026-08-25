@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg2://orbit:orbit@localhost:5432/orbit"
     enable_scheduler: bool = True
     default_webhook_url: str | None = None
+    webhook_signing_secret: str = Field("orbit-webhook-secret-key", validation_alias=AliasChoices("WEBHOOK_SIGNING_SECRET", "WEBHOOK_SECRET"))
 
     # Document Processing (Provider-Agnostic)
     document_converter_api_key: str = Field("", validation_alias=AliasChoices("DOCUMENT_CONVERTER_API_KEY", "FOXIT_API_KEY"))
