@@ -10,11 +10,12 @@ def test_get_workflow_topology():
     data = response.json()
     assert isinstance(data, list)
     assert len(data) >= 7
-    categories = [node["category"] for node in data]
-    assert "trigger" in categories
-    assert "parsing" in categories
-    assert "storage" in categories
-    assert "notify" in categories
+
+    # Verify modes are serialized properly
+    modes = [node.get("mode") for node in data]
+    assert "managed" in modes
+    assert "both" in modes
+    assert "custom" in modes
 
 
 def test_deploy_workflow():
@@ -29,3 +30,15 @@ def test_deploy_workflow():
     res = response.json()
     assert res["status"] == "deployed"
     assert "2 active adapter stages" in res["message"]
+
+
+def test_test_adapter_connection_api():
+    payload = {
+        "adapter_id": "7",
+        "config": {"bucket_name": "orbit-production"}
+    }
+    response = client.post("/api/v1/workflows/test-connection", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert "orbit-production" in data["message"]

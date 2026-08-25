@@ -54,6 +54,12 @@ export class ApiClient {
 			body: JSON.stringify({ nodes })
 		});
 	}
+	async testAdapterConnection(adapterId: string, config: Record<string, any>): Promise<{ success: boolean; message: string }> {
+		return this.request<{ success: boolean; message: string }>('/workflows/test-connection', {
+			method: 'POST',
+			body: JSON.stringify({ adapter_id: adapterId, config })
+		});
+	}
 }
 
 export const api = new ApiClient();
