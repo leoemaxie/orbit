@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from core.adapters.base import DocumentGenerator, DocumentParser, DocumentRedactor
 from core.adapters.documents.factory import DocumentAdapterFactory
+from core.adapters.storage.database_sink import DatabaseExportSink
 from core.adapters.storage.local_export import LocalFileExportSink
 from core.adapters.storage.s3_export import S3ExportSink
 from core.agent.brain import AgentBrain
@@ -49,6 +50,7 @@ class AgentOrchestrator:
     doc_generator: DocumentGenerator
     doc_redactor: DocumentRedactor
     s3_sink: S3ExportSink
+    db_sink: DatabaseExportSink
 
     def __init__(
         self,
@@ -67,6 +69,7 @@ class AgentOrchestrator:
         doc_generator: DocumentGenerator | None = None,
         doc_redactor: DocumentRedactor | None = None,
         s3_sink: S3ExportSink | None = None,
+        db_sink: DatabaseExportSink | None = None,
     ):
         self.discovery = discovery or CompositeDiscovery()
         self.retrieval = retrieval or ProxyRetrieval()
@@ -83,6 +86,7 @@ class AgentOrchestrator:
         self.doc_generator = doc_generator or DocumentAdapterFactory.get_generator()
         self.doc_redactor = doc_redactor or DocumentAdapterFactory.get_redactor()
         self.s3_sink = s3_sink or S3ExportSink()
+        self.db_sink = db_sink or DatabaseExportSink()
 
     def _safe_commit(self, db: Session) -> None:
         """Safely commits changes with retry on dropped or timed-out idle database connections."""
@@ -338,6 +342,9 @@ class AgentOrchestrator:
                     )
                     await self.s3_sink.export_results(
                         automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
+                    )
+                    await self.db_sink.export_results(
+                        automation.id, run.id, valid_records
                     )
                     dossier_url = self.s3_sink.generate_presigned_url(automation.id, run.id, "dossier.pdf")
                 except Exception as e:  # noqa: BLE001
