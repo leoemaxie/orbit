@@ -15,3 +15,5 @@ bin/
 .zed/
 BUILD.txt
 **/BUILD.txt
+exports/
+**/exports/

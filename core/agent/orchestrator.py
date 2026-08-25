@@ -12,8 +12,8 @@ from core.adapters.storage.local_export import LocalFileExportSink
 from core.adapters.storage.s3_export import S3ExportSink
 from core.agent.brain import AgentBrain
 from core.agent.condition import ConditionEvaluator
-from core.api.serializers import sanitize_error_message
 from core.db.orm import Automation, Result, Run
+from core.utils.sanitizer import sanitize_error_message
 from core.events.bus import event_bus
 from core.events.types import OrbitEvent
 from core.models.enums import Frequency, RunStatus
@@ -256,30 +256,33 @@ class AgentOrchestrator:
             self._safe_commit(db)
 
             # ────────────────────────────────────────────────
-            # 3. EXTRACTION STAGE (Schema-Driven & Self-Correcting)
+            # 3. EXTRACTION STAGE (Schema-Driven & Concurrent)
             # ────────────────────────────────────────────────
             run.status = RunStatus.extracting
             self._safe_commit(db)
 
             extracted_records: list[dict[str, Any]] = []
+            valid_pages = [(u, c) for u, c in pages.items() if c]
 
-            for url, content in pages.items():
-                if not content:
-                    continue
+            if valid_pages:
+                extract_sem = asyncio.Semaphore(4)
 
-                record = await self.extractor.extract(url, content, plan)
+                async def _extract_page(u: str, c: str) -> dict[str, Any]:
+                    async with extract_sem:
+                        return await self.extractor.extract(u, c, plan)
 
-                # Self-correction check: if extraction completely failed, ask brain for fallback strategy
-                if not record.get("extracted", True):
-                    diagnosis = await self.brain.diagnose_and_recover(
-                        stage="extraction",
-                        error=f"Empty extraction payload from {url}",
-                        plan=plan,
-                        sources=[url],
-                    )
-                    reasoning_trail.append({"stage": "extraction", "url": url, "decision": diagnosis})
+                extracted_records = list(await asyncio.gather(*(_extract_page(u, c) for u, c in valid_pages)))
 
-                extracted_records.append(record)
+            # If 0 records were successfully extracted, invoke brain once for diagnostic recovery
+            successful_records = [r for r in extracted_records if r.get("extracted", True)]
+            if not successful_records and valid_pages:
+                diagnosis = await self.brain.diagnose_and_recover(
+                    stage="extraction",
+                    error="All retrieved pages yielded empty extraction payloads against target schema",
+                    plan=plan,
+                    sources=[u for u, _ in valid_pages],
+                )
+                reasoning_trail.append({"stage": "extraction", "decision": diagnosis})
 
             run.extracted_count = len(extracted_records)
             self._safe_commit(db)
