@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X, Check, Sliders, Activity, ShieldCheck } from '@lucide/svelte';
+	import { X, Sliders, Activity } from '@lucide/svelte';
 	import { api } from '$lib/api/client';
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { WorkflowNodeData } from './types';
@@ -38,31 +38,35 @@
 </script>
 
 {#if node}
-	<div class="bg-surface-900 border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
+	<aside class="w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 shadow-2xl shrink-0 h-[640px]">
+		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-white/10 pb-3">
-			<div class="flex items-center gap-2">
-				<Sliders size={16} class="text-orbit-cyan" />
-				<h3 class="text-sm font-semibold text-white">{node.label}</h3>
-				<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-800 text-slate-300 border border-white/10">
-					{node.config.mode || 'both'}
-				</span>
+			<div class="flex items-center gap-2 min-w-0">
+				<Sliders size={15} class="text-orbit-cyan shrink-0" />
+				<h3 class="text-xs font-bold text-white uppercase tracking-wider truncate font-mono">{node.label}</h3>
 			</div>
-			<button type="button" onclick={onClose} class="p-1 rounded text-slate-400 hover:text-white transition-colors">
-				<X size={16} />
+			<button type="button" onclick={onClose} class="p-1 rounded text-slate-400 hover:text-white hover:bg-surface-800 transition-colors" title="Close inspector">
+				<X size={15} />
 			</button>
 		</div>
 
-		<p class="text-xs text-slate-400 font-mono">{node.description}</p>
+		<div class="flex items-center justify-between gap-2">
+			<span class="text-[10px] font-mono text-slate-400 truncate">{node.description}</span>
+			<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-800 text-orbit-cyan border border-white/10 shrink-0">
+				{node.config.mode || 'both'}
+			</span>
+		</div>
 
-		<div class="space-y-3 font-mono text-xs">
+		<!-- Form Fields Scroll Area -->
+		<div class="flex-1 overflow-y-auto space-y-3 font-mono text-xs pr-1 custom-scrollbar">
 			{#each Object.entries(configState) as [key, value]}
 				{#if key !== 'mode'}
 					<div class="space-y-1">
-						<label for={key} class="text-[11px] uppercase text-slate-400 font-semibold">{key.replace(/_/g, ' ')}</label>
+						<label for={key} class="text-[10px] uppercase text-slate-400 font-semibold">{key.replace(/_/g, ' ')}</label>
 						{#if typeof value === 'boolean'}
-							<div class="flex items-center gap-3 pt-1">
+							<div class="flex items-center gap-3 pt-0.5">
 								<input type="checkbox" id={key} bind:checked={configState[key]} class="w-4 h-4 rounded bg-surface-800 border-white/20 text-orbit-cyan cursor-pointer" />
-								<span class="text-slate-300">{configState[key] ? 'Enabled' : 'Disabled'}</span>
+								<span class="text-slate-300 text-xs">{configState[key] ? 'Enabled' : 'Disabled'}</span>
 							</div>
 						{:else}
 							<input
@@ -78,19 +82,20 @@
 		</div>
 
 		{#if testResult}
-			<div class="p-2.5 rounded-lg text-xs font-mono border {testResult.success ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
+			<div class="p-2 rounded-lg text-[11px] font-mono border {testResult.success ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
 				{testResult.message}
 			</div>
 		{/if}
 
-		<div class="pt-3 border-t border-white/10 flex items-center justify-between">
+		<!-- Footer Action Buttons -->
+		<div class="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
 			<Button variant="secondary" size="sm" loading={testing} onclick={handleTestConnection}>
-				<Activity size={13} />
-				<span>Test Connection</span>
+				<Activity size={12} />
+				<span>Test Probe</span>
 			</Button>
 			<Button variant="primary" size="sm" onclick={() => onSave(configState)}>
 				Save Settings
 			</Button>
 		</div>
-	</div>
+	</aside>
 {/if}

@@ -73,12 +73,12 @@
 		{deploying}
 	/>
 
-	<div class="flex flex-col lg:flex-row items-start gap-6">
+	<div class="flex flex-col lg:flex-row items-start gap-4">
 		{#if paletteOpen}
 			<WorkflowPalette onAddNode={handleAddNode} onClose={() => (paletteOpen = false)} />
 		{/if}
 
-		<div class="flex-1 w-full space-y-4 min-w-0">
+		<div class="flex-1 w-full min-w-0">
 			<WorkflowCanvas
 				{nodes}
 				{edges}
@@ -90,17 +90,17 @@
 				onDropNewNode={handleDropNewNode}
 				onUpdateNodePosition={handleUpdatePosition}
 			/>
-
-			{#if selectedNode}
-				<WorkflowConfigPanel
-					node={selectedNode}
-					onClose={() => (selectedNode = null)}
-					onSave={(cfg) => {
-						const idx = nodes.findIndex((n) => n.id === selectedNode?.id);
-						if (idx !== -1) { nodes[idx].config = cfg; selectedNode = { ...nodes[idx] }; }
-					}}
-				/>
-			{/if}
 		</div>
+
+		{#if selectedNode}
+			<WorkflowConfigPanel
+				node={selectedNode}
+				onClose={() => (selectedNode = null)}
+				onSave={(cfg) => {
+					const idx = nodes.findIndex((n) => n.id === selectedNode?.id);
+					if (idx !== -1) { nodes[idx].config = cfg; selectedNode = { ...nodes[idx] }; }
+				}}
+			/>
+		{/if}
 	</div>
 </div>
