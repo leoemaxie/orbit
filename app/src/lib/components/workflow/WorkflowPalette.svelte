@@ -22,7 +22,7 @@
 		{ typeId: 's3_storage', label: 'Amazon S3 Storage', category: 'storage', adapterType: 'custom', iconName: 'Cloud', description: 'Upload JSON and reports to S3 bucket', defaultConfig: { bucket_name: 'orbit-exports', region: 'us-east-1' } },
 		{ typeId: 'sql_database', label: 'Database', category: 'storage', adapterType: 'custom', iconName: 'Database', description: 'Stream records to PostgreSQL, MySQL, or SQLite', defaultConfig: { database_url: 'postgresql://user:pass@localhost:5432/orbit_warehouse', table_name: 'extracted_data', upsert_key: 'id' } },
 		{ typeId: 'slack_alert', label: 'Slack Notifications', category: 'notify', adapterType: 'custom', iconName: 'MessageSquare', description: 'Slack channel alerts with report links', defaultConfig: { webhook_enabled: true, channel: '#orbit-alerts' } },
-		{ typeId: 'email_alert', label: 'Email Notifications', category: 'notify', adapterType: 'custom', iconName: 'Mail', description: 'Executive email alerts & summary briefings', defaultConfig: { recipient_email: 'team@company.com', smtp_host: 'smtp.sendgrid.net', notify_on_anomaly: true } }
+		{ typeId: 'email_alert', label: 'Email Notifications', category: 'notify', adapterType: 'both', iconName: 'Mail', description: 'Executive email alerts & summary briefings', defaultConfig: { recipient_email: 'team@company.com', notify_on_anomaly: true } }
 	];
 
 	const filteredTemplates = $derived(

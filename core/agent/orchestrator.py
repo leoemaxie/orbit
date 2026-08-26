@@ -371,10 +371,23 @@ class AgentOrchestrator:
                 if matched:
                     run.status = RunStatus.alerting
                     self._safe_commit(db)
+
+                    # Extract target recipient email if configured on workflow nodes
+                    recipient_email = None
+                    if plan.workflow_nodes:
+                        for node in plan.workflow_nodes:
+                            if node.get("typeId") in ("email_alert", "email") or node.get("category") == "notify":
+                                recipient_email = node.get("config", {}).get("recipient_email")
+                                if recipient_email:
+                                    break
+
                     await self.notifier.notify(
                         title=f"Orbit Alert: {plan.objective}",
                         message=cond_msg,
                         payload={"automation_id": automation.id, "run_id": run.id, "dossier_url": dossier_url},
+                        channel=plan.notification_channel,
+                        recipient_email=recipient_email,
+                        dossier_url=dossier_url,
                     )
 
             # ────────────────────────────────────────────────

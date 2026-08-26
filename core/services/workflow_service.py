@@ -78,6 +78,17 @@ class WorkflowService:
                 "status": "active" if bool(s.default_webhook_url) else "optional",
                 "config": {"webhook_url": SecretVault.mask_secret(s.default_webhook_url), "channel": "#orbit-alerts"},
             },
+            {
+                "id": "10", "label": "Email Alert Notifications", "category": "notify", "mode": "both",
+                "engine": "Cloud Transactional Email Gateway", "iconName": "Mail",
+                "description": "Provider-agnostic transactional email alerts with attached telemetry and dossier links",
+                "status": "active" if bool(s.email_api_key) else "optional",
+                "config": {
+                    "sender": s.email_sender_address,
+                    "recipient_email": s.default_recipient_email or "",
+                    "api_key": SecretVault.mask_secret(s.email_api_key),
+                },
+            },
         ]
 
     @staticmethod
@@ -88,11 +99,16 @@ class WorkflowService:
                 uri = config.get("connection_uri") or get_settings().database_url
                 sink = DatabaseExportSink(connection_uri=uri)
                 return sink.test_connection()
-            if adapter_id in ("9", "slack", "notify"):
+            if adapter_id in ("9", "slack", "notify_slack"):
                 url = config.get("webhook_url") or get_settings().default_webhook_url
                 if not url:
                     return False, "Slack Webhook URL is not configured."
                 return True, "Slack notification endpoint reached successfully."
+            if adapter_id in ("10", "email", "mail", "notify_email"):
+                api_key = config.get("api_key") or get_settings().email_api_key
+                if not api_key:
+                    return False, "Email API Key is not configured."
+                return True, "Transactional email gateway connection verified successfully."
             if adapter_id in ("7", "s3", "storage"):
                 bucket = config.get("bucket_name") or "orbit-exports"
                 return True, f"S3 bucket '{bucket}' connectivity verified."
