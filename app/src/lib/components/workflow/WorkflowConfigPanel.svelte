@@ -14,12 +14,14 @@
 	let configState = $state<Record<string, any>>({});
 	let testing = $state(false);
 	let testResult = $state<{ success: boolean; message: string } | null>(null);
+	let saving = $state(false);
 	let saved = $state(false);
 
 	$effect(() => {
 		if (node) {
 			configState = { ...node.config };
 			testResult = null;
+			saving = false;
 			saved = false;
 		}
 	});
@@ -39,18 +41,21 @@
 	}
 
 	async function handleSave() {
-		if (node) {
-			try {
-				await api.saveAdapterConfig(node.id, configState);
-			} catch (e: any) {
-				console.warn('Adapter config save warning:', e);
-			}
+		if (!node || saving) return;
+		saving = true;
+		saved = false;
+		try {
+			await api.saveAdapterConfig(node.id, configState);
+		} catch (e: any) {
+			console.warn('Adapter config save warning:', e);
+		} finally {
+			onSave(configState);
+			saving = false;
+			saved = true;
+			setTimeout(() => {
+				saved = false;
+			}, 2500);
 		}
-		onSave(configState);
-		saved = true;
-		setTimeout(() => {
-			saved = false;
-		}, 2000);
 	}
 </script>
 
@@ -127,6 +132,8 @@
 			<Button
 				variant={saved ? 'secondary' : 'primary'}
 				size="sm"
+				loading={saving}
+				disabled={saving}
 				onclick={handleSave}
 				class={saved ? 'border-emerald-500/40 text-emerald-300 bg-emerald-950/30' : ''}
 			>
