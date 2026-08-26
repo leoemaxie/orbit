@@ -25,31 +25,35 @@ All adapters, pipeline steps, settings, and functions must remain **strictly pro
 
 ---
 
-## 2. Managed vs. Custom Adapter Architecture
+## 2. Managed vs. Custom & Destination Sink Scoping
 
-Orbit adapters generally operate in one of two modes (or support both):
+Orbit adapters operate under clean separation between platform execution credentials and user destination sinks:
 
-1. **Managed Mode (`managed`):**
-   * The platform handles provider authentication and credentials automatically using default daemon settings (e.g., `EMAIL_API_KEY`, `RETRIEVAL_API_KEY`).
-   * End-users only supply operational configuration (e.g., `recipient_email`, `search_query`) without managing third-party accounts or API keys.
+1. **Platform Execution Credentials (Daemon `.env`):**
+   * Shared outbound engine keys (`LLM_API_KEY`, `RETRIEVAL_API_KEY`, `SEARCH_ENGINE_API_KEY`, `DOCUMENT_CONVERTER_API_KEY`, `EMAIL_API_KEY`).
+   * Managed by the platform administrator for headless execution.
 
-2. **Custom Mode (`custom`):**
-   * The user or mission supplies their own custom API keys, endpoints, or target infrastructure (e.g., custom S3 bucket, private PostgreSQL URI, custom webhook URL).
+2. **Destination Sink Scoping (Per-Node / Per-Mission):**
+   * Destination endpoints (`recipient_email`, `webhook_url`, `slack_webhook_url`, `s3_access_key`) must **never** be hardcoded as daemon-level environment variables (e.g. do NOT use `DEFAULT_RECIPIENT_EMAIL` or `DEFAULT_WEBHOOK_URL`).
+   * User destination sinks belong strictly in the mission's DAG node configuration or must be elicited via `MissingParameter`.
 
 3. **Hybrid Mode (`both`):**
-   * Adapters like Email Notifications, Outbound Webhooks, and Document Processing default to managed execution while allowing optional custom credential overrides per node.
+   * Adapters like Email Notifications and Document Processing default to managed execution while allowing optional custom credential overrides per node.
 
 ---
 
-## 3. Configuration & Settings Standard
+## 3. Configuration, Pydantic & Type Safety Standards
 
-* Always use explicit `default="..."` or `default_factory=...` in Pydantic `Field(...)` declarations inside `core/config/settings.py`.
-* Provide multi-alias support with `validation_alias=AliasChoices(...)` using provider-agnostic aliases (e.g. `AliasChoices("EMAIL_API_KEY", "MAIL_API_KEY", "SMTP_API_KEY")`).
-* Ensure all sensitive keys (passwords, secrets, tokens) are masked in UI and diagnostic logs using `SecretVault.mask_secret(...)`.
+* **Explicit Defaults:** Always use explicit `default="..."` or `default_factory=...` in Pydantic `Field(...)` declarations inside `core/config/settings.py` for Pyright and Uvicorn compatibility.
+* **Multi-Alias Support:** Use `validation_alias=AliasChoices(...)` with provider-agnostic aliases (e.g. `AliasChoices("EMAIL_API_KEY", "MAIL_API_KEY", "SMTP_API_KEY")`).
+* **Secret Masking:** Ensure all sensitive keys (passwords, secrets, tokens) are masked in UI and diagnostic logs using `SecretVault.mask_secret(...)`.
+* **Exception Safety:** When catching third-party client exceptions (e.g. `httpx.HTTPError`), safely inspect attributes with `getattr(err, "response", None)` before accessing nested fields like `status_code`.
+* **Enum Integrity:** Verify that run statuses match valid enum members (e.g., `RunStatus.verified`).
 
 ---
 
 ## 4. Code & Commit Hygiene
 
-* Use **Conventional Commits** for all git commit messages (`feat(...)`, `fix(...)`, `refactor(...)`, `test(...)`, `chore(...)`).
-* Always maintain documentation integrity across docstrings and environment templates (`.env.example` and `core/.env.example`).
+* **Conventional Commits:** Use standard Conventional Commit prefixes (`feat(...)`, `fix(...)`, `refactor(...)`, `test(...)`, `chore(...)`).
+* **Intent-Driven Messages:** Summarize architectural intent and system impact; avoid verbose enumerations of individual variable names.
+* **Documentation & CI Sync:** Keep `.env.example`, `core/.env.example`, and `.github/workflows/` synchronized with codebase changes.
