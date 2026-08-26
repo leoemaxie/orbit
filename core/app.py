@@ -24,7 +24,15 @@ logger = logging.getLogger("core.app")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database schemas and tables verified successfully.")
+    except Exception as e:
+        logger.warning(
+            "Database connection failed during startup (%s). Ensure PostgreSQL is running on port 5432 or set DATABASE_URL=sqlite:///./orbit.db in your .env file.",
+            e,
+        )
+
     settings = get_settings()
     if settings.enable_scheduler:
         scheduler_service.start(check_interval_seconds=30)
