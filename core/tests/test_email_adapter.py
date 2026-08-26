@@ -127,6 +127,19 @@ async def test_email_adapter_test_managed_connection():
         assert "successfully dispatched" in msg_with_key
         assert "admin@company.com" in msg_with_key
 
+    # Error reporting test
+    mock_err_resp = MagicMock(status_code=403, text='{"message": "domain not verified"}', json=lambda: {"message": "domain not verified"})
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_err_resp
+        ok_fail, msg_fail = await EmailNotificationAdapter.test_managed_connection(
+            recipient_email="admin@company.com",
+            api_key="valid_token",
+            base_url="https://api.resend.com/emails",
+        )
+        assert ok_fail is False
+        assert "HTTP 403" in msg_fail
+        assert "domain not verified" in msg_fail
+
 
 def test_email_adapter_test_smtp_connection_missing_host():
     ok, msg = EmailNotificationAdapter.test_smtp_connection(host="")

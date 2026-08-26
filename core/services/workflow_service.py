@@ -96,7 +96,7 @@ class WorkflowService:
                     "mode": "managed",
                     "recipient_email": "team@company.com",
                     "notify_on_anomaly": True,
-                    "sender_address": "alerts@company.com",
+                    "sender_address": s.email_sender_address or "Orbit Alerts <alerts@orbit.dev>",
                     "smtp_host": "smtp.mailgun.org",
                     "smtp_port": 587,
                     "smtp_username": "",
@@ -182,8 +182,14 @@ class WorkflowService:
                     if "••••" in api_key or not api_key:
                         saved_key = cls._custom_adapter_configs.get(str(adapter_id), {}).get("api_key")
                         api_key = saved_key if saved_key and "••••" not in saved_key else get_settings().email_api_key
-                    sender = config.get("sender_address") or get_settings().email_sender_address
-                    base_url = config.get("base_url") or get_settings().email_base_url
+                    cfg_sender = str(config.get("sender_address") or "").strip().strip("'\"")
+                    daemon_sender = get_settings().email_sender_address
+                    sender = cfg_sender if (cfg_sender and cfg_sender not in ("alerts@company.com", "alerts@yourdomain.com", "alerts@orbit.dev")) else daemon_sender
+
+                    cfg_url = str(config.get("base_url") or "").strip().strip("'\"")
+                    daemon_url = get_settings().email_base_url
+                    base_url = cfg_url if (cfg_url and cfg_url != "https://api.orbit.dev/v1/emails") else daemon_url
+
                     return await EmailNotificationAdapter.test_managed_connection(
                         recipient_email=recipient,
                         api_key=api_key,

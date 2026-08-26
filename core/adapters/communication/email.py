@@ -22,14 +22,15 @@ class EmailNotificationAdapter:
     ) -> tuple[bool, str]:
         """Tests connection and credentials for the managed outbound email gateway by sending a test email."""
         settings = get_settings()
-        key = api_key or settings.email_api_key
-        url = base_url or settings.email_base_url or "https://api.orbit.dev/v1/emails"
-        sender = sender_address or settings.email_sender_address or "Orbit Alerts <alerts@orbit.dev>"
+        key = (api_key or settings.email_api_key or "").strip().strip("'\"")
+        url = (base_url or settings.email_base_url or "https://api.orbit.dev/v1/emails").strip().strip("'\"")
+        sender = (sender_address or settings.email_sender_address or "Orbit Alerts <alerts@orbit.dev>").strip().strip("'\"")
 
         if not key:
-            return False, "Managed Email API Key is not configured on daemon (missing EMAIL_API_KEY)."
+            return False, "Managed Email API Key is not configured on daemon (missing EMAIL_API_KEY in .env)."
 
-        if not recipient_email or "@" not in recipient_email:
+        recipient = str(recipient_email or "").strip().strip("'\"")
+        if not recipient or "@" not in recipient:
             return False, "A valid recipient email address is required (e.g. team@company.com)."
 
         adapter = cls(api_key=key, sender_address=sender, base_url=url, max_retries=1)
@@ -37,27 +38,53 @@ class EmailNotificationAdapter:
         html_body = adapter._render_html_template(
             title="Connection Probe Verified",
             message="This is a test notification dispatched by Orbit to verify that your managed transactional email adapter is functioning correctly.",
-            payload={"gateway_status": "operational", "recipient": recipient_email},
+            payload={"gateway_status": "operational", "recipient": recipient},
         )
         text_body = adapter._render_text_template(
             title="Connection Probe Verified",
             message="This is a test notification dispatched by Orbit to verify that your managed transactional email adapter is functioning correctly.",
-            payload={"gateway_status": "operational", "recipient": recipient_email},
+            payload={"gateway_status": "operational", "recipient": recipient},
         )
 
-        sent = await adapter.send_email(
-            to=recipient_email,
-            subject=subject,
-            html_body=html_body,
-            text_body=text_body,
-            custom_api_key=key,
-            custom_sender=sender,
-            custom_base_url=url,
-        )
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "User-Agent": "Orbit-Email-Adapter/1.0",
+        }
+        payload: dict[str, Any] = {
+            "from": sender,
+            "to": [recipient],
+            "subject": subject,
+            "html": html_body,
+            "text": text_body,
+        }
 
-        if sent:
-            return True, f"Test probe email successfully dispatched to '{recipient_email}'."
-        return False, f"Failed to deliver test email to '{recipient_email}'. Please verify EMAIL_API_KEY."
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(url, headers=headers, json=payload)
+                if resp.status_code in (200, 201, 202):
+                    logger.info("Test probe email dispatched successfully to %s via %s", recipient, url)
+                    return True, f"Test probe email successfully dispatched to '{recipient}' via {url}."
+
+                # Detailed error diagnostics
+                err_text = resp.text.strip()
+                try:
+                    err_json = resp.json()
+                    detail = err_json.get("message") or err_json.get("error") or err_text
+                except Exception:
+                    detail = err_text or resp.reason_phrase
+
+                logger.error("Managed email delivery failed [%s]: %s (sender: %s, url: %s)", resp.status_code, detail, sender, url)
+                return False, f"Email gateway returned HTTP {resp.status_code} ({url}): {detail}"
+        except httpx.ConnectError as ce:
+            logger.error("Email gateway connection error: %s (url: %s)", ce, url)
+            return False, f"Could not connect to email gateway at '{url}': {ce}"
+        except httpx.TimeoutException:
+            logger.error("Email gateway timed out (url: %s)", url)
+            return False, f"Email gateway timed out after 15s (url: '{url}')."
+        except Exception as e:
+            logger.exception("Unexpected error during email probe")
+            return False, f"Email probe failed: {e}"
 
     @staticmethod
     def test_smtp_connection(
