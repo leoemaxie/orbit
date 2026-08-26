@@ -39,21 +39,44 @@
 		}))
 	);
 
+	function persistLocal(currentNodes: WorkflowNodeData[]) {
+		if (typeof window !== 'undefined' && window.localStorage) {
+			try {
+				window.localStorage.setItem('orbit_workflow_canvas_nodes', JSON.stringify(currentNodes));
+			} catch {}
+		}
+	}
+
 	async function loadTopologyFromBackend() {
 		syncing = true;
 		try {
-			// 1. Fetch user's deployed pipeline first
+			// 1. Fetch user's deployed pipeline first from backend
 			const pipeline = await api.getPipeline();
 			if (Array.isArray(pipeline) && pipeline.length > 0) {
 				nodes = pipeline;
+				persistLocal(nodes);
 				selectedNode = null;
 				return;
 			}
 
-			// 2. If no pipeline deployed yet, load active adapter topology
+			// 2. If no deployed pipeline on backend, check local storage
+			if (typeof window !== 'undefined' && window.localStorage) {
+				const saved = window.localStorage.getItem('orbit_workflow_canvas_nodes');
+				if (saved) {
+					try {
+						const parsed = JSON.parse(saved);
+						if (Array.isArray(parsed) && parsed.length > 0) {
+							nodes = parsed;
+							selectedNode = null;
+							return;
+						}
+					} catch {}
+				}
+			}
+
+			// 3. If fresh state, load active adapter topology
 			const topology = await api.getWorkflowTopology();
 			if (Array.isArray(topology) && topology.length > 0) {
-				// Select active adapters or canonical core pipeline stages
 				const activeAdapters = topology.filter(
 					(t) => t.status === 'active' || (t.config && Object.values(t.config).some((v) => Boolean(v)))
 				);
@@ -85,6 +108,7 @@
 
 				if (mappedNodes.length > 0) {
 					nodes = mappedNodes;
+					persistLocal(nodes);
 					selectedNode = null;
 				}
 			}
@@ -96,6 +120,18 @@
 	}
 
 	onMount(() => {
+		// Initialize immediately from local storage if available for instant paint
+		if (typeof window !== 'undefined' && window.localStorage) {
+			const saved = window.localStorage.getItem('orbit_workflow_canvas_nodes');
+			if (saved) {
+				try {
+					const parsed = JSON.parse(saved);
+					if (Array.isArray(parsed) && parsed.length > 0) {
+						nodes = parsed;
+					}
+				} catch {}
+			}
+		}
 		loadTopologyFromBackend();
 	});
 
@@ -116,6 +152,7 @@
 			y,
 			config: { ...template.defaultConfig }
 		});
+		persistLocal(nodes);
 	}
 
 	function handleDropNewNode(template: NodeTemplate, x: number, y: number) {
@@ -132,6 +169,7 @@
 			y,
 			config: { ...template.defaultConfig }
 		});
+		persistLocal(nodes);
 	}
 
 	function handleUpdatePosition(id: string, x: number, y: number) {
@@ -139,12 +177,14 @@
 		if (node) {
 			node.x = x;
 			node.y = y;
+			persistLocal(nodes);
 		}
 	}
 
 	function handleDeleteNode(id: string) {
 		nodes = nodes.filter((n) => n.id !== id);
 		if (selectedNode?.id === id) selectedNode = null;
+		persistLocal(nodes);
 	}
 
 	async function handleDeploy() {
@@ -156,6 +196,7 @@
 			if (selectedNode) {
 				selectedNode = { ...selectedNode, status: 'configured' };
 			}
+			persistLocal(nodes);
 			deployMessage = res.message || `Pipeline successfully deployed with ${nodes.length} active stages.`;
 			deployed = true;
 			setTimeout(() => {
@@ -176,6 +217,9 @@
 			nodes = JSON.parse(JSON.stringify(defaultTriggerNode));
 			selectedNode = null;
 			deployMessage = null;
+			if (typeof window !== 'undefined' && window.localStorage) {
+				window.localStorage.removeItem('orbit_workflow_canvas_nodes');
+			}
 		}}
 		onSyncTopology={loadTopologyFromBackend}
 		{deploying}
@@ -229,6 +273,7 @@
 						nodes[idx].config = { ...cfg };
 						nodes[idx].status = 'configured';
 						selectedNode = { ...nodes[idx] };
+						persistLocal(nodes);
 					}
 				}}
 			/>

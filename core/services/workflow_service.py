@@ -1,4 +1,6 @@
+import json
 import logging
+from pathlib import Path
 from typing import Any
 
 from core.adapters.storage.database_sink import DatabaseExportSink
@@ -143,17 +145,28 @@ class WorkflowService:
 
     _custom_adapter_configs: dict[str, dict[str, Any]] = {}
     _deployed_pipeline: list[dict[str, Any]] = []
+    _storage_path: Path = Path(__file__).resolve().parent.parent / "exports" / "pipeline_topology.json"
 
     @classmethod
     def deploy_pipeline(cls, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Deploys and persists the active pipeline node topology."""
         cls._deployed_pipeline = nodes
+        try:
+            cls._storage_path.parent.mkdir(parents=True, exist_ok=True)
+            cls._storage_path.write_text(json.dumps(nodes, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning("Failed to persist pipeline to disk: %s", e)
         logger.info("Deployed active pipeline with %d nodes", len(nodes))
         return cls._deployed_pipeline
 
     @classmethod
     def get_deployed_pipeline(cls) -> list[dict[str, Any]]:
         """Retrieves the deployed active pipeline nodes."""
+        if not cls._deployed_pipeline and cls._storage_path.exists():
+            try:
+                cls._deployed_pipeline = json.loads(cls._storage_path.read_text(encoding="utf-8"))
+            except Exception as e:
+                logger.warning("Failed to read pipeline from disk: %s", e)
         return cls._deployed_pipeline
 
     @classmethod
