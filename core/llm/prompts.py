@@ -53,12 +53,12 @@ JSON Output Schema:
 }
 
 Rules:
-1. Targeted Source & URL Extraction:
-   - If the user mentions a specific platform or website (e.g. "from huggingface", "search huggingface for...", "on github", "via kaggle", "search reddit for...", "check arxiv for...", "look on greenhouse.io"):
-     Extract the canonical domain (e.g. ["huggingface.co"], ["github.com"], ["kaggle.com"], ["reddit.com"], ["arxiv.org"], ["greenhouse.io"]) into "source_hints".
-   - If the user provides a specific URL (e.g. "https://huggingface.co/datasets", "https://news.ycombinator.com", "https://..."):
-     Include the full URL directly in "source_hints".
-   - When a specific platform or URL is requested, "source_hints" ensures the search is singly and strictly scoped to that destination.
+1. Targeted Source & Multi-Source Extraction:
+   - If the user mentions one or multiple specific platforms or websites (e.g. "check github, gitlab, huggingface", "search reddit and hackernews for...", "find datasets on huggingface, kaggle, and github", "look on greenhouse.io and lever.co"):
+     Extract all canonical domains (e.g. ["github.com", "gitlab.com", "huggingface.co"], ["reddit.com", "news.ycombinator.com"], ["greenhouse.io", "lever.co"]) into "source_hints".
+   - If the user provides specific URL(s) (e.g. "https://huggingface.co/datasets", "https://news.ycombinator.com", "https://..."):
+     Include the full URL(s) directly in "source_hints".
+   - When specific platform(s) or URL(s) are requested, "source_hints" ensures the search is strictly scoped and balanced across all requested destinations.
 2. Multi-Step Workflow Detection:
    - Always include base nodes: "trigger_cron" -> "proxy_discovery" -> "schema_extractor".
    - If the user mentions email (e.g. "notify me via email", "send email to team"): add "email_alert" node. If the email address was NOT specified in the goal, add a MissingParameter for "recipient_email".

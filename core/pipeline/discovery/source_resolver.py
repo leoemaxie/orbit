@@ -156,3 +156,26 @@ def extract_sources_from_goal(goal: str) -> list[str]:
             sources.append(d_lower)
 
     return sources
+
+
+def interleave_source_results(source_results: list[list[str]], max_results: int = 10) -> list[str]:
+    """
+    Fairly merges results across multiple sources by interleaving items in round-robin fashion.
+    Prevents a single high-ranking platform from starving other requested sources.
+    """
+    interleaved: list[str] = []
+    seen = set()
+    max_len = max((len(r) for r in source_results), default=0)
+
+    for idx in range(max_len):
+        for result_list in source_results:
+            if idx < len(result_list):
+                url = result_list[idx]
+                if url and url not in seen:
+                    seen.add(url)
+                    interleaved.append(url)
+                    if len(interleaved) >= max_results:
+                        return interleaved
+
+    return interleaved
+

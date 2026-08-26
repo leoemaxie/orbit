@@ -8,6 +8,7 @@ from core.pipeline.discovery.source_resolver import (
     extract_domains_from_hints,
     extract_sources_from_goal,
     filter_urls_by_sources,
+    interleave_source_results,
     is_url_matching_sources,
     normalize_source_hint,
 )
@@ -24,7 +25,9 @@ __all__ = [
     "extract_domains_from_hints",
     "extract_sources_from_goal",
     "filter_urls_by_sources",
+    "interleave_source_results",
     "is_url_matching_sources",
     "normalize_source_hint",
 ]
+
 

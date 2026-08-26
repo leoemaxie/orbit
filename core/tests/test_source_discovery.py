@@ -269,3 +269,81 @@ async def test_goal_interpreter_source_hints_handling():
     assert plan.extraction_schema.entity_name == "dataset"
 
 
+def test_interleave_source_results():
+    from core.pipeline.discovery.source_resolver import interleave_source_results
+
+    github_links = ["https://github.com/1", "https://github.com/2", "https://github.com/3"]
+    gitlab_links = ["https://gitlab.com/1", "https://gitlab.com/2"]
+    hf_links = ["https://huggingface.co/1", "https://huggingface.co/2", "https://huggingface.co/3"]
+
+    interleaved = interleave_source_results([github_links, gitlab_links, hf_links], max_results=6)
+    assert interleaved == [
+        "https://github.com/1",
+        "https://gitlab.com/1",
+        "https://huggingface.co/1",
+        "https://github.com/2",
+        "https://gitlab.com/2",
+        "https://huggingface.co/2",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_search_engine_multi_source_parallel_discovery():
+    discovery = SearchEngineDiscovery()
+    discovery.settings.search_engine_api_key = "test-key"
+
+    plan = ExecutionPlan(
+        objective="Check github, gitlab, and hugging face",
+        search_query="llama fine-tune",
+        source_hints=["github.com", "gitlab.com", "huggingface.co"],
+    )
+
+    def fake_search(query, domain=None, country_code=None, max_results=10):
+        if domain == "github.com":
+            return ["https://github.com/a", "https://github.com/b"]
+        elif domain == "gitlab.com":
+            return ["https://gitlab.com/c", "https://gitlab.com/d"]
+        elif domain == "huggingface.co":
+            return ["https://huggingface.co/e", "https://huggingface.co/f"]
+        return []
+
+    discovery._search_single_source = AsyncMock(side_effect=fake_search)
+
+    results = await discovery.discover(plan, max_results=6)
+    # Verify all three platforms are queried and results are interleaved fairly
+    assert discovery._search_single_source.call_count == 3
+    assert results == [
+        "https://github.com/a",
+        "https://gitlab.com/c",
+        "https://huggingface.co/e",
+        "https://github.com/b",
+        "https://gitlab.com/d",
+        "https://huggingface.co/f",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_open_search_multi_source_parallel_discovery():
+    discovery = OpenWebSearchDiscovery()
+
+    plan = ExecutionPlan(
+        objective="Check github and gitlab",
+        search_query="rust agent",
+        source_hints=["github.com", "gitlab.com"],
+    )
+
+    def fake_search(query, domain=None, max_results=10):
+        if domain == "github.com":
+            return ["https://github.com/rust1"]
+        elif domain == "gitlab.com":
+            return ["https://gitlab.com/rust2"]
+        return []
+
+    discovery._search_single_source = AsyncMock(side_effect=fake_search)
+
+    results = await discovery.discover(plan, max_results=4)
+    assert discovery._search_single_source.call_count == 2
+    assert results == ["https://github.com/rust1", "https://gitlab.com/rust2"]
+
+
+
