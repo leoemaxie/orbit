@@ -14,6 +14,23 @@ export class OrbitStore {
 	interpretingGoal = $state<boolean>(false);
 	runningAutomation = $state<boolean>(false);
 	errorMessage = $state<string | null>(null);
+	sidebarCollapsed = $state<boolean>(false);
+
+	initSidebar() {
+		if (typeof window !== 'undefined') {
+			const saved = localStorage.getItem('orbit_sidebar_collapsed');
+			if (saved !== null) {
+				this.sidebarCollapsed = saved === 'true';
+			}
+		}
+	}
+
+	toggleSidebar() {
+		this.sidebarCollapsed = !this.sidebarCollapsed;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('orbit_sidebar_collapsed', String(this.sidebarCollapsed));
+		}
+	}
 
 	// Derived metrics
 	activeAutomationsCount = $derived(this.automations.filter((a) => a.active).length);
