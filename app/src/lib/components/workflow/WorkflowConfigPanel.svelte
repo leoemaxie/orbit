@@ -73,7 +73,7 @@
 </script>
 
 {#if node}
-	{@const effectiveType = node.adapterType || (node.id.includes('storage') || node.id.includes('database') || node.id.includes('slack') || node.id.includes('email') || node.id.includes('webhook') || node.id.includes('template') ? 'custom' : 'managed')}
+	{@const effectiveType = node.adapterType || (node.id.includes('storage') || node.id.includes('database') || node.id.includes('slack') || node.id.includes('webhook') || node.id.includes('template') ? 'custom' : node.id.includes('email') ? 'both' : 'managed')}
 	<aside class="w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl shrink-0 max-h-[640px] h-fit">
 		<!-- Header with Title & Mode -->
 		<div class="flex items-center justify-between border-b border-white/10 pb-2.5">
@@ -95,36 +95,59 @@
 
 		<p class="text-[11px] font-mono text-slate-400 leading-tight">{node.description}</p>
 
+		<!-- Hybrid Mode Selector for adapters supporting both (e.g. Email Notifications) -->
+		{#if 'mode' in configState}
+			<div class="flex items-center rounded-lg bg-surface-800 p-0.5 border border-white/10 text-[11px] font-mono">
+				<button
+					type="button"
+					class="flex-1 py-1 px-2 rounded-md font-semibold text-center transition-colors {configState.mode === 'managed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:text-slate-200'}"
+					onclick={() => { configState.mode = 'managed'; handleFieldChange(); }}
+				>
+					⚡ Managed
+				</button>
+				<button
+					type="button"
+					class="flex-1 py-1 px-2 rounded-md font-semibold text-center transition-colors {configState.mode === 'custom' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200'}"
+					onclick={() => { configState.mode = 'custom'; handleFieldChange(); }}
+				>
+					⚙️ Custom Server
+				</button>
+			</div>
+		{/if}
+
 		<!-- Form Fields Compact Area -->
 		<div class="overflow-y-auto max-h-[380px] space-y-2.5 font-mono text-xs pr-1 custom-scrollbar">
 			{#each Object.entries(configState) as [key, value]}
 				{#if key !== 'mode'}
-					<div class="space-y-1">
-						<label for={key} class="text-[10px] uppercase text-slate-400 font-semibold">{key.replace(/_/g, ' ')}</label>
-						{#if typeof value === 'boolean'}
-							<div class="flex items-center gap-3 pt-0.5">
-								<input type="checkbox" id={key} bind:checked={configState[key]} onchange={handleFieldChange} class="w-4 h-4 rounded bg-surface-800 border-white/20 text-orbit-cyan cursor-pointer" />
-								<span class="text-slate-300 text-xs">{configState[key] ? 'Enabled' : 'Disabled'}</span>
-							</div>
-						{:else if typeof value === 'number'}
-							<input
-								type="number"
-								id={key}
-								bind:value={configState[key]}
-								oninput={handleFieldChange}
-								class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
-							/>
-						{:else}
-							<input
-								type={!key.includes('url') && (key.includes('key') || key.includes('secret') || key.includes('password') || key.includes('token')) ? 'password' : 'text'}
-								id={key}
-								bind:value={configState[key]}
-								oninput={handleFieldChange}
-								placeholder={key.includes('url') ? 'https://...' : ''}
-								class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
-							/>
-						{/if}
-					</div>
+					{@const isCustomOnlyField = key === 'sender_address' || key === 'api_key' || key === 'base_url'}
+					{#if !('mode' in configState) || configState.mode === 'custom' || !isCustomOnlyField}
+						<div class="space-y-1">
+							<label for={key} class="text-[10px] uppercase text-slate-400 font-semibold">{key.replace(/_/g, ' ')}</label>
+							{#if typeof value === 'boolean'}
+								<div class="flex items-center gap-3 pt-0.5">
+									<input type="checkbox" id={key} bind:checked={configState[key]} onchange={handleFieldChange} class="w-4 h-4 rounded bg-surface-800 border-white/20 text-orbit-cyan cursor-pointer" />
+									<span class="text-slate-300 text-xs">{configState[key] ? 'Enabled' : 'Disabled'}</span>
+								</div>
+							{:else if typeof value === 'number'}
+								<input
+									type="number"
+									id={key}
+									bind:value={configState[key]}
+									oninput={handleFieldChange}
+									class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
+								/>
+							{:else}
+								<input
+									type={!key.includes('url') && (key.includes('key') || key.includes('secret') || key.includes('password') || key.includes('token')) ? 'password' : 'text'}
+									id={key}
+									bind:value={configState[key]}
+									oninput={handleFieldChange}
+									placeholder={key.includes('url') ? 'https://...' : key === 'recipient_email' ? 'team@company.com' : key === 'sender_address' ? 'alerts@yourdomain.com' : ''}
+									class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
+								/>
+							{/if}
+						</div>
+					{/if}
 				{/if}
 			{/each}
 		</div>
