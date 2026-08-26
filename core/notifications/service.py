@@ -28,8 +28,8 @@ class NotificationService:
     ) -> bool:
         """Routes notification alert to designated communication sink (email, slack, webhook)."""
         logger.info(f"🔔 [ORBIT ALERT] {title}: {message}")
-        target_url = webhook_url or self.settings.default_webhook_url
-        target_email = recipient_email or self.settings.default_recipient_email
+        target_url = webhook_url
+        target_email = recipient_email
         success = True
 
         # Route to Provider-Agnostic Email if requested or recipient configured

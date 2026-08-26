@@ -101,9 +101,7 @@ class EmailNotificationAdapter:
         custom_base_url: str | None = None,
     ) -> bool:
         """Renders an alert template and delivers via managed or custom transactional email."""
-        settings = get_settings()
-        target_email = recipient_email or settings.default_recipient_email
-        if not target_email:
+        if not recipient_email:
             logger.warning("Email alert skipped: No recipient email address specified.")
             return False
 
@@ -112,7 +110,7 @@ class EmailNotificationAdapter:
         text_content = self._render_text_template(title, message, payload=payload, dossier_url=dossier_url)
 
         return await self.send_email(
-            to=target_email,
+            to=recipient_email,
             subject=subject,
             html_body=html_content,
             text_body=text_content,

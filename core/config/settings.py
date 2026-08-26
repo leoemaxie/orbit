@@ -29,8 +29,6 @@ class Settings(BaseSettings):
     database_url: str = Field(default="postgresql+psycopg2://orbit:orbit@localhost:5432/orbit", validation_alias=AliasChoices("DATABASE_URL", "DB_URL"))
     enable_scheduler: bool = True
     scheduler_secret: str = Field(default="", validation_alias=AliasChoices("SCHEDULER_SECRET", "SCHEDULER_API_KEY", "CRON_SECRET"))
-    default_webhook_url: str | None = None
-    webhook_signing_secret: str = Field(default="orbit-webhook-secret-key", validation_alias=AliasChoices("WEBHOOK_SIGNING_SECRET", "WEBHOOK_SECRET"))
 
     # Document Processing (Provider-Agnostic)
     document_converter_api_key: str = Field(default="", validation_alias=AliasChoices("DOCUMENT_CONVERTER_API_KEY", "FOXIT_API_KEY"))
@@ -40,11 +38,10 @@ class Settings(BaseSettings):
     document_redactor_api_key: str = Field(default="", validation_alias=AliasChoices("DOCUMENT_REDACTOR_API_KEY", "NUTRIENT_API_KEY"))
     document_redactor_base_url: str = "https://api.nutrient.io/v1"
 
-    # Email Notifications (Provider-Agnostic Managed & Custom Delivery)
+    # Email Notifications (Provider-Agnostic Managed Outbound Gateway)
     email_api_key: str = Field(default="", validation_alias=AliasChoices("EMAIL_API_KEY", "MAIL_API_KEY", "SMTP_API_KEY"))
     email_sender_address: str = Field(default="Orbit Alerts <alerts@orbit.dev>", validation_alias=AliasChoices("EMAIL_SENDER_ADDRESS", "EMAIL_FROM", "MAIL_FROM"))
     email_base_url: str = Field(default="https://api.orbit.dev/v1/emails", validation_alias=AliasChoices("EMAIL_BASE_URL", "MAIL_BASE_URL"))
-    default_recipient_email: str | None = Field(default=None, validation_alias=AliasChoices("DEFAULT_RECIPIENT_EMAIL", "ALERT_EMAIL", "NOTIFICATION_EMAIL"))
 
     # Backward compatibility accessors
     @property

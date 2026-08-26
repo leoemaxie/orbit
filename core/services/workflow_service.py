@@ -75,17 +75,17 @@ class WorkflowService:
                 "id": "9", "label": "Slack Notifications", "category": "notify", "mode": "custom",
                 "engine": "Slack Incoming Webhook", "iconName": "MessageSquare",
                 "description": "Slack alert webhooks with signed report links",
-                "status": "active" if bool(s.default_webhook_url) else "optional",
-                "config": {"webhook_url": SecretVault.mask_secret(s.default_webhook_url), "channel": "#orbit-alerts"},
+                "status": "optional",
+                "config": {"webhook_url": "", "channel": "#orbit-alerts"},
             },
             {
-                "id": "10", "label": "Email Alert Notifications", "category": "notify", "mode": "custom",
+                "id": "10", "label": "Email Alert Notifications", "category": "notify", "mode": "both",
                 "engine": "Cloud Transactional Email Gateway", "iconName": "Mail",
                 "description": "Provider-agnostic transactional email alerts with attached telemetry and dossier links",
                 "status": "active" if bool(s.email_api_key) else "optional",
                 "config": {
                     "sender": s.email_sender_address,
-                    "recipient_email": s.default_recipient_email or "",
+                    "recipient_email": "",
                     "api_key": SecretVault.mask_secret(s.email_api_key),
                 },
             },
@@ -93,10 +93,10 @@ class WorkflowService:
                 "id": "11", "label": "Outbound Webhooks", "category": "notify", "mode": "custom",
                 "engine": "HMAC-SHA256 Signed Webhook Emitter", "iconName": "Play",
                 "description": "Secure signed webhook events with automated retry policy and record streaming",
-                "status": "active" if bool(s.default_webhook_url) else "optional",
+                "status": "optional",
                 "config": {
-                    "webhook_url": SecretVault.mask_secret(s.default_webhook_url),
-                    "signing_secret": SecretVault.mask_secret(s.webhook_signing_secret),
+                    "webhook_url": "",
+                    "signing_secret": "",
                 },
             },
         ]
@@ -117,9 +117,9 @@ class WorkflowService:
                 sink = DatabaseExportSink(connection_uri=uri)
                 return sink.test_connection()
             if adapter_id in ("9", "slack", "notify_slack"):
-                url = config.get("webhook_url") or get_settings().default_webhook_url
+                url = config.get("webhook_url")
                 if not url:
-                    return False, "Slack Webhook URL is not configured."
+                    return False, "Slack Webhook URL is not configured in node."
                 return True, "Slack notification endpoint reached successfully."
             if adapter_id in ("10", "email", "mail", "notify_email"):
                 api_key = config.get("api_key") or get_settings().email_api_key
@@ -128,10 +128,11 @@ class WorkflowService:
                 return True, "Transactional email gateway connection verified successfully."
             if adapter_id in ("11", "webhook", "signed_webhook"):
                 from core.adapters.communication.webhook import WebhookAdapter
-                url = config.get("webhook_url") or get_settings().default_webhook_url
+                url = config.get("webhook_url")
                 if not url:
-                    return False, "Webhook URL is not configured."
-                adapter = WebhookAdapter(webhook_url=url)
+                    return False, "Webhook URL is not configured in node."
+                secret = config.get("signing_secret")
+                adapter = WebhookAdapter(webhook_url=url, signing_secret=secret)
                 return await adapter.test_connection(url)
             if adapter_id in ("7", "s3", "storage"):
                 bucket = config.get("bucket_name") or "orbit-exports"

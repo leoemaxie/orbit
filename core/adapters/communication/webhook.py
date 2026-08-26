@@ -43,9 +43,8 @@ class WebhookAdapter:
         max_retries: int = 3,
         backoff_factor: float = 0.5,
     ):
-        settings = get_settings()
-        self.webhook_url = webhook_url or settings.default_webhook_url or ""
-        self.signing_secret = signing_secret or getattr(settings, "webhook_signing_secret", "orbit-webhook-secret-key")
+        self.webhook_url = webhook_url or ""
+        self.signing_secret = signing_secret or "orbit-webhook-secret-key"
         self.custom_headers = custom_headers or {}
         self.signature_header = signature_header
         self.timeout_sec = timeout_sec
