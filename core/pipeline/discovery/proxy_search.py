@@ -4,6 +4,10 @@ import httpx
 
 from core.config.settings import get_settings
 from core.models.execution_plan import ExecutionPlan
+from core.pipeline.discovery.source_resolver import (
+    build_scoped_search_query,
+    filter_urls_by_sources,
+)
 
 
 class ProxySearchDiscovery:
@@ -16,14 +20,10 @@ class ProxySearchDiscovery:
         if not self.settings.retrieval_api_key or not self.settings.retrieval_zone:
             return []
 
-        query = plan.search_query.strip()
-        if plan.source_hints:
-            site_filters = " OR ".join(f"site:{d.strip()}" for d in plan.source_hints if d.strip())
-            if site_filters:
-                query = f"{query} ({site_filters})"
+        query = build_scoped_search_query(plan.search_query, plan.source_hints)
 
         # Google search via proxy unlocker endpoint
-        search_url = f"https://www.google.com/search?q={query}&num={max_results}"
+        search_url = f"https://www.google.com/search?q={query}&num={max_results * 2}"
 
         headers = {
             "Authorization": f"Bearer {self.settings.retrieval_api_key}",
@@ -61,6 +61,11 @@ class ProxySearchDiscovery:
                         seen.add(l)
                         deduped.append(l)
 
+                if plan.source_hints:
+                    filtered = filter_urls_by_sources(deduped, plan.source_hints)
+                    return filtered[:max_results]
+
                 return deduped[:max_results]
         except Exception:  # noqa: BLE001
             return []
+

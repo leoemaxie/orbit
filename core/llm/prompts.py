@@ -8,8 +8,8 @@ JSON Output Schema:
 {
   "objective": "Concise summary of the goal",
   "domain": "jobs" | "real_estate" | "travel" | "finance" | "news" | "e-commerce" | "research" | "supply_chain" | "general",
-  "search_query": "Optimized search engine query to find relevant candidate source pages",
-  "source_hints": ["domain.com", "other.org"] (list of specific domains if user mentioned them; leave empty [] if open-web discovery is preferred),
+  "search_query": "Optimized search query to find relevant candidate source pages",
+  "source_hints": ["domain.com" | "https://example.com/path"] (list of specific domains e.g. ["huggingface.co"] or full URLs if user specified a platform, website, or direct URL; leave empty [] ONLY if unrestricted open-web discovery is intended),
   "geography": "Country or location name if relevant, or null",
   "country_code": "2-letter ISO country code (e.g. 'ng', 'us', 'gb') if relevant for proxy localization, or null",
   "extraction_schema": {
@@ -53,14 +53,20 @@ JSON Output Schema:
 }
 
 Rules:
-1. Multi-Step Workflow Detection:
+1. Targeted Source & URL Extraction:
+   - If the user mentions a specific platform or website (e.g. "from huggingface", "search huggingface for...", "on github", "via kaggle", "search reddit for...", "check arxiv for...", "look on greenhouse.io"):
+     Extract the canonical domain (e.g. ["huggingface.co"], ["github.com"], ["kaggle.com"], ["reddit.com"], ["arxiv.org"], ["greenhouse.io"]) into "source_hints".
+   - If the user provides a specific URL (e.g. "https://huggingface.co/datasets", "https://news.ycombinator.com", "https://..."):
+     Include the full URL directly in "source_hints".
+   - When a specific platform or URL is requested, "source_hints" ensures the search is singly and strictly scoped to that destination.
+2. Multi-Step Workflow Detection:
    - Always include base nodes: "trigger_cron" -> "proxy_discovery" -> "schema_extractor".
    - If the user mentions email (e.g. "notify me via email", "send email to team"): add "email_alert" node. If the email address was NOT specified in the goal, add a MissingParameter for "recipient_email".
    - If the user mentions database / SQL / Postgres (e.g. "save to database", "sync to postgres"): add "sql_database" node. If no connection string provided, add MissingParameter for "database_url" and "table_name".
    - If the user mentions Slack: add "slack_alert" node. If no webhook URL provided, add MissingParameter for "slack_webhook_url".
    - If the user mentions PDF / summary / report / dossier: add "html_dossier" node.
-2. Be completely domain-agnostic and extract structured fields tailored to the user's objective.
-3. Output ONLY valid JSON matching this schema.
+3. Be completely domain-agnostic and extract structured fields tailored to the user's objective.
+4. Output ONLY valid JSON matching this schema.
 """
 
 

@@ -131,11 +131,29 @@ class GoalInterpreter:
                 )
             )
 
+        # Merge and normalize source hints from LLM and deterministic goal inspection
+        from core.pipeline.discovery.source_resolver import (
+            extract_sources_from_goal,
+            normalize_source_hint,
+        )
+
+        llm_source_hints = raw.get("source_hints", [])
+        deterministic_sources = extract_sources_from_goal(goal)
+
+        merged_hints: list[str] = []
+        seen_hints = set()
+
+        for h in [*llm_source_hints, *deterministic_sources]:
+            norm = normalize_source_hint(h)
+            if norm and norm.lower() not in seen_hints:
+                seen_hints.add(norm.lower())
+                merged_hints.append(norm)
+
         return ExecutionPlan(
             objective=raw.get("objective", goal),
             domain=raw.get("domain", "general"),
             search_query=raw.get("search_query", goal),
-            source_hints=raw.get("source_hints", []),
+            source_hints=merged_hints,
             geography=raw.get("geography"),
             country_code=raw.get("country_code"),
             extraction_schema=dynamic_schema,
@@ -147,3 +165,4 @@ class GoalInterpreter:
             workflow_nodes=workflow_nodes,
             missing_parameters=missing_parameters,
         )
+

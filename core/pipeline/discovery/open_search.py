@@ -4,6 +4,10 @@ from urllib.parse import parse_qs, unquote, urlparse
 import httpx
 
 from core.models.execution_plan import ExecutionPlan
+from core.pipeline.discovery.source_resolver import (
+    build_scoped_search_query,
+    filter_urls_by_sources,
+)
 
 
 class OpenWebSearchDiscovery:
@@ -15,7 +19,7 @@ class OpenWebSearchDiscovery:
     SEARCH_ENDPOINT = "https://html.duckduckgo.com/html/"
 
     async def discover(self, plan: ExecutionPlan, max_results: int = 10) -> list[str]:
-        query = plan.search_query.strip()
+        query = build_scoped_search_query(plan.search_query, plan.source_hints)
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -49,27 +53,21 @@ class OpenWebSearchDiscovery:
         except Exception:  # noqa: BLE001
             return []
 
-        # Prioritize source hints if present, but retain other organic results
-        prioritized: list[str] = []
-        other_links: list[str] = []
-
-        for link in raw_urls:
-            if plan.source_hints and any(domain.lower() in link.lower() for domain in plan.source_hints if domain):
-                prioritized.append(link)
-            else:
-                other_links.append(link)
-
-        combined = prioritized + other_links
-
         # Deduplicate preserving order
         seen = set()
         deduped: list[str] = []
-        for u in combined:
+        for u in raw_urls:
             if u not in seen:
                 seen.add(u)
                 deduped.append(u)
 
+        # If user explicitly requested specific sources/domains, strictly enforce matching links only
+        if plan.source_hints:
+            filtered = filter_urls_by_sources(deduped, plan.source_hints)
+            return filtered[:max_results]
+
         return deduped[:max_results]
+
 
     def _clean_search_url(self, link: str) -> str | None:
         """Extracts and unquotes the direct target URL from search engine redirect links."""

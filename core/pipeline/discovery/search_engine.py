@@ -2,6 +2,10 @@ import httpx
 
 from core.config.settings import get_settings
 from core.models.execution_plan import ExecutionPlan
+from core.pipeline.discovery.source_resolver import (
+    build_scoped_search_query,
+    filter_urls_by_sources,
+)
 
 
 class SearchEngineDiscovery:
@@ -16,7 +20,8 @@ class SearchEngineDiscovery:
         if not self.settings.search_engine_api_key:
             raise ValueError("SEARCH_ENGINE_API_KEY (or SERPAPI_API_KEY) is not configured in settings or environment.")
 
-        query = plan.search_query.strip()
+        # Build scoped query if source hints exist (e.g. site:huggingface.co latest ml datasets)
+        query = build_scoped_search_query(plan.search_query, plan.source_hints)
 
         params: dict[str, str | int] = {
             "engine": "google",
@@ -47,24 +52,18 @@ class SearchEngineDiscovery:
             if link and link.startswith("http"):
                 raw_links.append(link)
 
-        # Prioritize source hints if present, but retain other organic results
-        prioritized: list[str] = []
-        other_links: list[str] = []
-
-        for link in raw_links:
-            if plan.source_hints and any(domain.lower() in link.lower() for domain in plan.source_hints if domain):
-                prioritized.append(link)
-            else:
-                other_links.append(link)
-
-        combined = prioritized + other_links
-
         # Deduplicate preserving order
         seen = set()
         deduped: list[str] = []
-        for u in combined:
+        for u in raw_links:
             if u not in seen:
                 seen.add(u)
                 deduped.append(u)
 
+        # If user explicitly requested specific sources/domains, strictly enforce matching links only
+        if plan.source_hints:
+            filtered = filter_urls_by_sources(deduped, plan.source_hints)
+            return filtered[:max_results]
+
         return deduped[:max_results]
+
