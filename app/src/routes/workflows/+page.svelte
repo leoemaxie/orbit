@@ -28,6 +28,7 @@
 	let paletteOpen = $state(true);
 	let deploying = $state(false);
 	let deployed = $state(false);
+	let syncing = $state(false);
 	let deployMessage = $state<string | null>(null);
 
 	const edges = $derived<WorkflowEdge[]>(
@@ -37,6 +38,57 @@
 			to: nodes[i + 1].id
 		}))
 	);
+
+	async function loadTopologyFromBackend() {
+		syncing = true;
+		try {
+			const topology = await api.getWorkflowTopology();
+			if (Array.isArray(topology) && topology.length > 0) {
+				// Select active adapters or canonical core pipeline stages
+				const activeAdapters = topology.filter(
+					(t) => t.status === 'active' || (t.config && Object.values(t.config).some((v) => Boolean(v)))
+				);
+				const targetList = activeAdapters.length > 0 ? activeAdapters : topology.slice(0, 4);
+
+				let currentX = 40;
+				let currentY = 50;
+				const mappedNodes: WorkflowNodeData[] = targetList.map((t, i) => {
+					const node: WorkflowNodeData = {
+						id: `node_${t.id}_${Date.now()}_${i}`,
+						label: t.label,
+						category: t.category,
+						adapterType: t.mode === 'managed' ? 'managed' : 'custom',
+						iconName: t.iconName || 'Database',
+						description: t.description,
+						status: t.status === 'active' ? 'configured' : 'active',
+						x: currentX,
+						y: currentY,
+						config: { ...t.config }
+					};
+					if (currentX + 260 > 680) {
+						currentX = 40;
+						currentY += 170;
+					} else {
+						currentX += 260;
+					}
+					return node;
+				});
+
+				if (mappedNodes.length > 0) {
+					nodes = mappedNodes;
+					selectedNode = null;
+				}
+			}
+		} catch (e: any) {
+			console.warn('Failed to fetch live workflow topology:', e);
+		} finally {
+			syncing = false;
+		}
+	}
+
+	onMount(() => {
+		loadTopologyFromBackend();
+	});
 
 	function handleAddNode(template: NodeTemplate) {
 		const newId = `node_${Date.now()}`;
@@ -116,8 +168,10 @@
 			selectedNode = null;
 			deployMessage = null;
 		}}
+		onSyncTopology={loadTopologyFromBackend}
 		{deploying}
 		{deployed}
+		{syncing}
 	/>
 
 	{#if deployMessage}
