@@ -52,11 +52,12 @@ def verify_scheduler_auth(
 async def trigger_due_automations(
     db: Annotated[Session, Depends(get_db)],
     _: bool = Depends(verify_scheduler_auth),
+    wait: bool = False,
 ):
     """
     Provider-agnostic cloud-native scheduler webhook.
     Works seamlessly with:
-    - Google Cloud Scheduler
+    - Google Cloud Scheduler (set ?wait=true for Cloud Run synchronous execution)
     - AWS EventBridge / Lambda
     - Render Cron Jobs
     - Fly.io / Railway / Heroku
@@ -73,6 +74,20 @@ async def trigger_due_automations(
         .all()
     )
 
+    async def _execute_due_task(auto_id: str) -> dict[str, str]:
+        with SessionLocal() as bg_db:
+            bg_auto = bg_db.query(Automation).filter(Automation.id == auto_id).first()
+            if bg_auto:
+                try:
+                    run = await orchestrator.execute_run(bg_db, bg_auto)
+                    status_val = run.status.value if hasattr(run.status, "value") else str(run.status)
+                    return {"automation_id": auto_id, "run_id": run.id, "status": status_val}
+                except Exception as err:
+                    logger.exception("Scheduled execution error for automation %s: %s", auto_id, err)
+                    return {"automation_id": auto_id, "error": str(err)}
+        return {"automation_id": auto_id, "error": "Automation not found"}
+
+    tasks = []
     triggered_ids = []
     for auto in due_automations:
         try:
@@ -80,27 +95,36 @@ async def trigger_due_automations(
             auto.next_run_at = None
             db.commit()
 
-            async def _execute_due_task(auto_id: str):
-                with SessionLocal() as bg_db:
-                    bg_auto = bg_db.query(Automation).filter(Automation.id == auto_id).first()
-                    if bg_auto:
-                        try:
-                            await orchestrator.execute_run(bg_db, bg_auto)
-                        except Exception as err:
-                            logger.exception("Scheduled execution error for automation %s: %s", auto_id, err)
+            task_coro = _execute_due_task(auto.id)
+            if wait:
+                tasks.append(task_coro)
+            else:
+                asyncio.create_task(task_coro)
 
-            asyncio.create_task(_execute_due_task(auto.id))
             triggered_ids.append(auto.id)
-            logger.info("Cloud scheduler triggered execution for automation %s", auto.id)
+            logger.info("Cloud scheduler triggered execution for automation %s (wait=%s)", auto.id, wait)
         except Exception as e:
             logger.error("Failed to trigger scheduled execution for automation %s: %s", auto.id, e)
 
-    return {
+    execution_results = None
+    if wait and tasks:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        execution_results = [
+            r if isinstance(r, dict) else {"error": str(r)} for r in results
+        ]
+
+    response = {
         "status": "success",
         "due_count": len(due_automations),
         "triggered_automation_ids": triggered_ids,
+        "wait": wait,
         "server_time_utc": now_utc.isoformat(),
     }
+    if execution_results is not None:
+        response["executions"] = execution_results
+
+    return response
+
 
 
 @router.get("/status", summary="Inspect upcoming scheduled automations")

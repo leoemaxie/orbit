@@ -43,13 +43,34 @@ def test_scheduler_trigger_due_endpoint(client):
         db.refresh(auto)
         auto_id = auto.id
 
-        # Call the cloud scheduler hook
+        # Call the cloud scheduler hook asynchronously (default)
         resp = client.post("/api/v1/scheduler/trigger-due")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "success"
         assert data["due_count"] >= 1
         assert auto_id in data["triggered_automation_ids"]
+        assert data["wait"] is False
+
+        # Create another due automation for testing ?wait=true
+        auto2 = Automation(
+            raw_goal="Test scheduled sync automation",
+            plan=plan.model_dump(),
+            active=True,
+            next_run_at=now_utc - timedelta(minutes=10),
+        )
+        db.add(auto2)
+        db.commit()
+        db.refresh(auto2)
+        auto2_id = auto2.id
+
+        # Call with ?wait=true (Cloud Run synchronous mode)
+        resp_sync = client.post("/api/v1/scheduler/trigger-due?wait=true")
+        assert resp_sync.status_code == 200
+        data_sync = resp_sync.json()
+        assert data_sync["status"] == "success"
+        assert data_sync["wait"] is True
+        assert auto2_id in data_sync["triggered_automation_ids"]
 
         # Call scheduler status
         status_resp = client.get("/api/v1/scheduler/status")
@@ -59,3 +80,4 @@ def test_scheduler_trigger_due_endpoint(client):
         assert "schedules" in status_data
     finally:
         db.close()
+
