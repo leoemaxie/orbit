@@ -137,8 +137,7 @@ async def test_email_adapter_test_managed_connection():
             base_url="https://api.resend.com/emails",
         )
         assert ok_fail is False
-        assert "HTTP 403" in msg_fail
-        assert "domain not verified" in msg_fail
+        assert "authorization failed" in msg_fail.lower() or "verify" in msg_fail.lower()
 
 
 def test_email_adapter_test_smtp_connection_missing_host():

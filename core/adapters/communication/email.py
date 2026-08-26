@@ -63,28 +63,32 @@ class EmailNotificationAdapter:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 resp = await client.post(url, headers=headers, json=payload)
                 if resp.status_code in (200, 201, 202):
-                    logger.info("Test probe email dispatched successfully to %s via %s", recipient, url)
-                    return True, f"Test probe email successfully dispatched to '{recipient}' via {url}."
+                    logger.info("Test probe email dispatched successfully to %s", recipient)
+                    return True, f"Test probe email successfully dispatched to '{recipient}'."
 
-                # Detailed error diagnostics
-                err_text = resp.text.strip()
-                try:
-                    err_json = resp.json()
-                    detail = err_json.get("message") or err_json.get("error") or err_text
-                except Exception:
-                    detail = err_text or resp.reason_phrase
+                logger.error(
+                    "Managed email delivery failed [%s]: %s (sender: %s, url: %s)",
+                    resp.status_code,
+                    resp.text,
+                    sender,
+                    url,
+                )
 
-                logger.error("Managed email delivery failed [%s]: %s (sender: %s, url: %s)", resp.status_code, detail, sender, url)
-                return False, f"Email gateway returned HTTP {resp.status_code} ({url}): {detail}"
+                if resp.status_code in (401, 403):
+                    return False, "Email gateway authorization failed. Please check your EMAIL_API_KEY and verified sender address."
+                if resp.status_code == 422:
+                    return False, "Email gateway rejected the recipient or sender address format. Please verify your email settings."
+                return False, f"Email gateway returned HTTP {resp.status_code}. Please verify outbound email configuration."
+
         except httpx.ConnectError as ce:
             logger.error("Email gateway connection error: %s (url: %s)", ce, url)
-            return False, f"Could not connect to email gateway at '{url}': {ce}"
+            return False, "Unable to reach the outbound email gateway. Please check your network connection and gateway endpoint."
         except httpx.TimeoutException:
-            logger.error("Email gateway timed out (url: %s)", url)
-            return False, f"Email gateway timed out after 15s (url: '{url}')."
+            logger.error("Email gateway request timed out (url: %s)", url)
+            return False, "Email gateway request timed out. Please check gateway reachability and retry."
         except Exception as e:
-            logger.exception("Unexpected error during email probe")
-            return False, f"Email probe failed: {e}"
+            logger.exception("Unexpected error during email probe: %s", e)
+            return False, "An error occurred while connecting to the email gateway. Please check your configuration."
 
     @staticmethod
     def test_smtp_connection(
@@ -117,7 +121,8 @@ class EmailNotificationAdapter:
                         server.login(username, password)
                     return True, f"SMTP server '{host}:{port}' connected and authenticated successfully."
         except Exception as e:
-            return False, f"SMTP connection probe failed: {e}"
+            logger.error("SMTP connection error: %s", e)
+            return False, "Could not establish connection to the SMTP server. Please verify the host, port, and credentials."
 
     def __init__(
         self,

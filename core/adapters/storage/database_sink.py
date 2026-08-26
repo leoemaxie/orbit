@@ -81,4 +81,5 @@ class DatabaseExportSink:
                 conn.execute(text("SELECT 1"))
             return True, "Data warehouse connection verified successfully."
         except Exception as e:
-            return False, f"Data warehouse connection test failed: {e}"
+            logger.error("Data warehouse connection probe failed: %s", e)
+            return False, "Could not connect to the database. Please verify your connection URI and server availability."

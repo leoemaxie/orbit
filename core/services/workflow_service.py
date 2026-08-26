@@ -258,7 +258,8 @@ class WorkflowService:
 
             return True, f"Adapter '{adapter_id}' probe succeeded."
         except Exception as e:
-            return False, f"Connection test failed: {e}"
+            logger.exception("Connection test failed for adapter %s: %s", adapter_id, e)
+            return False, "An error occurred while probing the adapter. Please verify the configuration settings."
 
     _custom_adapter_configs: dict[str, dict[str, Any]] = {}
     _deployed_pipeline: list[dict[str, Any]] = []

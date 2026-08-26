@@ -88,4 +88,5 @@ class S3ExportSink:
                     pass
             return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
         except Exception as e:
-            return False, f"Amazon S3 connection test failed: {e}"
+            logger.error("S3 connection test failed: %s", e)
+            return False, "Could not establish connection to the S3 bucket. Please verify the bucket name and cloud credentials."

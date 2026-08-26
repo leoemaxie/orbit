@@ -1,5 +1,8 @@
+import logging
 from typing import Any
 import httpx
+
+logger = logging.getLogger("core.adapters.communication.slack")
 
 
 class SlackWebhookAdapter:
@@ -73,6 +76,8 @@ class SlackWebhookAdapter:
                     return False, "Slack webhook returned 404 Not Found (channel or webhook token may be invalid)."
                 if resp.status_code == 403:
                     return False, "Slack webhook returned 403 Forbidden (webhook may be revoked or inactive)."
-                return False, f"Slack webhook returned HTTP {resp.status_code}: {resp.text[:100]}"
+                logger.error("Slack webhook returned HTTP %s: %s", resp.status_code, resp.text)
+                return False, f"Slack webhook returned HTTP {resp.status_code}. Please verify the webhook configuration."
         except Exception as e:
-            return False, f"Slack webhook probe failed: {e}"
+            logger.error("Slack webhook probe failed: %s", e)
+            return False, "Could not reach Slack webhook endpoint. Please verify your internet connection and webhook URL."
