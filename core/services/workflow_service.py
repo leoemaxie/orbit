@@ -142,6 +142,19 @@ class WorkflowService:
             return False, f"Connection test failed: {e}"
 
     _custom_adapter_configs: dict[str, dict[str, Any]] = {}
+    _deployed_pipeline: list[dict[str, Any]] = []
+
+    @classmethod
+    def deploy_pipeline(cls, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Deploys and persists the active pipeline node topology."""
+        cls._deployed_pipeline = nodes
+        logger.info("Deployed active pipeline with %d nodes", len(nodes))
+        return cls._deployed_pipeline
+
+    @classmethod
+    def get_deployed_pipeline(cls) -> list[dict[str, Any]]:
+        """Retrieves the deployed active pipeline nodes."""
+        return cls._deployed_pipeline
 
     @classmethod
     def save_adapter_config(cls, adapter_id: str, config: dict[str, Any]) -> dict[str, Any]:

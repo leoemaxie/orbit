@@ -42,6 +42,15 @@
 	async function loadTopologyFromBackend() {
 		syncing = true;
 		try {
+			// 1. Fetch user's deployed pipeline first
+			const pipeline = await api.getPipeline();
+			if (Array.isArray(pipeline) && pipeline.length > 0) {
+				nodes = pipeline;
+				selectedNode = null;
+				return;
+			}
+
+			// 2. If no pipeline deployed yet, load active adapter topology
 			const topology = await api.getWorkflowTopology();
 			if (Array.isArray(topology) && topology.length > 0) {
 				// Select active adapters or canonical core pipeline stages

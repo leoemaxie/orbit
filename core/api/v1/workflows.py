@@ -67,6 +67,12 @@ def save_adapter_config(adapter_id: str, payload: SaveAdapterConfigPayload) -> S
     )
 
 
+@router.get("/pipeline", response_model=list[dict[str, Any]])
+def get_deployed_pipeline() -> list[dict[str, Any]]:
+    """Returns the current deployed pipeline nodes configured by the user."""
+    return WorkflowService.get_deployed_pipeline()
+
+
 @router.get("/topology", response_model=list[AdapterTopologyOut])
 def get_workflow_topology() -> list[dict[str, Any]]:
     """Returns live adapter configurations across managed, custom, and hybrid modes."""
@@ -78,6 +84,7 @@ def deploy_workflow(payload: WorkflowDeployPayload) -> WorkflowDeployResponse:
     """Validates and deploys the adapter pipeline configuration."""
     from datetime import datetime, timezone
 
+    WorkflowService.deploy_pipeline(payload.nodes)
     return WorkflowDeployResponse(
         status="deployed",
         message=f"Pipeline updated with {len(payload.nodes)} active adapter stages.",

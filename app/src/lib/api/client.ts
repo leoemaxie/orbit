@@ -48,6 +48,7 @@ export class ApiClient {
 		return this.request<RunOut[]>(`/automations/${automationId}/runs`);
 	}
 	async getWorkflowTopology(): Promise<any[]> { return this.request<any[]>('/workflows/topology'); }
+	async getPipeline(): Promise<any[]> { return this.request<any[]>('/workflows/pipeline'); }
 	async deployWorkflow(nodes: any[]): Promise<{ status: string; message: string }> {
 		return this.request<{ status: string; message: string }>('/workflows/deploy', {
 			method: 'POST',
