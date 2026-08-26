@@ -10,19 +10,21 @@ logger = logging.getLogger("core.adapters.communication.email")
 
 
 class EmailNotificationAdapter:
-    """Provider-agnostic transactional email adapter supporting managed and custom delivery via HTTP gateways."""
+    """Provider-agnostic transactional email adapter supporting managed and custom delivery."""
 
     def __init__(
         self,
         api_key: str | None = None,
         sender_address: str | None = None,
         base_url: str | None = None,
+        mode: str = "both",
         max_retries: int = 3,
     ):
         settings = get_settings()
         self.api_key = api_key or settings.email_api_key or ""
         self.sender_address = sender_address or settings.email_sender_address or "Orbit Alerts <alerts@orbit.dev>"
-        self.base_url = base_url or settings.email_base_url or "https://api.resend.com/emails"
+        self.base_url = base_url or settings.email_base_url or "https://api.orbit.dev/v1/emails"
+        self.mode = mode
         self.max_retries = max_retries
 
     async def send_email(
@@ -31,10 +33,20 @@ class EmailNotificationAdapter:
         subject: str,
         html_body: str,
         text_body: str | None = None,
+        custom_api_key: str | None = None,
+        custom_sender: str | None = None,
+        custom_base_url: str | None = None,
     ) -> bool:
-        """Sends an outbound transactional email with authorization headers and exponential backoff retries."""
-        if not self.api_key:
-            logger.warning("Email dispatch skipped: EMAIL_API_KEY is not configured.")
+        """Sends an outbound transactional email with authorization headers and exponential backoff retries.
+        
+        Supports managed mode (platform credentials) and custom mode (overridden credentials).
+        """
+        active_api_key = custom_api_key or self.api_key
+        active_sender = custom_sender or self.sender_address
+        active_url = custom_base_url or self.base_url
+
+        if not active_api_key:
+            logger.warning("Email dispatch skipped: EMAIL_API_KEY is not configured (neither managed nor custom).")
             return False
 
         recipients = [to] if isinstance(to, str) else to
@@ -43,13 +55,13 @@ class EmailNotificationAdapter:
             return False
 
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {active_api_key}",
             "Content-Type": "application/json",
             "User-Agent": "Orbit-Email-Adapter/1.0",
         }
 
         payload: dict[str, Any] = {
-            "from": self.sender_address,
+            "from": active_sender,
             "to": recipients,
             "subject": subject,
             "html": html_body,
@@ -60,7 +72,7 @@ class EmailNotificationAdapter:
         for attempt in range(1, self.max_retries + 1):
             try:
                 async with httpx.AsyncClient(timeout=15.0) as client:
-                    resp = await client.post(self.base_url, headers=headers, json=payload)
+                    resp = await client.post(active_url, headers=headers, json=payload)
                     if resp.status_code in (200, 201, 202):
                         logger.info(f"Email successfully delivered to {recipients} (status: HTTP {resp.status_code})")
                         return True
@@ -84,8 +96,11 @@ class EmailNotificationAdapter:
         recipient_email: str | None = None,
         payload: dict[str, Any] | None = None,
         dossier_url: str | None = None,
+        custom_api_key: str | None = None,
+        custom_sender: str | None = None,
+        custom_base_url: str | None = None,
     ) -> bool:
-        """Renders an alert template and delivers to the specified recipient (or default recipient)."""
+        """Renders an alert template and delivers via managed or custom transactional email."""
         settings = get_settings()
         target_email = recipient_email or settings.default_recipient_email
         if not target_email:
@@ -101,6 +116,9 @@ class EmailNotificationAdapter:
             subject=subject,
             html_body=html_content,
             text_body=text_content,
+            custom_api_key=custom_api_key,
+            custom_sender=custom_sender,
+            custom_base_url=custom_base_url,
         )
 
     def _render_html_template(

@@ -69,6 +69,8 @@
 				<h3 class="text-xs font-bold text-white uppercase tracking-wider truncate font-mono">{node.label}</h3>
 				<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border {effectiveType === 'managed'
 					? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20'
+					: effectiveType === 'both'
+					? 'bg-amber-950/40 text-amber-300 border-amber-500/20'
 					: 'bg-cyan-950/40 text-cyan-300 border-cyan-500/20'}">
 					{effectiveType}
 				</span>
