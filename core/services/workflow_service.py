@@ -89,6 +89,16 @@ class WorkflowService:
                     "api_key": SecretVault.mask_secret(s.email_api_key),
                 },
             },
+            {
+                "id": "11", "label": "Outbound Webhooks", "category": "notify", "mode": "both",
+                "engine": "HMAC-SHA256 Signed Webhook Emitter", "iconName": "Play",
+                "description": "Secure signed webhook events with automated retry policy and record streaming",
+                "status": "active" if bool(s.default_webhook_url) else "optional",
+                "config": {
+                    "webhook_url": SecretVault.mask_secret(s.default_webhook_url),
+                    "signing_secret": SecretVault.mask_secret(s.webhook_signing_secret),
+                },
+            },
         ]
 
     @staticmethod
@@ -109,6 +119,13 @@ class WorkflowService:
                 if not api_key:
                     return False, "Email API Key is not configured."
                 return True, "Transactional email gateway connection verified successfully."
+            if adapter_id in ("11", "webhook", "signed_webhook"):
+                from core.adapters.communication.webhook import WebhookAdapter
+                url = config.get("webhook_url") or get_settings().default_webhook_url
+                if not url:
+                    return False, "Webhook URL is not configured."
+                adapter = WebhookAdapter(webhook_url=url)
+                return await adapter.test_connection(url)
             if adapter_id in ("7", "s3", "storage"):
                 bucket = config.get("bucket_name") or "orbit-exports"
                 return True, f"S3 bucket '{bucket}' connectivity verified."

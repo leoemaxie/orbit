@@ -45,3 +45,36 @@ async def test_signed_webhook_send_event_success():
         assert "X-Orbit-Timestamp" in headers
         assert headers["X-Orbit-Event"] == "run.completed"
         assert "X-Orbit-Delivery-Id" in headers
+
+
+@pytest.mark.asyncio
+async def test_webhook_send_records_batch():
+    from core.adapters.communication.webhook import WebhookAdapter
+
+    adapter = WebhookAdapter(webhook_url="https://api.external.com/records", signing_secret="secret123")
+    mock_resp = MagicMock(status_code=200)
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+
+        records = [{"id": 1, "title": "Dev Job", "salary": 120000}]
+        success = await adapter.send_records(automation_id="auto-100", run_id="run-200", records=records)
+        assert success is True
+
+        call_headers = mock_post.call_args.kwargs["headers"]
+        assert call_headers["X-Orbit-Event"] == "data.records_extracted"
+
+
+@pytest.mark.asyncio
+async def test_webhook_test_connection_probe():
+    from core.adapters.communication.webhook import WebhookAdapter
+
+    adapter = WebhookAdapter(webhook_url="https://api.external.com/probe", signing_secret="secret123")
+    mock_resp = MagicMock(status_code=200)
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+
+        success, msg = await adapter.test_connection()
+        assert success is True
+        assert "reached and acknowledged" in msg
