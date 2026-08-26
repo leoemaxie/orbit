@@ -18,13 +18,20 @@
 	let saving = $state(false);
 	let saved = $state(false);
 
+	let currentTrackedId = $state<string | null>(null);
+
 	$effect(() => {
 		if (node) {
-			configState = { ...node.config };
-			testResult = null;
-			saveError = null;
-			saving = false;
-			saved = false;
+			if (node.id !== currentTrackedId) {
+				currentTrackedId = node.id;
+				configState = { ...node.config };
+				testResult = null;
+				saveError = null;
+				saving = false;
+				saved = false;
+			}
+		} else {
+			currentTrackedId = null;
 		}
 	});
 
