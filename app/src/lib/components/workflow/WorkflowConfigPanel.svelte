@@ -2,6 +2,7 @@
 	import { X, Sliders, Activity, Save, CheckCircle2 } from '@lucide/svelte';
 	import { api } from '$lib/api/client';
 	import Button from '$lib/components/ui/Button.svelte';
+	import WorkflowConfigFields from './WorkflowConfigFields.svelte';
 	import type { WorkflowNodeData } from './types';
 
 	interface Props {
@@ -17,21 +18,16 @@
 	let saveError = $state<string | null>(null);
 	let saving = $state(false);
 	let saved = $state(false);
-
 	let currentTrackedId = $state<string | null>(null);
 
 	$effect(() => {
-		if (node) {
-			if (node.id !== currentTrackedId) {
-				currentTrackedId = node.id;
-				configState = { ...node.config };
-				testResult = null;
-				saveError = null;
-				saving = false;
-				saved = false;
-			}
-		} else {
-			currentTrackedId = null;
+		if (node && node.id !== currentTrackedId) {
+			currentTrackedId = node.id;
+			configState = { ...node.config };
+			testResult = null;
+			saveError = null;
+			saving = false;
+			saved = false;
 		}
 	});
 
@@ -45,8 +41,7 @@
 		testing = true;
 		testResult = null;
 		try {
-			const res = await api.testAdapterConnection(node.id, configState);
-			testResult = res;
+			testResult = await api.testAdapterConnection(node.id, configState);
 		} catch (e: any) {
 			testResult = { success: false, message: e.message || 'Probe failed' };
 		} finally {
@@ -64,7 +59,6 @@
 			onSave(configState);
 			saved = true;
 		} catch (e: any) {
-			console.warn('Adapter config save warning:', e);
 			saveError = e.message || 'Failed to save settings';
 		} finally {
 			saving = false;
@@ -75,7 +69,7 @@
 {#if node}
 	{@const effectiveType = node.adapterType || (node.id.includes('storage') || node.id.includes('database') || node.id.includes('slack') || node.id.includes('webhook') || node.id.includes('template') ? 'custom' : node.id.includes('email') ? 'both' : 'managed')}
 	<aside class="w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl shrink-0 max-h-[640px] h-fit">
-		<!-- Header with Title & Mode -->
+		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-white/10 pb-2.5">
 			<div class="flex items-center gap-2 min-w-0">
 				<Sliders size={14} class="text-orbit-cyan shrink-0" />
@@ -88,106 +82,31 @@
 					{effectiveType}
 				</span>
 			</div>
-			<button type="button" onclick={onClose} class="p-1 rounded text-slate-400 hover:text-white hover:bg-surface-800 transition-colors" title="Close inspector">
+			<button type="button" onclick={onClose} class="p-1 rounded text-slate-400 hover:text-white hover:bg-surface-800 transition-colors">
 				<X size={14} />
 			</button>
 		</div>
 
 		<p class="text-[11px] font-mono text-slate-400 leading-tight">{node.description}</p>
 
-		<!-- Hybrid Mode Selector for adapters supporting both (e.g. Email Notifications) -->
-		{#if 'mode' in configState}
-			<div class="flex items-center rounded-lg bg-surface-800 p-0.5 border border-white/10 text-[11px] font-mono">
-				<button
-					type="button"
-					class="flex-1 py-1 px-2 rounded-md font-semibold text-center transition-colors {configState.mode === 'managed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:text-slate-200'}"
-					onclick={() => { configState.mode = 'managed'; handleFieldChange(); }}
-				>
-					Managed Delivery
-				</button>
-				<button
-					type="button"
-					class="flex-1 py-1 px-2 rounded-md font-semibold text-center transition-colors {configState.mode === 'custom' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200'}"
-					onclick={() => { configState.mode = 'custom'; handleFieldChange(); }}
-				>
-					Custom SMTP Server
-				</button>
+		<!-- Dynamic Config Form Fields -->
+		<WorkflowConfigFields {configState} onChange={handleFieldChange} />
+
+		{#if saveError || testResult || saved}
+			<div class="p-2 rounded-lg text-[11px] font-mono border {saveError ? 'bg-rose-950/40 border-rose-500/30 text-rose-300' : saved ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : testResult?.success ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
+				{saveError || (saved ? 'Configuration saved and applied to canvas.' : testResult?.message)}
 			</div>
 		{/if}
 
-		<!-- Form Fields Compact Area -->
-		<div class="overflow-y-auto max-h-[380px] space-y-2.5 font-mono text-xs pr-1 custom-scrollbar">
-			{#each Object.entries(configState) as [key, value]}
-				{#if key !== 'mode'}
-					{@const isCustomOnlyField = key === 'sender_address' || key.startsWith('smtp_') || key === 'use_tls' || key === 'api_key' || key === 'base_url'}
-					{#if !('mode' in configState) || configState.mode === 'custom' || !isCustomOnlyField}
-						<div class="space-y-1">
-							<label for={key} class="text-[10px] uppercase text-slate-400 font-semibold">{key.replace(/_/g, ' ')}</label>
-							{#if typeof value === 'boolean'}
-								<div class="flex items-center gap-3 pt-0.5">
-									<input type="checkbox" id={key} bind:checked={configState[key]} onchange={handleFieldChange} class="w-4 h-4 rounded bg-surface-800 border-white/20 text-orbit-cyan cursor-pointer" />
-									<span class="text-slate-300 text-xs">{configState[key] ? 'Enabled' : 'Disabled'}</span>
-								</div>
-							{:else if typeof value === 'number'}
-								<input
-									type="number"
-									id={key}
-									bind:value={configState[key]}
-									oninput={handleFieldChange}
-									class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
-								/>
-							{:else}
-								<input
-									type={!key.includes('url') && (key.includes('key') || key.includes('secret') || key.includes('password') || key.includes('token')) ? 'password' : 'text'}
-									id={key}
-									bind:value={configState[key]}
-									oninput={handleFieldChange}
-									placeholder={key.includes('url') ? 'https://...' : key === 'recipient_email' ? 'team@company.com' : key === 'sender_address' ? 'alerts@yourdomain.com' : key === 'smtp_host' ? 'smtp.mailgun.org' : key === 'smtp_port' ? '587' : ''}
-									class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
-								/>
-							{/if}
-						</div>
-					{/if}
-				{/if}
-			{/each}
-		</div>
-
-		{#if saveError}
-			<div class="p-2 rounded-lg text-[11px] font-mono border bg-rose-950/40 border-rose-500/30 text-rose-300">
-				{saveError}
-			</div>
-		{:else if saved}
-			<div class="p-2 rounded-lg text-[11px] font-mono border bg-emerald-950/40 border-emerald-500/30 text-emerald-300 flex items-center gap-1.5 animate-in fade-in duration-200">
-				<CheckCircle2 size={13} />
-				<span>Configuration saved and applied to canvas.</span>
-			</div>
-		{:else if testResult}
-			<div class="p-2 rounded-lg text-[11px] font-mono border {testResult.success ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
-				{testResult.message}
-			</div>
-		{/if}
-
-		<!-- Action Buttons Directly Beneath Fields -->
+		<!-- Action Buttons -->
 		<div class="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
 			<Button variant="secondary" size="sm" loading={testing} onclick={handleTestConnection}>
 				<Activity size={12} />
 				<span>Test Probe</span>
 			</Button>
-			<Button
-				variant={saved ? 'secondary' : 'primary'}
-				size="sm"
-				loading={saving}
-				disabled={saving}
-				onclick={handleSave}
-				class={saved ? 'border-emerald-500/40 text-emerald-300 bg-emerald-950/30' : ''}
-			>
-				{#if saved}
-					<CheckCircle2 size={12} class="text-emerald-400" />
-					<span>Saved!</span>
-				{:else}
-					<Save size={12} />
-					<span>Save Settings</span>
-				{/if}
+			<Button variant={saved ? 'secondary' : 'primary'} size="sm" loading={saving} disabled={saving} onclick={handleSave}>
+				<Save size={12} />
+				<span>{saved ? 'Saved!' : 'Save Settings'}</span>
 			</Button>
 		</div>
 	</aside>
