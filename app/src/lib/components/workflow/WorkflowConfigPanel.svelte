@@ -103,14 +103,14 @@
 					class="flex-1 py-1 px-2 rounded-md font-semibold text-center transition-colors {configState.mode === 'managed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:text-slate-200'}"
 					onclick={() => { configState.mode = 'managed'; handleFieldChange(); }}
 				>
-					⚡ Managed
+					Managed Delivery
 				</button>
 				<button
 					type="button"
 					class="flex-1 py-1 px-2 rounded-md font-semibold text-center transition-colors {configState.mode === 'custom' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200'}"
 					onclick={() => { configState.mode = 'custom'; handleFieldChange(); }}
 				>
-					⚙️ Custom Server
+					Custom SMTP Server
 				</button>
 			</div>
 		{/if}
@@ -119,7 +119,7 @@
 		<div class="overflow-y-auto max-h-[380px] space-y-2.5 font-mono text-xs pr-1 custom-scrollbar">
 			{#each Object.entries(configState) as [key, value]}
 				{#if key !== 'mode'}
-					{@const isCustomOnlyField = key === 'sender_address' || key === 'api_key' || key === 'base_url'}
+					{@const isCustomOnlyField = key === 'sender_address' || key.startsWith('smtp_') || key === 'use_tls' || key === 'api_key' || key === 'base_url'}
 					{#if !('mode' in configState) || configState.mode === 'custom' || !isCustomOnlyField}
 						<div class="space-y-1">
 							<label for={key} class="text-[10px] uppercase text-slate-400 font-semibold">{key.replace(/_/g, ' ')}</label>
@@ -142,7 +142,7 @@
 									id={key}
 									bind:value={configState[key]}
 									oninput={handleFieldChange}
-									placeholder={key.includes('url') ? 'https://...' : key === 'recipient_email' ? 'team@company.com' : key === 'sender_address' ? 'alerts@yourdomain.com' : ''}
+									placeholder={key.includes('url') ? 'https://...' : key === 'recipient_email' ? 'team@company.com' : key === 'sender_address' ? 'alerts@yourdomain.com' : key === 'smtp_host' ? 'smtp.mailgun.org' : key === 'smtp_port' ? '587' : ''}
 									class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
 								/>
 							{/if}

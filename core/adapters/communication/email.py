@@ -12,6 +12,39 @@ logger = logging.getLogger("core.adapters.communication.email")
 class EmailNotificationAdapter:
     """Provider-agnostic transactional email adapter supporting managed and custom delivery."""
 
+    @staticmethod
+    def test_smtp_connection(
+        host: str,
+        port: int = 587,
+        username: str = "",
+        password: str = "",
+        use_tls: bool = True,
+    ) -> tuple[bool, str]:
+        """Tests connection to a custom SMTP server."""
+        import smtplib
+        import ssl
+
+        if not host:
+            return False, "SMTP Host is required."
+
+        try:
+            if port == 465 or (not use_tls and port != 587):
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL(host, port, context=context, timeout=10) as server:
+                    if username and password:
+                        server.login(username, password)
+                    return True, f"SMTP server '{host}:{port}' connected and authenticated successfully."
+            else:
+                with smtplib.SMTP(host, port, timeout=10) as server:
+                    if use_tls:
+                        context = ssl.create_default_context()
+                        server.starttls(context=context)
+                    if username and password:
+                        server.login(username, password)
+                    return True, f"SMTP server '{host}:{port}' connected and authenticated successfully."
+        except Exception as e:
+            return False, f"SMTP connection probe failed: {e}"
+
     def __init__(
         self,
         api_key: str | None = None,

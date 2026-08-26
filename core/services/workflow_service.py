@@ -89,16 +89,19 @@ class WorkflowService:
             },
             {
                 "id": "10", "label": "Email Alert Notifications", "category": "notify", "mode": "both",
-                "engine": "Cloud Transactional Email Gateway", "iconName": "Mail",
-                "description": "Provider-agnostic transactional email alerts with attached telemetry and dossier links",
+                "engine": "Managed Gateway / Custom SMTP", "iconName": "Mail",
+                "description": "Transactional email alerts with attached telemetry and dossier links",
                 "status": "active" if bool(s.email_api_key) else "optional",
                 "config": {
                     "mode": "managed",
                     "recipient_email": "team@company.com",
                     "notify_on_anomaly": True,
-                    "sender_address": "",
-                    "api_key": "",
-                    "base_url": "",
+                    "sender_address": "alerts@company.com",
+                    "smtp_host": "smtp.mailgun.org",
+                    "smtp_port": 587,
+                    "smtp_username": "",
+                    "smtp_password": "",
+                    "use_tls": True,
                 },
             },
             {
@@ -139,10 +142,19 @@ class WorkflowService:
                 if not recipient or "@" not in recipient:
                     return False, "A valid recipient email address is required."
                 if delivery_mode == "custom":
-                    api_key = config.get("api_key")
-                    if not api_key:
-                        return False, "Custom API Key is required for custom email delivery mode."
-                    return True, f"Custom email delivery verified for '{recipient}'."
+                    from core.adapters.communication.email import EmailNotificationAdapter
+                    host = config.get("smtp_host") or ""
+                    port = int(config.get("smtp_port") or 587)
+                    username = config.get("smtp_username") or ""
+                    password = config.get("smtp_password") or ""
+                    use_tls = bool(config.get("use_tls", True))
+                    return EmailNotificationAdapter.test_smtp_connection(
+                        host=host,
+                        port=port,
+                        username=username,
+                        password=password,
+                        use_tls=use_tls,
+                    )
                 return True, f"Managed transactional email gateway verified for '{recipient}'."
             if adapter_id in ("11", "webhook", "signed_webhook"):
                 from core.adapters.communication.webhook import WebhookAdapter
