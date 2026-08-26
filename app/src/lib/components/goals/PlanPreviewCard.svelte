@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Clock, Globe, Search, Bell, Play } from '@lucide/svelte';
-	import type { AutomationOut, ExecutionPlan } from '$lib/api/types';
+	import { Clock, Globe, Search, Bell, Play, GitBranch, ArrowRight, CheckCircle2, AlertCircle, Database, Mail, MessageSquare, Sparkles, Sliders } from '@lucide/svelte';
+	import type { AutomationOut, ExecutionPlan, MissingParameter } from '$lib/api/types';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import PlanSchemaGrid from './PlanSchemaGrid.svelte';
@@ -14,6 +14,28 @@
 	let { automation, onRunNow, running = false }: Props = $props();
 
 	const plan: ExecutionPlan = $derived(automation.plan);
+	let userInputs = $state<Record<string, string>>({});
+
+	// Initialize user inputs with default values from missing parameters
+	$effect(() => {
+		if (plan.missing_parameters) {
+			const initial: Record<string, string> = {};
+			for (const p of plan.missing_parameters) {
+				initial[p.parameter_name] = p.default_value || '';
+			}
+			userInputs = initial;
+		}
+	});
+
+	function getNodeIcon(typeId: string) {
+		if (typeId.includes('trigger')) return Clock;
+		if (typeId.includes('discovery')) return Globe;
+		if (typeId.includes('schema') || typeId.includes('database')) return Database;
+		if (typeId.includes('email')) return Mail;
+		if (typeId.includes('slack')) return MessageSquare;
+		if (typeId.includes('dossier')) return Sparkles;
+		return GitBranch;
+	}
 </script>
 
 <Card class="space-y-6 border-orbit-cyan/30 shadow-glow-cyan/10">
@@ -21,7 +43,7 @@
 	<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
 		<div>
 			<div class="flex items-center gap-2 mb-1 flex-wrap">
-				<span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase bg-orbit-violet/20 text-orbit-violet border border-orbit-violet/30">
+				<span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase bg-orbit-cyan/20 text-orbit-cyan border border-orbit-cyan/30 font-semibold">
 					{plan.domain || 'GENERAL'} DOMAIN
 				</span>
 				{#if plan.geography}
@@ -35,6 +57,15 @@
 		</div>
 
 		<div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+			<a
+				href="/workflows"
+				class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 border border-white/10 text-xs text-slate-300 hover:text-white transition-colors font-mono"
+				title="Customize in Visual Workflow Canvas"
+			>
+				<Sliders size={13} class="text-orbit-cyan" />
+				<span>Workflow Canvas</span>
+			</a>
+
 			{#if onRunNow}
 				<Button
 					variant="primary"
@@ -44,11 +75,77 @@
 					class="font-medium w-full sm:w-auto"
 				>
 					<Play size={15} />
-					<span>Execute Orbit Run</span>
+					<span>Launch Mission</span>
 				</Button>
 			{/if}
 		</div>
 	</div>
+
+	<!-- Synthesized Workflow DAG Pipeline -->
+	{#if plan.workflow_nodes && plan.workflow_nodes.length > 0}
+		<div class="space-y-2 p-3.5 rounded-xl bg-surface-900/90 border border-white/10">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-2 text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider">
+					<GitBranch size={14} class="text-orbit-cyan" />
+					<span>Synthesized Agentic Workflow DAG</span>
+				</div>
+				<span class="text-[10px] font-mono text-slate-500">Autonomous multi-adapter sequence</span>
+			</div>
+
+			<div class="flex items-center gap-2 overflow-x-auto py-2 scrollbar-none">
+				{#each plan.workflow_nodes as node, i}
+					{@const NodeIcon = getNodeIcon(node.typeId || '')}
+					<div class="flex items-center gap-2 shrink-0">
+						<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-800 border border-white/10 text-xs font-medium text-slate-200">
+							<NodeIcon size={14} class="text-orbit-cyan" />
+							<span>{node.label || node.typeId}</span>
+							<span class="text-[9px] font-mono uppercase px-1 py-0.2 rounded border {node.adapterType === 'managed'
+								? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20'
+								: 'bg-cyan-950/40 text-cyan-300 border-cyan-500/20'}">
+								{node.adapterType || 'managed'}
+							</span>
+						</div>
+
+						{#if i < plan.workflow_nodes.length - 1}
+							<ArrowRight size={13} class="text-slate-500 shrink-0" />
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Interactive Missing Parameter Elicitation -->
+	{#if plan.missing_parameters && plan.missing_parameters.length > 0}
+		<div class="p-4 rounded-xl bg-amber-950/25 border border-amber-500/30 space-y-3">
+			<div class="flex items-center gap-2 text-amber-300 text-xs font-semibold uppercase font-mono">
+				<AlertCircle size={15} />
+				<span>Action Required: Configure Workflow Inputs</span>
+			</div>
+			<p class="text-xs text-slate-300 leading-relaxed">
+				Orbit detected specialized integration steps in your goal. Provide the missing parameters below so Orbit can connect the workflow:
+			</p>
+
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+				{#each plan.missing_parameters as param}
+					<div class="space-y-1">
+						<label for={param.parameter_name} class="text-[11px] font-semibold text-slate-300 font-mono">
+							{param.label}
+							{#if param.required}<span class="text-rose-400">*</span>{/if}
+						</label>
+						<p class="text-[10px] text-slate-400 font-mono">{param.prompt}</p>
+						<input
+							type={param.parameter_name.includes('url') || param.parameter_name.includes('key') || param.parameter_name.includes('secret') ? 'password' : 'text'}
+							id={param.parameter_name}
+							bind:value={userInputs[param.parameter_name]}
+							placeholder={param.default_value || `Enter ${param.label.toLowerCase()}...`}
+							class="w-full px-3 py-1.5 bg-surface-900 border border-white/15 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-orbit-cyan font-mono"
+						/>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<!-- Plan Grid -->
 	<div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
@@ -69,8 +166,8 @@
 		<!-- Search Query -->
 		<div class="p-3.5 rounded-lg bg-surface-850 border border-white/5 space-y-1.5 md:col-span-2">
 			<div class="flex items-center gap-1.5 text-xs text-slate-400 font-mono uppercase">
-				<Search size={13} class="text-orbit-violet" />
-				<span>Synthesized Discovery Query</span>
+				<Search size={13} class="text-orbit-cyan" />
+				<span>Discovery Query</span>
 			</div>
 			<div class="text-xs font-mono text-slate-200 truncate bg-surface-900 px-2.5 py-1 rounded border border-white/5">
 				{plan.search_query}

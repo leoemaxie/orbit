@@ -41,6 +41,17 @@ class DynamicExtractionSchema(BaseModel):
         }
 
 
+class MissingParameter(BaseModel):
+    """A parameter or credential needed for a workflow adapter that must be elicited from the user."""
+    node_id: str = Field(default="")
+    adapter_type: str = Field(..., description="e.g. 'email_alert', 'sql_database', 'slack_alert', 's3_storage'")
+    parameter_name: str = Field(..., description="e.g. 'recipient_email', 'database_url', 'table_name', 'slack_webhook_url'")
+    label: str = Field(..., description="Short label for UI input")
+    prompt: str = Field(..., description="Question or prompt to ask the user")
+    default_value: str | None = None
+    required: bool = True
+
+
 class ExecutionPlan(BaseModel):
     """The complete domain-agnostic execution plan produced by the Goal Interpreter."""
     objective: str = Field(..., description="Concise summary of the goal")
@@ -55,3 +66,5 @@ class ExecutionPlan(BaseModel):
     timezone: str = Field(default="UTC", description="Timezone name e.g. 'Africa/Lagos', 'UTC'")
     condition: str | None = Field(default=None, description="Alert or filter condition e.g. 'min(price) < 400000' or 'salary >= 120000'")
     notification_channel: str | None = Field(default=None, description="Notification target e.g. 'webhook', 'email', 'log'")
+    workflow_nodes: list[dict[str, Any]] = Field(default_factory=list, description="Synthesized DAG nodes for execution pipeline")
+    missing_parameters: list[MissingParameter] = Field(default_factory=list, description="Required settings/credentials to elicit from user")

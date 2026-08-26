@@ -49,6 +49,88 @@ class GoalInterpreter:
             fields=fields,
         )
 
+        # Parse workflow DAG nodes
+        workflow_nodes = raw.get("workflow_nodes", [])
+        if not workflow_nodes:
+            workflow_nodes = [
+                {
+                    "typeId": "trigger_cron",
+                    "label": "Schedule Trigger",
+                    "category": "trigger",
+                    "adapterType": "managed",
+                    "config": {
+                        "frequency": raw.get("frequency", "once"),
+                        "schedule_time": raw.get("schedule_time", "08:00"),
+                        "timezone": raw.get("timezone", "UTC"),
+                    },
+                },
+                {
+                    "typeId": "proxy_discovery",
+                    "label": "Source Discovery",
+                    "category": "discovery",
+                    "adapterType": "managed",
+                    "config": {"search_query": raw.get("search_query", goal)},
+                },
+                {
+                    "typeId": "schema_extractor",
+                    "label": "LLM Schema Extraction",
+                    "category": "extraction",
+                    "adapterType": "managed",
+                    "config": {"entity_name": schema_raw.get("entity_name", "item")},
+                },
+            ]
+            if raw.get("notification_channel") == "email" or "email" in goal.lower():
+                workflow_nodes.append({
+                    "typeId": "email_alert",
+                    "label": "Email Notifications",
+                    "category": "notify",
+                    "adapterType": "custom",
+                    "config": {"recipient_email": ""},
+                })
+            if "database" in goal.lower() or "postgres" in goal.lower() or "sql" in goal.lower():
+                workflow_nodes.append({
+                    "typeId": "sql_database",
+                    "label": "Database",
+                    "category": "storage",
+                    "adapterType": "custom",
+                    "config": {"database_url": "", "table_name": f"extracted_{schema_raw.get('entity_name', 'items')}"},
+                })
+
+        # Parse missing parameters
+        missing_params_raw = raw.get("missing_parameters", [])
+        missing_parameters = []
+        for p in missing_params_raw:
+            if isinstance(p, dict) and p.get("parameter_name"):
+                from core.models.execution_plan import MissingParameter
+                missing_parameters.append(
+                    MissingParameter(
+                        node_id=p.get("node_id", ""),
+                        adapter_type=p.get("adapter_type", "custom"),
+                        parameter_name=p.get("parameter_name"),
+                        label=p.get("label", p.get("parameter_name", "").replace("_", " ").title()),
+                        prompt=p.get("prompt", f"Please provide {p.get('parameter_name')}"),
+                        default_value=p.get("default_value"),
+                        required=p.get("required", True),
+                    )
+                )
+
+        # Fallback check for missing email address if email adapter is present but no email was in goal
+        has_email_node = any(n.get("typeId") == "email_alert" for n in workflow_nodes)
+        has_email_param = any(p.parameter_name == "recipient_email" for p in missing_parameters)
+        if has_email_node and not has_email_param and "@" not in goal:
+            from core.models.execution_plan import MissingParameter
+            missing_parameters.append(
+                MissingParameter(
+                    node_id="email_alert",
+                    adapter_type="email_alert",
+                    parameter_name="recipient_email",
+                    label="Recipient Email Address",
+                    prompt="What email address should Orbit send notifications and reports to?",
+                    default_value=None,
+                    required=True,
+                )
+            )
+
         return ExecutionPlan(
             objective=raw.get("objective", goal),
             domain=raw.get("domain", "general"),
@@ -62,4 +144,6 @@ class GoalInterpreter:
             timezone=raw.get("timezone", "UTC"),
             condition=raw.get("condition"),
             notification_channel=raw.get("notification_channel"),
+            workflow_nodes=workflow_nodes,
+            missing_parameters=missing_parameters,
         )

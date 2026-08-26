@@ -14,6 +14,16 @@ export interface DynamicExtractionSchema {
 	description?: string | null;
 }
 
+export interface MissingParameter {
+	node_id?: string;
+	adapter_type: string;
+	parameter_name: string;
+	label: string;
+	prompt: string;
+	default_value?: string | null;
+	required?: boolean;
+}
+
 export interface ExecutionPlan {
 	objective: string;
 	domain: string;
@@ -27,6 +37,8 @@ export interface ExecutionPlan {
 	timezone: string;
 	condition?: string | null;
 	notification_channel?: string | null;
+	workflow_nodes?: any[];
+	missing_parameters?: MissingParameter[];
 }
 
 export interface GoalRequest {
