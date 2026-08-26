@@ -14,6 +14,7 @@
 	let configState = $state<Record<string, any>>({});
 	let testing = $state(false);
 	let testResult = $state<{ success: boolean; message: string } | null>(null);
+	let saveError = $state<string | null>(null);
 	let saving = $state(false);
 	let saved = $state(false);
 
@@ -21,10 +22,16 @@
 		if (node) {
 			configState = { ...node.config };
 			testResult = null;
+			saveError = null;
 			saving = false;
 			saved = false;
 		}
 	});
+
+	function handleFieldChange() {
+		saved = false;
+		saveError = null;
+	}
 
 	async function handleTestConnection() {
 		if (!node) return;
@@ -44,17 +51,16 @@
 		if (!node || saving) return;
 		saving = true;
 		saved = false;
+		saveError = null;
 		try {
 			await api.saveAdapterConfig(node.id, configState);
+			onSave(configState);
+			saved = true;
 		} catch (e: any) {
 			console.warn('Adapter config save warning:', e);
+			saveError = e.message || 'Failed to save settings';
 		} finally {
-			onSave(configState);
 			saving = false;
-			saved = true;
-			setTimeout(() => {
-				saved = false;
-			}, 2500);
 		}
 	}
 </script>
@@ -90,7 +96,7 @@
 						<label for={key} class="text-[10px] uppercase text-slate-400 font-semibold">{key.replace(/_/g, ' ')}</label>
 						{#if typeof value === 'boolean'}
 							<div class="flex items-center gap-3 pt-0.5">
-								<input type="checkbox" id={key} bind:checked={configState[key]} class="w-4 h-4 rounded bg-surface-800 border-white/20 text-orbit-cyan cursor-pointer" />
+								<input type="checkbox" id={key} bind:checked={configState[key]} onchange={handleFieldChange} class="w-4 h-4 rounded bg-surface-800 border-white/20 text-orbit-cyan cursor-pointer" />
 								<span class="text-slate-300 text-xs">{configState[key] ? 'Enabled' : 'Disabled'}</span>
 							</div>
 						{:else if typeof value === 'number'}
@@ -98,6 +104,7 @@
 								type="number"
 								id={key}
 								bind:value={configState[key]}
+								oninput={handleFieldChange}
 								class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
 							/>
 						{:else}
@@ -105,6 +112,7 @@
 								type={!key.includes('url') && (key.includes('key') || key.includes('secret') || key.includes('password') || key.includes('token')) ? 'password' : 'text'}
 								id={key}
 								bind:value={configState[key]}
+								oninput={handleFieldChange}
 								placeholder={key.includes('url') ? 'https://...' : ''}
 								class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
 							/>
@@ -114,7 +122,11 @@
 			{/each}
 		</div>
 
-		{#if saved}
+		{#if saveError}
+			<div class="p-2 rounded-lg text-[11px] font-mono border bg-rose-950/40 border-rose-500/30 text-rose-300">
+				{saveError}
+			</div>
+		{:else if saved}
 			<div class="p-2 rounded-lg text-[11px] font-mono border bg-emerald-950/40 border-emerald-500/30 text-emerald-300 flex items-center gap-1.5 animate-in fade-in duration-200">
 				<CheckCircle2 size={13} />
 				<span>Configuration saved and applied to canvas.</span>
