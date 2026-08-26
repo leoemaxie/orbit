@@ -41,7 +41,8 @@
 		testing = true;
 		testResult = null;
 		try {
-			testResult = await api.testAdapterConnection(node.id, configState);
+			const identifier = node.typeId || node.id || node.label;
+			testResult = await api.testAdapterConnection(identifier, configState);
 		} catch (e: any) {
 			testResult = { success: false, message: e.message || 'Probe failed' };
 		} finally {

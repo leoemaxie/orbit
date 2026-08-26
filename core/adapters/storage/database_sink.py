@@ -14,7 +14,10 @@ class DatabaseExportSink:
 
     def __init__(self, connection_uri: str | None = None, target_table: str | None = None):
         raw_uri = connection_uri or ""
-        self.connection_uri = SecretVault.decrypt_secret(raw_uri)
+        if "••••" in raw_uri or not raw_uri:
+            from core.config.settings import get_settings
+            raw_uri = get_settings().database_url or ""
+        self.connection_uri = SecretVault.decrypt_secret(raw_uri) if raw_uri else ""
         self.target_table = target_table or "orbit_extracted_records"
 
     def _sanitize_ident(self, name: str) -> str:

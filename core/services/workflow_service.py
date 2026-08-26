@@ -123,30 +123,38 @@ class WorkflowService:
                 adapter["status"] = "active"
         return topology
 
-    @staticmethod
-    async def test_adapter_connection(adapter_id: str, config: dict[str, Any]) -> tuple[bool, str]:
+    @classmethod
+    async def test_adapter_connection(cls, adapter_id: str, config: dict[str, Any]) -> tuple[bool, str]:
         """Performs a secure live connectivity test without logging raw credentials."""
+        clean_id = str(adapter_id).lower()
         try:
-            if adapter_id in ("8", "db", "database"):
-                uri = config.get("connection_uri") or get_settings().database_url
-                sink = DatabaseExportSink(connection_uri=uri)
+            # 1. Database Warehouse Sink
+            if any(k in clean_id for k in ("database", "db", "sql", "warehouse", "table")) or clean_id == "8":
+                raw_uri = config.get("connection_uri") or config.get("database_url") or ""
+                if "••••" in raw_uri or not raw_uri:
+                    saved = cls._custom_adapter_configs.get(str(adapter_id), {}).get("connection_uri") or cls._custom_adapter_configs.get(str(adapter_id), {}).get("database_url")
+                    raw_uri = saved if saved and "••••" not in saved else get_settings().database_url
+                target_tbl = config.get("target_table") or config.get("table_name") or "orbit_extracted_records"
+                sink = DatabaseExportSink(connection_uri=raw_uri, target_table=target_tbl)
                 return sink.test_connection()
-            if adapter_id in ("9", "slack", "notify_slack"):
-                url = config.get("webhook_url")
-                if not url:
-                    return False, "Slack Webhook URL is not configured in node."
-                return True, "Slack notification endpoint reached successfully."
-            if adapter_id in ("10", "email", "mail", "notify_email", "email_alert"):
+
+            # 2. Email Notifications (Managed & Custom SMTP)
+            if any(k in clean_id for k in ("email", "mail", "smtp", "notify_email", "email_alert")) or clean_id == "10":
+                from core.adapters.communication.email import EmailNotificationAdapter
                 delivery_mode = config.get("mode", "managed")
                 recipient = config.get("recipient_email")
                 if not recipient or "@" not in recipient:
-                    return False, "A valid recipient email address is required."
+                    return False, "A valid recipient email address is required (e.g. team@company.com)."
+
                 if delivery_mode == "custom":
-                    from core.adapters.communication.email import EmailNotificationAdapter
                     host = config.get("smtp_host") or ""
                     port = int(config.get("smtp_port") or 587)
                     username = config.get("smtp_username") or ""
                     password = config.get("smtp_password") or ""
+                    if "••••" in password:
+                        saved_pw = cls._custom_adapter_configs.get(str(adapter_id), {}).get("smtp_password")
+                        if saved_pw and "••••" not in saved_pw:
+                            password = saved_pw
                     use_tls = bool(config.get("use_tls", True))
                     return EmailNotificationAdapter.test_smtp_connection(
                         host=host,
@@ -155,8 +163,28 @@ class WorkflowService:
                         password=password,
                         use_tls=use_tls,
                     )
-                return True, f"Managed transactional email gateway verified for '{recipient}'."
-            if adapter_id in ("11", "webhook", "signed_webhook"):
+                else:
+                    api_key = config.get("api_key") or ""
+                    if "••••" in api_key or not api_key:
+                        saved_key = cls._custom_adapter_configs.get(str(adapter_id), {}).get("api_key")
+                        api_key = saved_key if saved_key and "••••" not in saved_key else get_settings().email_api_key
+                    sender = config.get("sender_address") or get_settings().email_sender_address
+                    base_url = config.get("base_url") or get_settings().email_base_url
+                    return await EmailNotificationAdapter.test_managed_connection(
+                        api_key=api_key,
+                        base_url=base_url,
+                        sender_address=sender,
+                    )
+
+            # 3. Slack Notifications
+            if any(k in clean_id for k in ("slack", "notify_slack")) or clean_id == "9":
+                url = config.get("webhook_url")
+                if not url:
+                    return False, "Slack Webhook URL is not configured in node."
+                return True, "Slack notification endpoint reached successfully."
+
+            # 4. Outbound Signed Webhooks
+            if any(k in clean_id for k in ("webhook", "signed_webhook")) or clean_id == "11":
                 from core.adapters.communication.webhook import WebhookAdapter
                 url = config.get("webhook_url")
                 if not url:
@@ -164,7 +192,9 @@ class WorkflowService:
                 secret = config.get("signing_secret")
                 adapter = WebhookAdapter(webhook_url=url, signing_secret=secret)
                 return await adapter.test_connection(url)
-            if adapter_id in ("7", "s3", "storage", "s3_storage"):
+
+            # 5. S3 Cloud Storage
+            if any(k in clean_id for k in ("s3", "storage", "s3_storage", "cloud")) or clean_id == "7":
                 sink = S3ExportSink(
                     bucket_name=config.get("bucket_name") or "orbit-exports",
                     region=config.get("region") or "us-east-1",
@@ -173,7 +203,8 @@ class WorkflowService:
                     secret_key=config.get("secret_key"),
                 )
                 return await sink.test_connection()
-            return True, "Adapter probe succeeded."
+
+            return True, f"Adapter '{adapter_id}' probe succeeded."
         except Exception as e:
             return False, f"Connection test failed: {e}"
 

@@ -28,6 +28,23 @@ async def test_test_adapter_connection():
     assert ok is True
     assert "orbit-test" in msg
 
-    # Test Slack connection probe without url
-    ok, msg = await WorkflowService.test_adapter_connection("8", {"webhook_url": ""})
-    assert isinstance(ok, bool)
+    # Test Database connection probe with sqlite in-memory
+    ok_db, msg_db = await WorkflowService.test_adapter_connection(
+        "sql_database", {"connection_uri": "sqlite:///:memory:"}
+    )
+    assert ok_db is True
+    assert "verified" in msg_db
+
+    # Test Email connection probe with invalid recipient
+    ok_email_inv, msg_email_inv = await WorkflowService.test_adapter_connection(
+        "email_alert", {"recipient_email": "invalid-address"}
+    )
+    assert ok_email_inv is False
+    assert "valid recipient email" in msg_email_inv
+
+    # Test Email custom mode without host
+    ok_smtp_fail, msg_smtp_fail = await WorkflowService.test_adapter_connection(
+        "10", {"mode": "custom", "recipient_email": "admin@company.com", "smtp_host": ""}
+    )
+    assert ok_smtp_fail is False
+    assert "SMTP Host is required" in msg_smtp_fail

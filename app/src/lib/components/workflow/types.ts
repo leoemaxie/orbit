@@ -10,9 +10,10 @@ export type NodeCategory =
 
 export interface WorkflowNodeData {
 	id: string;
+	typeId?: string;
 	label: string;
 	category: NodeCategory;
-	adapterType?: 'managed' | 'custom';
+	adapterType?: 'managed' | 'custom' | 'both';
 	iconName: string;
 	description: string;
 	status: 'active' | 'configured' | 'optional';
@@ -31,7 +32,7 @@ export interface NodeTemplate {
 	typeId: string;
 	label: string;
 	category: NodeCategory;
-	adapterType: 'managed' | 'custom';
+	adapterType: 'managed' | 'custom' | 'both';
 	iconName: string;
 	description: string;
 	defaultConfig: Record<string, any>;

@@ -45,7 +45,8 @@ export function clearLocalNodes(): void {
 
 export function createNodeFromTemplate(template: NodeTemplate, x: number, y: number): WorkflowNodeData {
 	return {
-		id: `node_${Date.now()}`,
+		id: `node_${template.typeId}_${Date.now()}`,
+		typeId: template.typeId,
 		label: template.label,
 		category: template.category,
 		adapterType: template.adapterType,
@@ -87,9 +88,10 @@ export async function fetchInitialWorkflowNodes(): Promise<WorkflowNodeData[]> {
 		const mappedNodes: WorkflowNodeData[] = targetList.map((t, i) => {
 			const node: WorkflowNodeData = {
 				id: `node_${t.id}_${Date.now()}_${i}`,
+				typeId: String(t.id),
 				label: t.label,
 				category: t.category,
-				adapterType: t.mode === 'managed' ? 'managed' : 'custom',
+				adapterType: t.mode === 'managed' ? 'managed' : t.mode === 'both' ? 'both' : 'custom',
 				iconName: t.iconName || 'Database',
 				description: t.description,
 				status: t.status === 'active' ? 'configured' : 'active',

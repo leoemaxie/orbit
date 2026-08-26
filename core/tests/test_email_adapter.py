@@ -96,3 +96,27 @@ async def test_notification_service_routes_to_email():
     assert args["recipient_email"] == "traveler@example.com"
     assert args["title"] == "Flight Alert"
     assert args["dossier_url"] == "https://orbit.dev/dossier/1"
+
+
+@pytest.mark.asyncio
+async def test_email_adapter_test_managed_connection():
+    # Without api key
+    ok_no_key, msg_no_key = await EmailNotificationAdapter.test_managed_connection(api_key="")
+    assert ok_no_key is False
+    assert "missing EMAIL_API_KEY" in msg_no_key
+
+    # With api key
+    mock_resp = MagicMock(status_code=200)
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = mock_resp
+        ok_with_key, msg_with_key = await EmailNotificationAdapter.test_managed_connection(
+            api_key="valid_token", base_url="https://api.orbit.dev/v1/emails"
+        )
+        assert ok_with_key is True
+        assert "verified" in msg_with_key or "reached" in msg_with_key
+
+
+def test_email_adapter_test_smtp_connection_missing_host():
+    ok, msg = EmailNotificationAdapter.test_smtp_connection(host="")
+    assert ok is False
+    assert "SMTP Host is required" in msg

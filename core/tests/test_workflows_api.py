@@ -42,3 +42,24 @@ def test_test_adapter_connection_api():
     data = response.json()
     assert data["success"] is True
     assert "orbit-production" in data["message"]
+
+    # Test Database probe via API
+    db_payload = {
+        "adapter_id": "sql_database",
+        "config": {"connection_uri": "sqlite:///:memory:"}
+    }
+    db_resp = client.post("/api/v1/workflows/test-connection", json=db_payload)
+    assert db_resp.status_code == 200
+    db_data = db_resp.json()
+    assert db_data["success"] is True
+    assert "verified" in db_data["message"]
+
+    # Test Email probe via API with invalid recipient
+    email_payload = {
+        "adapter_id": "email_alert",
+        "config": {"recipient_email": "bad_email_format"}
+    }
+    email_resp = client.post("/api/v1/workflows/test-connection", json=email_payload)
+    assert email_resp.status_code == 200
+    email_data = email_resp.json()
+    assert email_data["success"] is False

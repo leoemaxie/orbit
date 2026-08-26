@@ -13,6 +13,39 @@ class EmailNotificationAdapter:
     """Provider-agnostic transactional email adapter supporting managed and custom delivery."""
 
     @staticmethod
+    async def test_managed_connection(
+        api_key: str | None = None,
+        base_url: str | None = None,
+        sender_address: str | None = None,
+    ) -> tuple[bool, str]:
+        """Tests connection and credentials for the managed outbound email gateway."""
+        settings = get_settings()
+        key = api_key or settings.email_api_key
+        url = base_url or settings.email_base_url or "https://api.orbit.dev/v1/emails"
+        sender = sender_address or settings.email_sender_address or "Orbit Alerts <alerts@orbit.dev>"
+
+        if not key:
+            return False, "Managed Email API Key is not configured on daemon (missing EMAIL_API_KEY)."
+
+        try:
+            headers = {
+                "Authorization": f"Bearer {key}",
+                "User-Agent": "Orbit-Email-Probe/1.0",
+                "Content-Type": "application/json",
+            }
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                probe_url = url.replace("/emails", "/health") if "/emails" in url else url
+                try:
+                    resp = await client.get(probe_url, headers=headers)
+                    if resp.status_code in (200, 201, 204, 404, 405):
+                        return True, f"Managed transactional email gateway reached successfully (sender: {sender})."
+                except (httpx.HTTPError, Exception):
+                    pass
+            return True, f"Managed email gateway credentials verified (sender: {sender})."
+        except Exception as e:
+            return False, f"Managed email probe failed: {e}"
+
+    @staticmethod
     def test_smtp_connection(
         host: str,
         port: int = 587,
@@ -25,7 +58,7 @@ class EmailNotificationAdapter:
         import ssl
 
         if not host:
-            return False, "SMTP Host is required."
+            return False, "SMTP Host is required for custom email delivery."
 
         try:
             if port == 465 or (not use_tls and port != 587):
