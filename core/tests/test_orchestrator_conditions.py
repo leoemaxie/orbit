@@ -53,7 +53,7 @@ async def test_historical_delta_condition_and_notification(db_session):
     db_session.add(auto)
     db_session.commit()
 
-    prev_run = Run(automation_id=auto.id, status=RunStatus.completed, validated_count=1)
+    prev_run = Run(automation_id=auto.id, status=RunStatus.verified, validated_count=1)
     db_session.add(prev_run)
     db_session.commit()
     db_session.add(Result(run_id=prev_run.id, url="https://jobs.com/1", data={"salary": 150000}, valid=True))

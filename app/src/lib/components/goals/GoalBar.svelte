@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sparkles, ArrowRight } from '@lucide/svelte';
+	import { Sparkles, ArrowRight, Plus, Cpu, FileText, DollarSign, Database, Activity } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
 	interface Props {
@@ -11,16 +11,42 @@
 	let {
 		onSubmit,
 		loading = false,
-		placeholder = 'e.g. Daily at 6 AM, monitor SaaS pricing changes across enterprise vendors and alert on drops above 10%'
+		placeholder = 'Describe your web data objective or workflow — e.g. Track GPU pricing across cloud providers every 6 hours, alert if H100 drops below $2.50, and sync to database...'
 	}: Props = $props();
 
 	let goalText = $state('');
 
-	const templates = [
-		'Daily at 6 AM, monitor pricing, SKU availability, and inventory changes across top 5 enterprise cloud hardware vendors',
-		'Weekly on Monday, aggregate median tech compensation bands, level distributions, and hiring volume across Tier 1 fintechs',
-		'Every 4 hours, scan regional energy regulatory portals for policy updates on renewable grid tariffs and alert on changes',
-		'Daily, extract and structure AI research preprints mentioning sparse attention architectures with author affiliation schemas'
+	const promptPills = [
+		{
+			label: 'Cloud GPU & Compute Pricing',
+			icon: Cpu,
+			goal: 'Every 6 hours, track on-demand and spot pricing for H100, A100, and RTX 4090 GPUs across RunPod, Lambda Labs, CoreWeave, and AWS'
+		},
+		{
+			label: 'AI Model Leaderboards',
+			icon: Sparkles,
+			goal: 'Daily, monitor LMSYS Chatbot Arena and OpenRouter leaderboards for new LLM releases, benchmark scores, and pricing per million tokens'
+		},
+		{
+			label: 'ML Datasets & Benchmarks',
+			icon: Database,
+			goal: 'Weekly, track and extract open-source instruction-tuning datasets and evaluation benchmarks from HuggingFace and PapersWithCode with license types and token counts'
+		},
+		{
+			label: 'arXiv Research Preprints',
+			icon: FileText,
+			goal: 'Daily at 6 AM, extract newly published arXiv preprints on LLM reasoning and agent evaluation with author affiliations and GitHub repo links'
+		},
+		{
+			label: 'Staff AI Engineer Salaries',
+			icon: DollarSign,
+			goal: 'Weekly on Monday, aggregate verified Staff and Senior AI engineer compensation bands, base/equity splits, and level distributions across Tier 1 tech firms'
+		},
+		{
+			label: 'Cloud & API Status',
+			icon: Activity,
+			goal: 'Every 15 minutes, monitor status pages and incident disclosures across major cloud and AI API providers, alerting on service degradation'
+		}
 	];
 
 	function handleSubmit(e?: Event) {
@@ -29,54 +55,83 @@
 		onSubmit(goalText.trim());
 	}
 
-	function selectTemplate(tmpl: string) {
-		goalText = tmpl;
+	function selectPill(goal: string) {
+		goalText = goal;
 	}
 </script>
 
-<div class="w-full space-y-3">
+<div class="w-full space-y-4">
+	<!-- Heroic Web Data Prompt Card -->
 	<form onsubmit={handleSubmit} class="relative group">
-		<!-- Ambient glow border -->
+		<!-- Subtle ambient glow on hover/focus -->
 		<div
-			class="absolute -inset-px bg-gradient-to-r from-orbit-cyan via-orbit-violet to-orbit-emerald rounded-2xl opacity-20 group-focus-within:opacity-60 blur-sm transition-all duration-300 pointer-events-none"
+			class="absolute -inset-1 bg-gradient-to-r from-orbit-cyan/20 via-sky-500/15 to-emerald-500/20 rounded-3xl opacity-30 group-focus-within:opacity-75 blur-md transition-all duration-300 pointer-events-none"
 		></div>
 
-		<div class="relative bg-surface-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3">
-			<Sparkles size={18} class="text-orbit-cyan shrink-0 opacity-70" />
+		<div class="relative bg-surface-900 border border-white/10 group-focus-within:border-orbit-cyan/40 rounded-2xl p-4 md:p-5 shadow-2xl transition-colors space-y-3">
+			<div class="flex items-start gap-3">
+				<textarea
+					bind:value={goalText}
+					{placeholder}
+					disabled={loading}
+					rows="3"
+					class="w-full bg-transparent text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none resize-none font-sans leading-relaxed"
+					onkeydown={(e) => {
+						if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+							handleSubmit();
+						}
+					}}
+				></textarea>
+			</div>
 
-			<input
-				type="text"
-				bind:value={goalText}
-				{placeholder}
-				disabled={loading}
-				class="min-w-0 flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
-			/>
+			<!-- Bottom Toolbar in Prompt Box -->
+			<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-white/5">
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						onclick={() => (goalText = goalText ? `${goalText} (country: Nigeria)` : 'Track ')}
+						class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-800 hover:bg-surface-700 border border-white/5 text-xs text-slate-300 hover:text-white transition-colors font-sans"
+						title="Add country, domain, or website context"
+					>
+						<Plus size={13} class="text-orbit-cyan" />
+						<span>Add context</span>
+					</button>
 
-			<Button
-				type="submit"
-				variant="primary"
-				size="sm"
-				{loading}
-				disabled={!goalText.trim()}
-				class="shrink-0 font-medium"
-			>
-				<span>Create Mission</span>
-				<ArrowRight size={14} />
-			</Button>
+					<span class="text-[11px] font-mono text-slate-500 hidden sm:inline">
+						Press <kbd class="px-1.5 py-0.5 rounded bg-surface-800 text-slate-400 border border-white/10 text-[10px]">Ctrl+Enter</kbd> to run
+					</span>
+				</div>
+
+				<Button
+					type="submit"
+					variant="primary"
+					size="md"
+					{loading}
+					disabled={!goalText.trim()}
+					class="shrink-0 font-medium"
+				>
+					<Sparkles size={15} />
+					<span>Start Mission</span>
+					<ArrowRight size={14} />
+				</Button>
+			</div>
 		</div>
 	</form>
 
-	<!-- Example missions grid -->
+	<!-- Quick Examples for Data & Engineering Teams -->
 	<div class="space-y-2">
-		<p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-1">Example missions</p>
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-			{#each templates as tmpl}
+		<div class="flex items-center gap-1.5 text-xs text-slate-400 px-1 font-mono">
+			<span>Examples:</span>
+		</div>
+		<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+			{#each promptPills as pill}
 				<button
 					type="button"
-					onclick={() => selectTemplate(tmpl)}
-					class="text-left px-3 py-2.5 rounded-lg bg-surface-900 hover:bg-surface-800 border border-white/8 hover:border-orbit-cyan/30 text-xs text-slate-400 hover:text-slate-200 transition-all leading-relaxed"
+					onclick={() => selectPill(pill.goal)}
+					class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-900/80 hover:bg-surface-800 border border-white/10 hover:border-orbit-cyan/40 text-xs text-slate-300 hover:text-slate-100 transition-all shrink-0 font-sans shadow-sm"
 				>
-					{tmpl}
+					<pill.icon size={13} class="text-orbit-cyan" />
+					<span>{pill.label}</span>
 				</button>
 			{/each}
 		</div>

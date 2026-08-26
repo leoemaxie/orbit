@@ -37,7 +37,8 @@ class SearchEngineDiscovery:
                 resp.raise_for_status()
                 data = resp.json()
         except httpx.HTTPError as err:
-            status = getattr(err, "response", None) and err.response.status_code
+            resp_err = getattr(err, "response", None)
+            status = resp_err.status_code if resp_err is not None else None
             raise RuntimeError(f"Search API request failed (status: HTTP {status or 'error'})") from None
 
         raw_links: list[str] = []
