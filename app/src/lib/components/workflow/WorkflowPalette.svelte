@@ -20,7 +20,7 @@
 		{ typeId: 'template_generator', label: 'Template Document Merger', category: 'dossier', iconName: 'FileText', description: 'Merge records into Word/PDF templates', defaultConfig: { template_id: 'default-report' } },
 		{ typeId: 'pii_redactor', label: 'PII Data Masking', category: 'compliance', iconName: 'ShieldCheck', description: 'Mask sensitive PII (SSN, emails, cards)', defaultConfig: { entities: 'EMAIL,SSN,CREDIT_CARD' } },
 		{ typeId: 's3_storage', label: 'Amazon S3 Storage', category: 'storage', iconName: 'Cloud', description: 'Upload JSON and reports to S3 bucket', defaultConfig: { bucket_name: 'orbit-exports', region: 'us-east-1' } },
-		{ typeId: 'sql_database', label: 'Relational Database Sink', category: 'storage', iconName: 'Database', description: 'Stream records to PostgreSQL, MySQL, or SQLite', defaultConfig: { database_url: 'postgresql://user:pass@localhost:5432/orbit_warehouse', table_name: 'extracted_data', upsert_key: 'id' } },
+		{ typeId: 'sql_database', label: 'Database', category: 'storage', iconName: 'Database', description: 'Stream records to PostgreSQL, MySQL, or SQLite', defaultConfig: { database_url: 'postgresql://user:pass@localhost:5432/orbit_warehouse', table_name: 'extracted_data', upsert_key: 'id' } },
 		{ typeId: 'slack_alert', label: 'Slack Notifications', category: 'notify', iconName: 'MessageSquare', description: 'Slack channel alerts with report links', defaultConfig: { webhook_enabled: true, channel: '#orbit-alerts' } },
 		{ typeId: 'email_alert', label: 'Email Notifications', category: 'notify', iconName: 'Mail', description: 'Executive email alerts & summary briefings', defaultConfig: { recipient_email: 'team@company.com', smtp_host: 'smtp.sendgrid.net', notify_on_anomaly: true } }
 	];
