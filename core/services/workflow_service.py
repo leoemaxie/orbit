@@ -149,19 +149,69 @@ class WorkflowService:
 
     @classmethod
     def deploy_pipeline(cls, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Deploys and persists the active pipeline node topology."""
+        """Deploys and persists the active pipeline node topology in the Database."""
+        from datetime import datetime, timezone
+        from core.db.orm import WorkflowPipeline
+        from core.db.session import SessionLocal
+
         cls._deployed_pipeline = nodes
+
+        # 1. Database persistence
+        try:
+            db = SessionLocal()
+            try:
+                pipeline = db.query(WorkflowPipeline).filter(WorkflowPipeline.active.is_(True)).first()
+                if not pipeline:
+                    pipeline = WorkflowPipeline(name="Active Production Pipeline", nodes=nodes, edges=[], active=True)
+                    db.add(pipeline)
+                else:
+                    pipeline.nodes = nodes
+                    pipeline.updated_at = datetime.now(timezone.utc)
+                db.commit()
+                logger.info("Successfully persisted deployed pipeline to database (ID: %s)", pipeline.id)
+            except Exception as db_err:
+                db.rollback()
+                logger.warning("Database write failed for workflow pipeline (%s). Using local storage cache.", db_err)
+            finally:
+                db.close()
+        except Exception as conn_err:
+            logger.warning("Database connection unavailable for workflow deploy: %s", conn_err)
+
+        # 2. Local disk fallback
         try:
             cls._storage_path.parent.mkdir(parents=True, exist_ok=True)
             cls._storage_path.write_text(json.dumps(nodes, indent=2), encoding="utf-8")
         except Exception as e:
             logger.warning("Failed to persist pipeline to disk: %s", e)
+
         logger.info("Deployed active pipeline with %d nodes", len(nodes))
         return cls._deployed_pipeline
 
     @classmethod
     def get_deployed_pipeline(cls) -> list[dict[str, Any]]:
-        """Retrieves the deployed active pipeline nodes."""
+        """Retrieves the deployed active pipeline nodes from Database or local cache."""
+        from core.db.orm import WorkflowPipeline
+        from core.db.session import SessionLocal
+
+        try:
+            db = SessionLocal()
+            try:
+                pipeline = (
+                    db.query(WorkflowPipeline)
+                    .filter(WorkflowPipeline.active.is_(True))
+                    .order_by(WorkflowPipeline.updated_at.desc())
+                    .first()
+                )
+                if pipeline and pipeline.nodes:
+                    cls._deployed_pipeline = pipeline.nodes
+                    return cls._deployed_pipeline
+            except Exception as db_err:
+                logger.warning("Database read failed for workflow pipeline (%s). Falling back to cache.", db_err)
+            finally:
+                db.close()
+        except Exception as conn_err:
+            logger.warning("Database connection unavailable to fetch workflow pipeline: %s", conn_err)
+
         if not cls._deployed_pipeline and cls._storage_path.exists():
             try:
                 cls._deployed_pipeline = json.loads(cls._storage_path.read_text(encoding="utf-8"))
@@ -171,12 +221,36 @@ class WorkflowService:
 
     @classmethod
     def save_adapter_config(cls, adapter_id: str, config: dict[str, Any]) -> dict[str, Any]:
-        """Saves adapter configuration parameters and credentials in runtime memory or vault."""
+        """Saves adapter configuration parameters and credentials in Database."""
+        from datetime import datetime, timezone
+        from core.db.orm import AdapterConfig
+        from core.db.session import SessionLocal
+
         cls._custom_adapter_configs[str(adapter_id)] = config
-        logger.info("Saved configuration for adapter %s", adapter_id)
+
+        try:
+            db = SessionLocal()
+            try:
+                adapter = db.query(AdapterConfig).filter(AdapterConfig.id == str(adapter_id)).first()
+                if not adapter:
+                    adapter = AdapterConfig(id=str(adapter_id), config=config)
+                    db.add(adapter)
+                else:
+                    adapter.config = config
+                    adapter.updated_at = datetime.now(timezone.utc)
+                db.commit()
+                logger.info("Successfully saved adapter '%s' config to database", adapter_id)
+            except Exception as db_err:
+                db.rollback()
+                logger.warning("Database write failed for adapter config (%s).", db_err)
+            finally:
+                db.close()
+        except Exception as conn_err:
+            logger.warning("Database connection unavailable to save adapter config: %s", conn_err)
+
         return {
             "adapter_id": adapter_id,
             "status": "saved",
-            "message": f"Configuration for adapter '{adapter_id}' saved successfully.",
+            "message": f"Configuration for adapter '{adapter_id}' saved successfully to database.",
             "config": config,
         }

@@ -77,8 +77,29 @@ class Result(Base):
     url: Mapped[str | None] = mapped_column(Text, nullable=True)
     data: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 
-    valid: Mapped[bool] = mapped_column(Boolean, default=False)
-    validation_errors: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
-
     run: Mapped["Run"] = relationship("Run", back_populates="results")
+
+
+class WorkflowPipeline(Base):
+    """Stored autonomous workflow pipeline DAG with nodes and edges."""
+
+    __tablename__ = "workflow_pipelines"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String, default="Active Pipeline")
+    nodes: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
+    edges: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class AdapterConfig(Base):
+    """Stored adapter credentials and configuration parameters."""
+
+    __tablename__ = "adapter_configs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    config: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+

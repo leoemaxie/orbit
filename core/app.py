@@ -15,7 +15,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from core import __version__
 from core.api.v1.router import v1_router
 from core.config.settings import get_settings
-from core.db.orm import Automation, Result, Run  # noqa: F401
+from core.db.orm import (  # noqa: F401
+    AdapterConfig,
+    Automation,
+    Result,
+    Run,
+    WorkflowPipeline,
+)
 from core.db.session import Base, engine
 from core.scheduler.service import scheduler_service
 
