@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Play, Search, FileText, Database, ShieldCheck, Cloud, MessageSquare, Trash2, GripVertical } from '@lucide/svelte';
+	import { Play, Search, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Mail, Sparkles, Trash2, GripVertical } from '@lucide/svelte';
 	import type { WorkflowNodeData } from './types';
 
 	interface Props {
@@ -12,18 +12,31 @@
 
 	let { node, selected = false, onSelect, onDelete, onDragNodeStart }: Props = $props();
 
-	const iconMap: Record<string, any> = {
+	const iconNameMap: Record<string, any> = {
+		Play,
+		Search,
+		Globe,
+		FileText,
+		Database,
+		ShieldCheck,
+		Cloud,
+		MessageSquare,
+		Mail,
+		Sparkles
+	};
+
+	const iconCategoryMap: Record<string, any> = {
 		trigger: Play,
-		discovery: Search,
+		discovery: Globe,
 		parsing: FileText,
 		extraction: Database,
-		dossier: ShieldCheck,
+		dossier: Sparkles,
 		compliance: ShieldCheck,
-		storage: Cloud,
+		storage: Database,
 		notify: MessageSquare
 	};
 
-	const Icon = $derived(iconMap[node.category] || Database);
+	const Icon = $derived(iconNameMap[node.iconName] || iconCategoryMap[node.category] || Database);
 </script>
 
 <div
