@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from core.adapters.storage.database_sink import DatabaseExportSink
+from core.adapters.storage.s3_export import S3ExportSink
 from core.config.settings import get_settings
 from core.security.vault import SecretVault
 
@@ -18,7 +19,7 @@ class WorkflowService:
         """Returns live adapter configurations across managed, custom, and both modes."""
         s = get_settings()
 
-        return [
+        topology = [
             {
                 "id": "1", "label": "Schedule Trigger", "category": "trigger", "mode": "both",
                 "engine": "Cron & Webhook Engine", "iconName": "Play",
@@ -61,10 +62,16 @@ class WorkflowService:
             },
             {
                 "id": "7", "label": "Amazon S3 Storage", "category": "storage", "mode": "custom",
-                "engine": "Amazon S3 / MinIO", "iconName": "Cloud",
-                "description": "S3 bucket archival & presigned download links",
+                "engine": "Amazon S3 / MinIO / R2", "iconName": "Cloud",
+                "description": "Upload JSON artifacts and compiled dossiers to S3-compatible cloud buckets",
                 "status": "optional",
-                "config": {"bucket_name": "orbit-exports", "region": "us-east-1", "access_key": ""},
+                "config": {
+                    "bucket_name": "orbit-exports",
+                    "region": "us-east-1",
+                    "endpoint_url": "",
+                    "access_key": "",
+                    "secret_key": "",
+                },
             },
             {
                 "id": "8", "label": "Database Warehouse Sink", "category": "storage", "mode": "custom",
@@ -136,9 +143,15 @@ class WorkflowService:
                 secret = config.get("signing_secret")
                 adapter = WebhookAdapter(webhook_url=url, signing_secret=secret)
                 return await adapter.test_connection(url)
-            if adapter_id in ("7", "s3", "storage"):
-                bucket = config.get("bucket_name") or "orbit-exports"
-                return True, f"S3 bucket '{bucket}' connectivity verified."
+            if adapter_id in ("7", "s3", "storage", "s3_storage"):
+                sink = S3ExportSink(
+                    bucket_name=config.get("bucket_name") or "orbit-exports",
+                    region=config.get("region") or "us-east-1",
+                    endpoint_url=config.get("endpoint_url"),
+                    access_key=config.get("access_key"),
+                    secret_key=config.get("secret_key"),
+                )
+                return await sink.test_connection()
             return True, "Adapter probe succeeded."
         except Exception as e:
             return False, f"Connection test failed: {e}"

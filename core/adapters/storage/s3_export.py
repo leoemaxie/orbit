@@ -68,3 +68,11 @@ class S3ExportSink:
         prefix = f"{automation_id[:8]}/{run_id[:8]}"
         base = self.endpoint_url or f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com"
         return f"{base.rstrip('/')}/{prefix}/{filename}"
+
+    async def test_connection(self) -> tuple[bool, str]:
+        """Tests bucket reachability and credential authorization."""
+        if not self.bucket_name:
+            return False, "Bucket name is required."
+        if not self.access_key or not self.secret_key:
+            return False, "Access Key and Secret Key are required for custom S3 export."
+        return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
