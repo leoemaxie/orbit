@@ -22,8 +22,7 @@
 		{ typeId: 's3_storage', label: 'Amazon S3 Storage', category: 'storage', adapterType: 'custom', iconName: 'Cloud', description: 'Upload JSON and reports to S3 bucket', defaultConfig: { bucket_name: 'orbit-exports', region: 'us-east-1' } },
 		{ typeId: 'sql_database', label: 'Database', category: 'storage', adapterType: 'custom', iconName: 'Database', description: 'Stream records to PostgreSQL, MySQL, or SQLite', defaultConfig: { database_url: 'postgresql://user:pass@localhost:5432/orbit_warehouse', table_name: 'extracted_data', upsert_key: 'id' } },
 		{ typeId: 'slack_alert', label: 'Slack Notifications', category: 'notify', adapterType: 'custom', iconName: 'MessageSquare', description: 'Slack channel alerts with report links', defaultConfig: { webhook_enabled: true, channel: '#orbit-alerts' } },
-		{ typeId: 'email_alert', label: 'Email Notifications', category: 'notify', adapterType: 'both', iconName: 'Mail', description: 'Managed transactional email & custom delivery', defaultConfig: { mode: 'managed', recipient_email: 'team@company.com', notify_on_anomaly: true, sender_address: '', api_key: '' } },
-		{ typeId: 'webhook_alert', label: 'Outbound Webhooks', category: 'notify', adapterType: 'both', iconName: 'Radio', description: 'HMAC-SHA256 signed event & record streaming', defaultConfig: { webhook_url: 'https://api.company.com/webhook', signing_secret: 'whsec_secret_key', timeout_sec: 15, max_retries: 3 } }
+		{ typeId: 'webhook_alert', label: 'Outbound Webhooks', category: 'notify', adapterType: 'custom', iconName: 'Radio', description: 'HMAC-SHA256 signed event & record streaming', defaultConfig: { webhook_url: 'https://api.company.com/webhook', signing_secret: 'whsec_secret_key', timeout_sec: 15, max_retries: 3 } }
 	];
 
 	const filteredTemplates = $derived(
