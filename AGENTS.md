@@ -52,7 +52,35 @@ Orbit adapters operate under clean separation between platform execution credent
 
 ---
 
-## 4. Code & Commit Hygiene
+## 4. Frontend & UI Engineering Guidelines (`app/`)
+
+### Component Size & Modularity (< 120 Lines)
+* **Rule:** Svelte components in `app/src/lib/components/` must be single-responsibility and strictly under **~120 lines of code**.
+* **Decomposition:** Large views or panels must be split into dedicated sub-components (e.g. separating complex views into `*Header.svelte`, `*Controls.svelte`, `*Card.svelte`, `*Table.svelte`, `*Row.svelte`).
+
+### Svelte 5 Runes Standard
+* **Strict Runes Usage:** Always use Svelte 5 runes:
+  * `$state(...)` for reactive local variables.
+  * `$derived(...)` for computed reactive expressions.
+  * `$props()` for typed component arguments (`interface Props { ... }`).
+  * `$effect(...)` for reactive side-effects and lifecycle sync.
+* **No Legacy Syntax:** Never use legacy Svelte 3/4 syntax (`export let`, `$:`, writable stores).
+
+### Design Tokens & Typography
+* **Color Palette:** Deep Space Dark theme (`bg-void` `#07090E`, `bg-surface-900` `#0E131F`, `bg-surface-800` `#141B2D`, `accent-cyan` / `text-orbit-cyan` `#00F2FE` / `#38BDF8`).
+* **Typography Hierarchy:**
+  * `font-display` (`Space Grotesk`): Aerospace headers & hero titles.
+  * `font-sans` (`Sora`): UI controls, buttons, tooltips, body text.
+  * `font-mono` (`JetBrains Mono`): Telemetry data, metrics, timestamps, status badges, schedules.
+* **Iconography:** Use `@lucide/svelte` exclusively with standardized sizing (`size={12-16}` for inline buttons/badges, `size={18-24}` for cards/banners).
+
+### State Management & API Client
+* Centralize domain state in `$lib/state/*.svelte.ts` (e.g. `orbitStore` in `orbit.svelte.ts`) with reactive runes.
+* All backend API interactions must flow through the typed `ApiClient` in `$lib/api/client.ts`.
+
+---
+
+## 5. Code & Commit Hygiene
 
 * **Conventional Commits:** Use standard Conventional Commit prefixes (`feat(...)`, `fix(...)`, `refactor(...)`, `test(...)`, `chore(...)`).
 * **Intent-Driven Messages:** Summarize architectural intent and system impact; avoid verbose enumerations of individual variable names.
