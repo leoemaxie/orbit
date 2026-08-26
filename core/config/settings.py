@@ -40,10 +40,10 @@ class Settings(BaseSettings):
     document_redactor_api_key: str = Field(default="", validation_alias=AliasChoices("DOCUMENT_REDACTOR_API_KEY", "NUTRIENT_API_KEY"))
     document_redactor_base_url: str = "https://api.nutrient.io/v1"
 
-    # Email Notifications (Provider-Agnostic with Managed/Custom Resend Gateway)
-    email_api_key: str = Field(default="", validation_alias=AliasChoices("EMAIL_API_KEY", "RESEND_API_KEY", "MAIL_API_KEY"))
-    email_sender_address: str = Field(default="Orbit Alerts <alerts@orbit.dev>", validation_alias=AliasChoices("EMAIL_SENDER_ADDRESS", "EMAIL_FROM", "RESEND_FROM", "MAIL_FROM"))
-    email_base_url: str = Field(default="https://api.resend.com/emails", validation_alias=AliasChoices("EMAIL_BASE_URL", "RESEND_BASE_URL", "MAIL_BASE_URL"))
+    # Email Notifications (Provider-Agnostic Managed & Custom Delivery)
+    email_api_key: str = Field(default="", validation_alias=AliasChoices("EMAIL_API_KEY", "MAIL_API_KEY", "SMTP_API_KEY"))
+    email_sender_address: str = Field(default="Orbit Alerts <alerts@orbit.dev>", validation_alias=AliasChoices("EMAIL_SENDER_ADDRESS", "EMAIL_FROM", "MAIL_FROM"))
+    email_base_url: str = Field(default="https://api.orbit.dev/v1/emails", validation_alias=AliasChoices("EMAIL_BASE_URL", "MAIL_BASE_URL"))
     default_recipient_email: str | None = Field(default=None, validation_alias=AliasChoices("DEFAULT_RECIPIENT_EMAIL", "ALERT_EMAIL", "NOTIFICATION_EMAIL"))
 
     # Backward compatibility accessors

@@ -10,7 +10,7 @@ async def test_email_adapter_send_email_success():
     adapter = EmailNotificationAdapter(
         api_key="test_email_api_key_123",
         sender_address="Orbit Alerts <alerts@orbit.dev>",
-        base_url="https://api.resend.com/emails",
+        base_url="https://api.email-gateway.internal/v1/emails",
     )
 
     mock_resp = MagicMock(status_code=200, text='{"id": "msg_123"}')
@@ -28,7 +28,7 @@ async def test_email_adapter_send_email_success():
         assert mock_post.called
 
         called_url = mock_post.call_args.args[0]
-        assert called_url == "https://api.resend.com/emails"
+        assert called_url == "https://api.email-gateway.internal/v1/emails"
 
         headers = mock_post.call_args.kwargs["headers"]
         assert headers["Authorization"] == "Bearer test_email_api_key_123"
