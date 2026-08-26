@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     email_sender_address: str = Field(default="Orbit Alerts <alerts@orbit.dev>", validation_alias=AliasChoices("EMAIL_SENDER_ADDRESS", "EMAIL_FROM", "MAIL_FROM"))
     email_base_url: str = Field(default="https://api.orbit.dev/v1/emails", validation_alias=AliasChoices("EMAIL_BASE_URL", "MAIL_BASE_URL"))
 
+    # Message Broker & Distributed Lock (Provider-Agnostic with orb: key prefix)
+    event_broker_backend: str = Field(default="memory", validation_alias=AliasChoices("EVENT_BROKER_BACKEND", "BROKER_BACKEND", "EVENT_BROKER"))
+    broker_url: str = Field(default="redis://localhost:6379/0", validation_alias=AliasChoices("BROKER_URL", "REDIS_URL", "MESSAGE_BROKER_URL"))
+    broker_project_id: str = Field(default="", validation_alias=AliasChoices("BROKER_PROJECT_ID", "GCP_PROJECT_ID", "CLOUD_PROJECT_ID"))
+    broker_key_prefix: str = Field(default="orb", validation_alias=AliasChoices("BROKER_KEY_PREFIX", "REDIS_KEY_PREFIX", "KEY_PREFIX"))
+
+
     # Backward compatibility accessors
     @property
     def openrouter_api_key(self) -> str: return self.llm_api_key

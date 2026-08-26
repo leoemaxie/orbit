@@ -9,9 +9,6 @@ from apscheduler.triggers.interval import IntervalTrigger
 from core.db.orm import Automation
 from core.db.session import SessionLocal
 
-if TYPE_CHECKING:
-    from core.agent.orchestrator import AgentOrchestrator
-
 logger = logging.getLogger("core.scheduler")
 
 
@@ -58,6 +55,15 @@ class SchedulerService:
 
     async def _check_and_trigger_due_automations(self):
         """Finds all active automations where next_run_at <= now and triggers execution."""
+        from core.scheduler.lock import LockFactory
+
+        lock = LockFactory.get_lock()
+        # Acquire leader election lock for this tick (auto-releases in 25 seconds)
+        acquired = await lock.acquire("scheduler:tick", timeout_seconds=25)
+        if not acquired:
+            logger.debug("Scheduler tick lock held by another worker instance. Skipping tick.")
+            return
+
         db = SessionLocal()
         try:
             now_utc = datetime.now(timezone.utc)
@@ -82,13 +88,14 @@ class SchedulerService:
                     db.commit()
                     # Execute asynchronously
                     asyncio.create_task(self._run_single_automation(auto.id))
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.error(f"Failed to launch task for automation {auto.id}: {e}")
 
         except Exception as e:
             logger.error(f"Error querying due automations: {e}")
         finally:
             db.close()
+            await lock.release("scheduler:tick")
 
     async def _run_single_automation(self, automation_id: str):
         db = SessionLocal()
@@ -96,7 +103,8 @@ class SchedulerService:
             auto = db.query(Automation).filter(Automation.id == automation_id).first()
             if auto:
                 await self.orchestrator.execute_run(db, auto)
-        except Exception as e:  # noqa: BLE001
+
+        except Exception as e:
             logger.error(f"Execution error for scheduled automation {automation_id}: {e}")
         finally:
             db.close()
