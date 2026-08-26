@@ -40,13 +40,6 @@ class Settings(BaseSettings):
     document_redactor_api_key: str = Field(default="", validation_alias=AliasChoices("DOCUMENT_REDACTOR_API_KEY", "NUTRIENT_API_KEY"))
     document_redactor_base_url: str = "https://api.nutrient.io/v1"
 
-    # Cloud Storage Sinks (S3 / MinIO)
-    s3_bucket_name: str = "orbit-exports"
-    s3_endpoint_url: str | None = None
-    s3_access_key: str = Field(default="", validation_alias=AliasChoices("S3_ACCESS_KEY", "AWS_ACCESS_KEY_ID"))
-    s3_secret_key: str = Field(default="", validation_alias=AliasChoices("S3_SECRET_KEY", "AWS_SECRET_ACCESS_KEY"))
-    s3_region: str = "us-east-1"
-
     # Backward compatibility accessors
     @property
     def openrouter_api_key(self) -> str: return self.llm_api_key

@@ -3,21 +3,25 @@ import logging
 from typing import Any
 import httpx
 
-from core.config.settings import get_settings
-
 logger = logging.getLogger("core.adapters.storage.s3_export")
 
 
 class S3ExportSink:
-    """Amazon S3 and MinIO compatible object storage export sink."""
+    """Custom Amazon S3 and MinIO compatible object storage export sink."""
 
-    def __init__(self, bucket_name: str | None = None):
-        settings = get_settings()
-        self.bucket_name = bucket_name or settings.s3_bucket_name
-        self.endpoint_url = settings.s3_endpoint_url
-        self.access_key = settings.s3_access_key
-        self.secret_key = settings.s3_secret_key
-        self.region = settings.s3_region
+    def __init__(
+        self,
+        bucket_name: str = "orbit-exports",
+        endpoint_url: str | None = None,
+        access_key: str | None = None,
+        secret_key: str | None = None,
+        region: str = "us-east-1",
+    ):
+        self.bucket_name = bucket_name
+        self.endpoint_url = endpoint_url
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.region = region
 
     async def export_results(
         self,
@@ -29,7 +33,7 @@ class S3ExportSink:
     ) -> bool:
         """Uploads JSON extraction artifacts and compiled PDF dossiers to S3."""
         if not self.access_key or not self.secret_key:
-            logger.info("S3 credentials not configured; skipping cloud object upload.")
+            logger.info("Custom S3 credentials not configured; skipping cloud object upload.")
             return True
 
         prefix = f"{automation_id[:8]}/{run_id[:8]}"

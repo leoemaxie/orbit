@@ -58,11 +58,11 @@ class WorkflowService:
                 "config": {"format": "pdf", "pii_redaction": bool(s.document_redactor_api_key), "api_key": SecretVault.mask_secret(s.document_generator_api_key)},
             },
             {
-                "id": "7", "label": "Amazon S3 Storage", "category": "storage", "mode": "both",
+                "id": "7", "label": "Amazon S3 Storage", "category": "storage", "mode": "custom",
                 "engine": "Amazon S3 / MinIO", "iconName": "Cloud",
                 "description": "S3 bucket archival & presigned download links",
-                "status": "active" if bool(s.s3_access_key and s.s3_secret_key) else "optional",
-                "config": {"bucket_name": s.s3_bucket_name, "region": s.s3_region, "access_key": SecretVault.mask_secret(s.s3_access_key)},
+                "status": "optional",
+                "config": {"bucket_name": "orbit-exports", "region": "us-east-1", "access_key": ""},
             },
             {
                 "id": "8", "label": "Database Warehouse Sink", "category": "storage", "mode": "custom",
@@ -94,7 +94,7 @@ class WorkflowService:
                     return False, "Slack Webhook URL is not configured."
                 return True, "Slack notification endpoint reached successfully."
             if adapter_id in ("7", "s3", "storage"):
-                bucket = config.get("bucket_name") or get_settings().s3_bucket_name
+                bucket = config.get("bucket_name") or "orbit-exports"
                 return True, f"S3 bucket '{bucket}' connectivity verified."
             return True, "Adapter probe succeeded."
         except Exception as e:
