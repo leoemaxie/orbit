@@ -12,13 +12,15 @@ logger = logging.getLogger("core.adapters.communication.email")
 class EmailNotificationAdapter:
     """Provider-agnostic transactional email adapter supporting managed and custom delivery."""
 
-    @staticmethod
+    @classmethod
     async def test_managed_connection(
+        cls,
+        recipient_email: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
         sender_address: str | None = None,
     ) -> tuple[bool, str]:
-        """Tests connection and credentials for the managed outbound email gateway."""
+        """Tests connection and credentials for the managed outbound email gateway by sending a test email."""
         settings = get_settings()
         key = api_key or settings.email_api_key
         url = base_url or settings.email_base_url or "https://api.orbit.dev/v1/emails"
@@ -27,23 +29,35 @@ class EmailNotificationAdapter:
         if not key:
             return False, "Managed Email API Key is not configured on daemon (missing EMAIL_API_KEY)."
 
-        try:
-            headers = {
-                "Authorization": f"Bearer {key}",
-                "User-Agent": "Orbit-Email-Probe/1.0",
-                "Content-Type": "application/json",
-            }
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                probe_url = url.replace("/emails", "/health") if "/emails" in url else url
-                try:
-                    resp = await client.get(probe_url, headers=headers)
-                    if resp.status_code in (200, 201, 204, 404, 405):
-                        return True, f"Managed transactional email gateway reached successfully (sender: {sender})."
-                except (httpx.HTTPError, Exception):
-                    pass
-            return True, f"Managed email gateway credentials verified (sender: {sender})."
-        except Exception as e:
-            return False, f"Managed email probe failed: {e}"
+        if not recipient_email or "@" not in recipient_email:
+            return False, "A valid recipient email address is required (e.g. team@company.com)."
+
+        adapter = cls(api_key=key, sender_address=sender, base_url=url, max_retries=1)
+        subject = "🛰️ [Orbit Probe] Test Email Notification"
+        html_body = adapter._render_html_template(
+            title="Connection Probe Verified",
+            message="This is a test notification dispatched by Orbit to verify that your managed transactional email adapter is functioning correctly.",
+            payload={"gateway_status": "operational", "recipient": recipient_email},
+        )
+        text_body = adapter._render_text_template(
+            title="Connection Probe Verified",
+            message="This is a test notification dispatched by Orbit to verify that your managed transactional email adapter is functioning correctly.",
+            payload={"gateway_status": "operational", "recipient": recipient_email},
+        )
+
+        sent = await adapter.send_email(
+            to=recipient_email,
+            subject=subject,
+            html_body=html_body,
+            text_body=text_body,
+            custom_api_key=key,
+            custom_sender=sender,
+            custom_base_url=url,
+        )
+
+        if sent:
+            return True, f"Test probe email successfully dispatched to '{recipient_email}'."
+        return False, f"Failed to deliver test email to '{recipient_email}'. Please verify EMAIL_API_KEY."
 
     @staticmethod
     def test_smtp_connection(

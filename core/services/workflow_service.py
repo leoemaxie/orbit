@@ -142,7 +142,21 @@ class WorkflowService:
             if any(k in clean_id for k in ("email", "mail", "smtp", "notify_email", "email_alert")) or clean_id == "10":
                 from core.adapters.communication.email import EmailNotificationAdapter
                 delivery_mode = config.get("mode", "managed")
-                recipient = config.get("recipient_email")
+                recipient = str(
+                    config.get("recipient_email")
+                    or config.get("email")
+                    or config.get("recipient")
+                    or config.get("to")
+                    or config.get("email_to")
+                    or config.get("email_address")
+                    or ""
+                ).strip().strip("'\"")
+
+                if not recipient or "@" not in recipient:
+                    saved_rec = cls._custom_adapter_configs.get(str(adapter_id), {}).get("recipient_email") or cls._custom_adapter_configs.get(str(adapter_id), {}).get("email")
+                    if saved_rec and "@" in str(saved_rec):
+                        recipient = str(saved_rec).strip().strip("'\"")
+
                 if not recipient or "@" not in recipient:
                     return False, "A valid recipient email address is required (e.g. team@company.com)."
 
@@ -171,6 +185,7 @@ class WorkflowService:
                     sender = config.get("sender_address") or get_settings().email_sender_address
                     base_url = config.get("base_url") or get_settings().email_base_url
                     return await EmailNotificationAdapter.test_managed_connection(
+                        recipient_email=recipient,
                         api_key=api_key,
                         base_url=base_url,
                         sender_address=sender,

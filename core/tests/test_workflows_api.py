@@ -63,3 +63,16 @@ def test_test_adapter_connection_api():
     assert email_resp.status_code == 200
     email_data = email_resp.json()
     assert email_data["success"] is False
+
+    # Test Email probe via API with valid recipient and mock
+    from unittest.mock import AsyncMock, patch
+    with patch("core.adapters.communication.email.EmailNotificationAdapter.send_email", new_callable=AsyncMock) as mock_send:
+        mock_send.return_value = True
+        valid_payload = {
+            "adapter_id": "email_alert",
+            "config": {"recipient_email": "user@example.com", "api_key": "test-key"}
+        }
+        res_valid = client.post("/api/v1/workflows/test-connection", json=valid_payload)
+        assert res_valid.status_code == 200
+        assert res_valid.json()["success"] is True
+        assert "user@example.com" in res_valid.json()["message"]

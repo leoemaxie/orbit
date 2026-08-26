@@ -101,19 +101,31 @@ async def test_notification_service_routes_to_email():
 @pytest.mark.asyncio
 async def test_email_adapter_test_managed_connection():
     # Without api key
-    ok_no_key, msg_no_key = await EmailNotificationAdapter.test_managed_connection(api_key="")
+    ok_no_key, msg_no_key = await EmailNotificationAdapter.test_managed_connection(
+        recipient_email="test@domain.com", api_key=""
+    )
     assert ok_no_key is False
     assert "missing EMAIL_API_KEY" in msg_no_key
 
-    # With api key
-    mock_resp = MagicMock(status_code=200)
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
-        mock_get.return_value = mock_resp
+    # Without recipient email
+    ok_no_rec, msg_no_rec = await EmailNotificationAdapter.test_managed_connection(
+        recipient_email="", api_key="valid_token"
+    )
+    assert ok_no_rec is False
+    assert "valid recipient email" in msg_no_rec
+
+    # With api key and recipient email - success
+    mock_resp = MagicMock(status_code=200, text='{"id": "test_msg_1"}')
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
         ok_with_key, msg_with_key = await EmailNotificationAdapter.test_managed_connection(
-            api_key="valid_token", base_url="https://api.orbit.dev/v1/emails"
+            recipient_email="admin@company.com",
+            api_key="valid_token",
+            base_url="https://api.orbit.dev/v1/emails",
         )
         assert ok_with_key is True
-        assert "verified" in msg_with_key or "reached" in msg_with_key
+        assert "successfully dispatched" in msg_with_key
+        assert "admin@company.com" in msg_with_key
 
 
 def test_email_adapter_test_smtp_connection_missing_host():

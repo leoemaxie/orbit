@@ -2,17 +2,25 @@ import logging
 import re
 from typing import Any
 
+from core.agent.baseline_cache import BaselineCache, BaselineCacheFactory
+
 logger = logging.getLogger("core.agent.condition")
 
 
 class ConditionEvaluator:
     """Domain-agnostic evaluator for threshold alerts, metric aggregations, and historical relative shifts."""
 
+    baseline_cache: BaselineCache
+
+    def __init__(self, baseline_cache: BaselineCache | None = None):
+        self.baseline_cache = baseline_cache or BaselineCacheFactory.get_cache()
+
     def evaluate(
         self,
         condition_expr: str | None,
         records: list[dict[str, Any]],
         previous_records: list[dict[str, Any]] | None = None,
+        baseline_metrics: dict[str, float] | None = None,
     ) -> tuple[bool, str]:
         """
         Evaluates a condition string against extracted records with historical comparison support.
@@ -46,17 +54,28 @@ class ConditionEvaluator:
             if not target_field:
                 return False, f"Could not determine target numeric field for condition '{expr}'"
 
-            if not previous_records:
-                return False, f"First run: no historical baseline available to compute {target_pct}% delta on '{target_field}'."
-
             curr_values = self._extract_numeric_values(records, target_field)
-            prev_values = self._extract_numeric_values(previous_records, target_field)
+            if not curr_values:
+                return False, f"Could not extract numeric values for '{target_field}' from current records."
 
-            if not curr_values or not prev_values:
-                return False, f"Could not extract numeric values for '{target_field}' across runs."
-
-            prev_stat = min(prev_values) if not is_increase else max(prev_values)
             curr_stat = min(curr_values) if not is_increase else max(curr_values)
+
+            # Resolve historical baseline from baseline_metrics cache or previous_records
+            prev_stat: float | None = None
+            if baseline_metrics:
+                metric_key = f"{target_field}_{'max' if is_increase else 'min'}"
+                if metric_key in baseline_metrics:
+                    prev_stat = baseline_metrics[metric_key]
+                elif f"{target_field}_avg" in baseline_metrics:
+                    prev_stat = baseline_metrics[f"{target_field}_avg"]
+
+            if prev_stat is None and previous_records:
+                prev_values = self._extract_numeric_values(previous_records, target_field)
+                if prev_values:
+                    prev_stat = min(prev_values) if not is_increase else max(prev_values)
+
+            if prev_stat is None:
+                return False, f"First run: no historical baseline available to compute {target_pct}% delta on '{target_field}'."
 
             if prev_stat <= 0:
                 return False, f"Previous baseline for '{target_field}' was non-positive ({prev_stat})."
@@ -74,6 +93,7 @@ class ConditionEvaluator:
                     False,
                     f"Metric '{target_field}' delta: {actual_pct_change:+.1f}% (current: {curr_stat:.2f} vs prev: {prev_stat:.2f}, target: >= {target_pct}%)",
                 )
+
 
         # 2. Aggregations: min(field), max(field), avg(field), count()
         agg_match = re.match(
