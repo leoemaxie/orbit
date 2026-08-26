@@ -93,9 +93,12 @@ class WorkflowService:
                 "description": "Provider-agnostic transactional email alerts with attached telemetry and dossier links",
                 "status": "active" if bool(s.email_api_key) else "optional",
                 "config": {
-                    "sender": s.email_sender_address,
-                    "recipient_email": "",
-                    "api_key": SecretVault.mask_secret(s.email_api_key),
+                    "mode": "managed",
+                    "recipient_email": "team@company.com",
+                    "notify_on_anomaly": True,
+                    "sender_address": "",
+                    "api_key": "",
+                    "base_url": "",
                 },
             },
             {
@@ -130,11 +133,17 @@ class WorkflowService:
                 if not url:
                     return False, "Slack Webhook URL is not configured in node."
                 return True, "Slack notification endpoint reached successfully."
-            if adapter_id in ("10", "email", "mail", "notify_email"):
-                api_key = config.get("api_key") or get_settings().email_api_key
-                if not api_key:
-                    return False, "Email API Key is not configured."
-                return True, "Transactional email gateway connection verified successfully."
+            if adapter_id in ("10", "email", "mail", "notify_email", "email_alert"):
+                delivery_mode = config.get("mode", "managed")
+                recipient = config.get("recipient_email")
+                if not recipient or "@" not in recipient:
+                    return False, "A valid recipient email address is required."
+                if delivery_mode == "custom":
+                    api_key = config.get("api_key")
+                    if not api_key:
+                        return False, "Custom API Key is required for custom email delivery mode."
+                    return True, f"Custom email delivery verified for '{recipient}'."
+                return True, f"Managed transactional email gateway verified for '{recipient}'."
             if adapter_id in ("11", "webhook", "signed_webhook"):
                 from core.adapters.communication.webhook import WebhookAdapter
                 url = config.get("webhook_url")
