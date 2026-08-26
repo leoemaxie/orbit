@@ -192,30 +192,61 @@ class WorkflowService:
                     )
 
             # 3. Slack Notifications
-            if any(k in clean_id for k in ("slack", "notify_slack")) or clean_id == "9":
-                url = config.get("webhook_url")
+            if any(k in clean_id for k in ("slack", "notify_slack", "slack_alert")) or clean_id == "9":
+                from core.adapters.communication.slack import SlackWebhookAdapter
+                url = str(config.get("webhook_url") or config.get("url") or "").strip().strip("'\"")
+                if "••••" in url or not url:
+                    saved_url = cls._custom_adapter_configs.get(str(adapter_id), {}).get("webhook_url")
+                    if saved_url and "••••" not in saved_url:
+                        url = str(saved_url).strip()
                 if not url:
                     return False, "Slack Webhook URL is not configured in node."
-                return True, "Slack notification endpoint reached successfully."
+                adapter = SlackWebhookAdapter(webhook_url=url)
+                return await adapter.test_connection()
 
             # 4. Outbound Signed Webhooks
-            if any(k in clean_id for k in ("webhook", "signed_webhook")) or clean_id == "11":
+            if any(k in clean_id for k in ("webhook", "signed_webhook", "webhook_alert", "radio")) or clean_id == "11":
                 from core.adapters.communication.webhook import WebhookAdapter
-                url = config.get("webhook_url")
+                url = str(config.get("webhook_url") or config.get("url") or "").strip().strip("'\"")
+                if "••••" in url or not url:
+                    saved_url = cls._custom_adapter_configs.get(str(adapter_id), {}).get("webhook_url")
+                    if saved_url and "••••" not in saved_url:
+                        url = str(saved_url).strip()
                 if not url:
                     return False, "Webhook URL is not configured in node."
-                secret = config.get("signing_secret")
-                adapter = WebhookAdapter(webhook_url=url, signing_secret=secret)
-                return await adapter.test_connection(url)
+
+                secret = str(config.get("signing_secret") or config.get("secret") or "orbit-webhook-secret-key").strip().strip("'\"")
+                if "••••" in secret:
+                    saved_sec = cls._custom_adapter_configs.get(str(adapter_id), {}).get("signing_secret")
+                    if saved_sec and "••••" not in saved_sec:
+                        secret = str(saved_sec).strip()
+                timeout = float(config.get("timeout_sec") or 10.0)
+                adapter = WebhookAdapter(webhook_url=url, signing_secret=secret, timeout_sec=timeout, max_retries=1)
+                return await adapter.test_connection()
 
             # 5. S3 Cloud Storage
-            if any(k in clean_id for k in ("s3", "storage", "s3_storage", "cloud")) or clean_id == "7":
+            if any(k in clean_id for k in ("s3", "storage", "s3_storage", "cloud", "bucket")) or clean_id == "7":
+                b_name = str(config.get("bucket_name") or config.get("bucket") or "orbit-exports").strip()
+                region = str(config.get("region") or "us-east-1").strip()
+                endpoint = config.get("endpoint_url") or config.get("endpoint") or None
+                acc_key = str(config.get("access_key") or config.get("aws_access_key_id") or "").strip()
+                sec_key = str(config.get("secret_key") or config.get("aws_secret_access_key") or "").strip()
+
+                if "••••" in acc_key or not acc_key:
+                    saved_acc = cls._custom_adapter_configs.get(str(adapter_id), {}).get("access_key")
+                    if saved_acc and "••••" not in saved_acc:
+                        acc_key = str(saved_acc).strip()
+                if "••••" in sec_key or not sec_key:
+                    saved_sec = cls._custom_adapter_configs.get(str(adapter_id), {}).get("secret_key")
+                    if saved_sec and "••••" not in saved_sec:
+                        sec_key = str(saved_sec).strip()
+
                 sink = S3ExportSink(
-                    bucket_name=config.get("bucket_name") or "orbit-exports",
-                    region=config.get("region") or "us-east-1",
-                    endpoint_url=config.get("endpoint_url"),
-                    access_key=config.get("access_key"),
-                    secret_key=config.get("secret_key"),
+                    bucket_name=b_name,
+                    region=region,
+                    endpoint_url=endpoint,
+                    access_key=acc_key,
+                    secret_key=sec_key,
                 )
                 return await sink.test_connection()
 

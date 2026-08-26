@@ -50,3 +50,29 @@ class SlackWebhookAdapter:
                 return resp.status_code == 200
         except Exception:  # noqa: BLE001
             return False
+
+    async def test_connection(self) -> tuple[bool, str]:
+        """Tests live reachability of the Slack Incoming Webhook endpoint with a test diagnostic card."""
+        if not self.webhook_url:
+            return False, "Slack Webhook URL is not configured."
+        if not (self.webhook_url.startswith("https://hooks.slack.com/") or self.webhook_url.startswith("https://") or self.webhook_url.startswith("http://")):
+            return False, "Invalid Slack Webhook URL. It must be a valid webhook endpoint (e.g. https://hooks.slack.com/services/...)."
+
+        test_blocks: list[dict[str, Any]] = [
+            {"type": "header", "text": {"type": "plain_text", "text": "🛰️ Orbit Connection Probe"}},
+            {"type": "section", "text": {"type": "mrkdwn", "text": "*Slack Incoming Webhook verified successfully.*\nOrbit notification alerts are ready to dispatch to this channel."}},
+            {"type": "context", "elements": [{"type": "mrkdwn", "text": "Status: `operational` | Diagnostic: `orbit.slack.probe`"}]},
+        ]
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(self.webhook_url, json={"blocks": test_blocks})
+                if resp.status_code == 200:
+                    return True, "Slack webhook probe verified and test card dispatched to channel."
+                if resp.status_code == 404:
+                    return False, "Slack webhook returned 404 Not Found (channel or webhook token may be invalid)."
+                if resp.status_code == 403:
+                    return False, "Slack webhook returned 403 Forbidden (webhook may be revoked or inactive)."
+                return False, f"Slack webhook returned HTTP {resp.status_code}: {resp.text[:100]}"
+        except Exception as e:
+            return False, f"Slack webhook probe failed: {e}"

@@ -8,12 +8,17 @@
 
 	function getPlaceholder(key: string): string {
 		if (key.includes('uri') || key.includes('database_url')) return 'postgresql://user:pass@localhost:5432/orbit';
+		if (key === 'webhook_url') return 'https://hooks.slack.com/... or https://api.site.com/webhook';
 		if (key.includes('url')) return 'https://...';
 		if (key === 'recipient_email') return 'team@company.com';
 		if (key === 'sender_address') return 'alerts@yourdomain.com';
 		if (key === 'smtp_host') return 'smtp.mailgun.org';
 		if (key === 'smtp_port') return '587';
 		if (key.includes('table')) return 'orbit_extracted_records';
+		if (key === 'bucket_name') return 'orbit-exports';
+		if (key === 'region') return 'us-east-1';
+		if (key === 'access_key') return 'AKIA...';
+		if (key.includes('secret') || key.includes('password')) return '••••••••••••••••';
 		return '';
 	}
 </script>

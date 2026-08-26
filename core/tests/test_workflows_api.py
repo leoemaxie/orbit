@@ -76,3 +76,28 @@ def test_test_adapter_connection_api():
         assert res_valid.status_code == 200
         assert res_valid.json()["success"] is True
         assert "user@example.com" in res_valid.json()["message"]
+
+    # Test Slack probe via API with mock
+    from unittest.mock import MagicMock
+    mock_resp = MagicMock(status_code=200)
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        slack_payload = {
+            "adapter_id": "slack_alert",
+            "config": {"webhook_url": "https://hooks.slack.com/services/T1/B1/X1"}
+        }
+        res_slack = client.post("/api/v1/workflows/test-connection", json=slack_payload)
+        assert res_slack.status_code == 200
+        assert res_slack.json()["success"] is True
+        assert "verified" in res_slack.json()["message"]
+
+    # Test Outbound Webhook probe via API with mock
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        wh_payload = {
+            "adapter_id": "webhook_alert",
+            "config": {"webhook_url": "https://api.domain.com/webhook", "signing_secret": "whsec_123"}
+        }
+        res_wh = client.post("/api/v1/workflows/test-connection", json=wh_payload)
+        assert res_wh.status_code == 200
+        assert res_wh.json()["success"] is True

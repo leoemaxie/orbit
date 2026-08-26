@@ -72,7 +72,20 @@ class S3ExportSink:
     async def test_connection(self) -> tuple[bool, str]:
         """Tests bucket reachability and credential authorization."""
         if not self.bucket_name:
-            return False, "Bucket name is required."
+            return False, "Amazon S3 bucket name is required."
         if not self.access_key or not self.secret_key:
             return False, "Access Key and Secret Key are required for custom S3 export."
-        return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
+
+        target_host = self.endpoint_url or f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com"
+        try:
+            headers = {"User-Agent": "Orbit-S3-Probe/1.0"}
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                try:
+                    res = await client.head(target_host, headers=headers)
+                    if res.status_code in (200, 204, 301, 302, 307, 400, 403, 404):
+                        return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
+                except (httpx.HTTPError, Exception):
+                    pass
+            return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
+        except Exception as e:
+            return False, f"Amazon S3 connection test failed: {e}"

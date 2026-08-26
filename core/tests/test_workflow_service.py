@@ -48,3 +48,30 @@ async def test_test_adapter_connection():
     )
     assert ok_smtp_fail is False
     assert "SMTP Host is required" in msg_smtp_fail
+
+    # Test Slack probe without URL
+    ok_slack_no_url, msg_slack_no_url = await WorkflowService.test_adapter_connection(
+        "slack_alert", {"webhook_url": ""}
+    )
+    assert ok_slack_no_url is False
+    assert "not configured" in msg_slack_no_url
+
+    # Test Slack probe with mock
+    from unittest.mock import AsyncMock, MagicMock, patch
+    mock_resp = MagicMock(status_code=200)
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        ok_slack, msg_slack = await WorkflowService.test_adapter_connection(
+            "slack_alert", {"webhook_url": "https://hooks.slack.com/services/T00/B00/X123"}
+        )
+        assert ok_slack is True
+        assert "verified" in msg_slack
+
+    # Test Webhook probe with mock
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        ok_wh, msg_wh = await WorkflowService.test_adapter_connection(
+            "webhook_alert", {"webhook_url": "https://api.external.com/events"}
+        )
+        assert ok_wh is True
+        assert "reached and acknowledged" in msg_wh
