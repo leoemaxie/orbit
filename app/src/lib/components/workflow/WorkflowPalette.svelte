@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Search, Plus, Play, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Sparkles, ChevronLeft } from '@lucide/svelte';
+	import { Search, Plus, Play, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Mail, Sparkles, ChevronLeft } from '@lucide/svelte';
 	import type { NodeTemplate } from './types';
 
 	interface Props {
@@ -11,18 +11,18 @@
 	let searchQuery = $state('');
 
 	const nodeTemplates: NodeTemplate[] = [
-		{ typeId: 'trigger_cron', label: 'Schedule Trigger', category: 'trigger', iconName: 'Play', description: 'Cron schedule & webhook trigger', defaultConfig: { frequency: 'daily', schedule_time: '08:00', timezone: 'UTC' } },
-		{ typeId: 'proxy_discovery', label: 'Source Discovery', category: 'discovery', iconName: 'Globe', description: 'Multi-engine search & proxy retrieval', defaultConfig: { search_depth: 2, max_sources: 8, proxy_zone: 'datacenter' } },
-		{ typeId: 'doc_parser', label: 'Document & Table Parser', category: 'parsing', iconName: 'FileText', description: 'Document layout and table deconstruction', defaultConfig: { layout_analysis: true, table_format: 'markdown' } },
-		{ typeId: 'format_converter', label: 'Format Normalization & OCR', category: 'parsing', iconName: 'FileText', description: 'Convert DOCX/XLSX to PDF & run OCR', defaultConfig: { source_format: 'docx', ocr_enabled: true } },
-		{ typeId: 'schema_extractor', label: 'LLM Schema Extraction', category: 'extraction', iconName: 'Database', description: 'Structured JSON extraction & validation', defaultConfig: { temperature: 0.1, anomaly_detection: true } },
-		{ typeId: 'html_dossier', label: 'PDF Report Builder', category: 'dossier', iconName: 'Sparkles', description: 'Styled PDF summary & briefing generation', defaultConfig: { format: 'pdf', page_size: 'A4' } },
-		{ typeId: 'template_generator', label: 'Template Document Merger', category: 'dossier', iconName: 'FileText', description: 'Merge records into Word/PDF templates', defaultConfig: { template_id: 'default-report' } },
-		{ typeId: 'pii_redactor', label: 'PII Data Masking', category: 'compliance', iconName: 'ShieldCheck', description: 'Mask sensitive PII (SSN, emails, cards)', defaultConfig: { entities: 'EMAIL,SSN,CREDIT_CARD' } },
-		{ typeId: 's3_storage', label: 'Amazon S3 Storage', category: 'storage', iconName: 'Cloud', description: 'Upload JSON and reports to S3 bucket', defaultConfig: { bucket_name: 'orbit-exports', region: 'us-east-1' } },
-		{ typeId: 'sql_database', label: 'Database', category: 'storage', iconName: 'Database', description: 'Stream records to PostgreSQL, MySQL, or SQLite', defaultConfig: { database_url: 'postgresql://user:pass@localhost:5432/orbit_warehouse', table_name: 'extracted_data', upsert_key: 'id' } },
-		{ typeId: 'slack_alert', label: 'Slack Notifications', category: 'notify', iconName: 'MessageSquare', description: 'Slack channel alerts with report links', defaultConfig: { webhook_enabled: true, channel: '#orbit-alerts' } },
-		{ typeId: 'email_alert', label: 'Email Notifications', category: 'notify', iconName: 'Mail', description: 'Executive email alerts & summary briefings', defaultConfig: { recipient_email: 'team@company.com', smtp_host: 'smtp.sendgrid.net', notify_on_anomaly: true } }
+		{ typeId: 'trigger_cron', label: 'Schedule Trigger', category: 'trigger', adapterType: 'managed', iconName: 'Play', description: 'Cron schedule & webhook trigger', defaultConfig: { frequency: 'daily', schedule_time: '08:00', timezone: 'UTC' } },
+		{ typeId: 'proxy_discovery', label: 'Source Discovery', category: 'discovery', adapterType: 'managed', iconName: 'Globe', description: 'Multi-engine search & proxy retrieval', defaultConfig: { search_depth: 2, max_sources: 8, proxy_zone: 'datacenter' } },
+		{ typeId: 'doc_parser', label: 'Document & Table Parser', category: 'parsing', adapterType: 'managed', iconName: 'FileText', description: 'Document layout and table deconstruction', defaultConfig: { layout_analysis: true, table_format: 'markdown' } },
+		{ typeId: 'format_converter', label: 'Format Normalization & OCR', category: 'parsing', adapterType: 'managed', iconName: 'FileText', description: 'Convert DOCX/XLSX to PDF & run OCR', defaultConfig: { source_format: 'docx', ocr_enabled: true } },
+		{ typeId: 'schema_extractor', label: 'LLM Schema Extraction', category: 'extraction', adapterType: 'managed', iconName: 'Database', description: 'Structured JSON extraction & validation', defaultConfig: { temperature: 0.1, anomaly_detection: true } },
+		{ typeId: 'html_dossier', label: 'PDF Report Builder', category: 'dossier', adapterType: 'managed', iconName: 'Sparkles', description: 'Styled PDF summary & briefing generation', defaultConfig: { format: 'pdf', page_size: 'A4' } },
+		{ typeId: 'template_generator', label: 'Template Document Merger', category: 'dossier', adapterType: 'custom', iconName: 'FileText', description: 'Merge records into Word/PDF templates', defaultConfig: { template_id: 'default-report' } },
+		{ typeId: 'pii_redactor', label: 'PII Data Masking', category: 'compliance', adapterType: 'managed', iconName: 'ShieldCheck', description: 'Mask sensitive PII (SSN, emails, cards)', defaultConfig: { entities: 'EMAIL,SSN,CREDIT_CARD' } },
+		{ typeId: 's3_storage', label: 'Amazon S3 Storage', category: 'storage', adapterType: 'custom', iconName: 'Cloud', description: 'Upload JSON and reports to S3 bucket', defaultConfig: { bucket_name: 'orbit-exports', region: 'us-east-1' } },
+		{ typeId: 'sql_database', label: 'Database', category: 'storage', adapterType: 'custom', iconName: 'Database', description: 'Stream records to PostgreSQL, MySQL, or SQLite', defaultConfig: { database_url: 'postgresql://user:pass@localhost:5432/orbit_warehouse', table_name: 'extracted_data', upsert_key: 'id' } },
+		{ typeId: 'slack_alert', label: 'Slack Notifications', category: 'notify', adapterType: 'custom', iconName: 'MessageSquare', description: 'Slack channel alerts with report links', defaultConfig: { webhook_enabled: true, channel: '#orbit-alerts' } },
+		{ typeId: 'email_alert', label: 'Email Notifications', category: 'notify', adapterType: 'custom', iconName: 'Mail', description: 'Executive email alerts & summary briefings', defaultConfig: { recipient_email: 'team@company.com', smtp_host: 'smtp.sendgrid.net', notify_on_anomaly: true } }
 	];
 
 	const filteredTemplates = $derived(
@@ -68,8 +68,15 @@
 				class="group p-2.5 bg-surface-800/80 hover:bg-surface-800 border border-white/5 hover:border-orbit-cyan/40 rounded-xl cursor-grab active:cursor-grabbing transition-all select-none relative flex items-center justify-between gap-2"
 			>
 				<div class="min-w-0 flex-1">
-					<span class="text-xs font-semibold text-slate-200 group-hover:text-orbit-cyan transition-colors truncate block">{template.label}</span>
-					<p class="text-[11px] font-mono text-slate-400 line-clamp-1 mt-0.5">{template.description}</p>
+					<div class="flex items-center gap-1.5 mb-0.5">
+						<span class="text-xs font-semibold text-slate-200 group-hover:text-orbit-cyan transition-colors truncate block">{template.label}</span>
+						<span class="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border shrink-0 {template.adapterType === 'managed'
+							? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20'
+							: 'bg-cyan-950/40 text-cyan-300 border-cyan-500/20'}">
+							{template.adapterType}
+						</span>
+					</div>
+					<p class="text-[11px] font-mono text-slate-400 line-clamp-1">{template.description}</p>
 				</div>
 				<button
 					type="button"

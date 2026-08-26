@@ -12,6 +12,7 @@
 			id: 'node_trigger_1',
 			label: 'Schedule Trigger',
 			category: 'trigger',
+			adapterType: 'managed',
 			iconName: 'Play',
 			description: 'Cron schedule & webhook trigger',
 			status: 'active',
@@ -39,12 +40,12 @@
 		const lastNode = nodes[nodes.length - 1];
 		const x = lastNode ? (lastNode.x + 260 > 620 ? 40 : lastNode.x + 260) : 40;
 		const y = lastNode ? (lastNode.x + 260 > 620 ? lastNode.y + 170 : lastNode.y) : 50;
-		nodes.push({ id: newId, label: template.label, category: template.category, iconName: template.iconName, description: template.description, status: 'active', x, y, config: { ...template.defaultConfig } });
+		nodes.push({ id: newId, label: template.label, category: template.category, adapterType: template.adapterType, iconName: template.iconName, description: template.description, status: 'active', x, y, config: { ...template.defaultConfig } });
 	}
 
 	function handleDropNewNode(template: NodeTemplate, x: number, y: number) {
 		const newId = `node_${Date.now()}`;
-		nodes.push({ id: newId, label: template.label, category: template.category, iconName: template.iconName, description: template.description, status: 'active', x, y, config: { ...template.defaultConfig } });
+		nodes.push({ id: newId, label: template.label, category: template.category, adapterType: template.adapterType, iconName: template.iconName, description: template.description, status: 'active', x, y, config: { ...template.defaultConfig } });
 	}
 
 	function handleUpdatePosition(id: string, x: number, y: number) {

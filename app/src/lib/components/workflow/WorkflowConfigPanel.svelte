@@ -43,9 +43,11 @@
 		<div class="flex items-center justify-between border-b border-white/10 pb-2.5">
 			<div class="flex items-center gap-2 min-w-0">
 				<Sliders size={14} class="text-orbit-cyan shrink-0" />
-				<h3 class="text-xs font-bold text-white uppercase tracking-wider truncate font-mono">{node.label}</h3>
-				<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface-800 text-orbit-cyan border border-white/10">
-					{node.config.mode || 'both'}
+				{@const effectiveType = node.adapterType || (node.id.includes('storage') || node.id.includes('database') || node.id.includes('slack') || node.id.includes('email') || node.id.includes('template') ? 'custom' : 'managed')}
+				<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border {effectiveType === 'managed'
+					? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20'
+					: 'bg-cyan-950/40 text-cyan-300 border-cyan-500/20'}">
+					{effectiveType}
 				</span>
 			</div>
 			<button type="button" onclick={onClose} class="p-1 rounded text-slate-400 hover:text-white hover:bg-surface-800 transition-colors" title="Close inspector">
