@@ -18,7 +18,7 @@ def calculate_next_run(
 
     try:
         tz = ZoneInfo(tz_name)
-    except Exception:  # noqa: BLE001
+    except Exception:
         tz = ZoneInfo("UTC")
 
     now_tz = (now or datetime.now(timezone.utc)).astimezone(tz)

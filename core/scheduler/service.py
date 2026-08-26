@@ -85,7 +85,7 @@ class SchedulerService:
                 except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to launch task for automation {auto.id}: {e}")
 
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(f"Error querying due automations: {e}")
         finally:
             db.close()

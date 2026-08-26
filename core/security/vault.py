@@ -11,12 +11,14 @@ logger = logging.getLogger("core.security.vault")
 class SecretVault:
     """Enterprise secret encryption, decryption, and masking utility."""
 
-    _cipher: Fernet | None = None
+    _cipher: Fernet
 
     @classmethod
     def _get_cipher(cls) -> Fernet:
-        if cls._cipher is None:
-            raw_key = os.getenv("ORBIT_SECRET_KEY", "orbit-master-default-secret-key-32b!")
+        if not hasattr(cls, "_cipher") or getattr(cls, "_cipher", None) is None:
+            raw_key = os.getenv("ORBIT_SECRET_KEY")
+            if not raw_key:
+                raise ValueError("ORBIT_SECRET_KEY environment variable must be configured.")
             derived_key = base64.urlsafe_b64encode(hashlib.sha256(raw_key.encode()).digest())
             cls._cipher = Fernet(derived_key)
         return cls._cipher
