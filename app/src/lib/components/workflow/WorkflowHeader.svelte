@@ -1,15 +1,17 @@
 <script lang="ts">
-	import { GitBranch, Play, RefreshCw, CheckCircle2 } from '@lucide/svelte';
+	import { GitBranch, Play, RefreshCw, CheckCircle2, RotateCw } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
 	interface Props {
 		onDeploy: () => void;
 		onReset: () => void;
+		onSyncTopology?: () => void;
 		deploying?: boolean;
 		deployed?: boolean;
+		syncing?: boolean;
 	}
 
-	let { onDeploy, onReset, deploying = false, deployed = false }: Props = $props();
+	let { onDeploy, onReset, onSyncTopology, deploying = false, deployed = false, syncing = false }: Props = $props();
 </script>
 
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -23,11 +25,19 @@
 		</p>
 	</div>
 
-	<div class="flex items-center gap-2.5">
-		<Button variant="secondary" size="sm" onclick={onReset}>
+	<div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+		{#if onSyncTopology}
+			<Button variant="secondary" size="sm" loading={syncing} onclick={onSyncTopology} title="Fetch live adapter configurations from backend">
+				<RotateCw size={13} class="text-orbit-cyan" />
+				<span>Sync Active Topology</span>
+			</Button>
+		{/if}
+
+		<Button variant="secondary" size="sm" onclick={onReset} title="Reset to empty pipeline canvas">
 			<RefreshCw size={13} />
 			<span>Reset</span>
 		</Button>
+
 		<Button
 			variant={deployed ? 'secondary' : 'primary'}
 			size="md"

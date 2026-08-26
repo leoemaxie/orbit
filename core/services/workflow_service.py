@@ -79,7 +79,7 @@ class WorkflowService:
                 "config": {"webhook_url": SecretVault.mask_secret(s.default_webhook_url), "channel": "#orbit-alerts"},
             },
             {
-                "id": "10", "label": "Email Alert Notifications", "category": "notify", "mode": "both",
+                "id": "10", "label": "Email Alert Notifications", "category": "notify", "mode": "custom",
                 "engine": "Cloud Transactional Email Gateway", "iconName": "Mail",
                 "description": "Provider-agnostic transactional email alerts with attached telemetry and dossier links",
                 "status": "active" if bool(s.email_api_key) else "optional",
@@ -100,6 +100,13 @@ class WorkflowService:
                 },
             },
         ]
+
+        for adapter in topology:
+            saved_cfg = cls._custom_adapter_configs.get(str(adapter["id"])) or cls._custom_adapter_configs.get(str(adapter["label"]).lower())
+            if saved_cfg:
+                adapter["config"].update(saved_cfg)
+                adapter["status"] = "active"
+        return topology
 
     @staticmethod
     async def test_adapter_connection(adapter_id: str, config: dict[str, Any]) -> tuple[bool, str]:
