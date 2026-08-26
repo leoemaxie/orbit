@@ -90,7 +90,7 @@ class WorkflowService:
                 },
             },
             {
-                "id": "11", "label": "Outbound Webhooks", "category": "notify", "mode": "both",
+                "id": "11", "label": "Outbound Webhooks", "category": "notify", "mode": "custom",
                 "engine": "HMAC-SHA256 Signed Webhook Emitter", "iconName": "Play",
                 "description": "Secure signed webhook events with automated retry policy and record streaming",
                 "status": "active" if bool(s.default_webhook_url) else "optional",
