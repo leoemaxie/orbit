@@ -99,7 +99,11 @@
 				onClose={() => (selectedNode = null)}
 				onSave={(cfg) => {
 					const idx = nodes.findIndex((n) => n.id === selectedNode?.id);
-					if (idx !== -1) { nodes[idx].config = cfg; selectedNode = { ...nodes[idx] }; }
+					if (idx !== -1) {
+						nodes[idx].config = { ...cfg };
+						nodes[idx].status = 'configured';
+						selectedNode = { ...nodes[idx] };
+					}
 				}}
 			/>
 		{/if}

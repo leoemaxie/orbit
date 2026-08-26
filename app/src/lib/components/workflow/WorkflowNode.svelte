@@ -65,6 +65,9 @@
 		</div>
 
 		<div class="flex items-center gap-1">
+			{#if node.status === 'configured'}
+				<span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" title="Configured"></span>
+			{/if}
 			<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-800 text-slate-400 border border-white/5">
 				{node.category}
 			</span>

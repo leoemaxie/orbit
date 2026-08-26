@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X, Sliders, Activity, Save } from '@lucide/svelte';
+	import { X, Sliders, Activity, Save, CheckCircle2 } from '@lucide/svelte';
 	import { api } from '$lib/api/client';
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { WorkflowNodeData } from './types';
@@ -14,11 +14,13 @@
 	let configState = $state<Record<string, any>>({});
 	let testing = $state(false);
 	let testResult = $state<{ success: boolean; message: string } | null>(null);
+	let saved = $state(false);
 
 	$effect(() => {
 		if (node) {
 			configState = { ...node.config };
 			testResult = null;
+			saved = false;
 		}
 	});
 
@@ -34,6 +36,14 @@
 		} finally {
 			testing = false;
 		}
+	}
+
+	function handleSave() {
+		onSave(configState);
+		saved = true;
+		setTimeout(() => {
+			saved = false;
+		}, 2000);
 	}
 </script>
 
@@ -82,7 +92,12 @@
 			{/each}
 		</div>
 
-		{#if testResult}
+		{#if saved}
+			<div class="p-2 rounded-lg text-[11px] font-mono border bg-emerald-950/40 border-emerald-500/30 text-emerald-300 flex items-center gap-1.5 animate-in fade-in duration-200">
+				<CheckCircle2 size={13} />
+				<span>Configuration saved and applied to canvas.</span>
+			</div>
+		{:else if testResult}
 			<div class="p-2 rounded-lg text-[11px] font-mono border {testResult.success ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
 				{testResult.message}
 			</div>
@@ -94,9 +109,19 @@
 				<Activity size={12} />
 				<span>Test Probe</span>
 			</Button>
-			<Button variant="primary" size="sm" onclick={() => onSave(configState)}>
-				<Save size={12} />
-				<span>Save Settings</span>
+			<Button
+				variant={saved ? 'secondary' : 'primary'}
+				size="sm"
+				onclick={handleSave}
+				class={saved ? 'border-emerald-500/40 text-emerald-300 bg-emerald-950/30' : ''}
+			>
+				{#if saved}
+					<CheckCircle2 size={12} class="text-emerald-400" />
+					<span>Saved!</span>
+				{:else}
+					<Save size={12} />
+					<span>Save Settings</span>
+				{/if}
 			</Button>
 		</div>
 	</aside>
