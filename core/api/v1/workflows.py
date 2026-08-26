@@ -41,6 +41,32 @@ class TestConnectionResponse(BaseModel):
     message: str
 
 
+class SaveAdapterConfigPayload(BaseModel):
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class SaveAdapterConfigResponse(BaseModel):
+    status: str
+    adapter_id: str
+    message: str
+    saved_at: str
+
+
+@router.post("/adapters/{adapter_id}/config", response_model=SaveAdapterConfigResponse)
+@router.put("/adapters/{adapter_id}/config", response_model=SaveAdapterConfigResponse)
+def save_adapter_config(adapter_id: str, payload: SaveAdapterConfigPayload) -> SaveAdapterConfigResponse:
+    """Persists configuration parameters and credentials for a workflow adapter."""
+    from datetime import datetime, timezone
+
+    WorkflowService.save_adapter_config(adapter_id, payload.config)
+    return SaveAdapterConfigResponse(
+        status="saved",
+        adapter_id=adapter_id,
+        message=f"Configuration for adapter '{adapter_id}' saved successfully.",
+        saved_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
 @router.get("/topology", response_model=list[AdapterTopologyOut])
 def get_workflow_topology() -> list[dict[str, Any]]:
     """Returns live adapter configurations across managed, custom, and hybrid modes."""

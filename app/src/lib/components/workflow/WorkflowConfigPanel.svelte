@@ -38,7 +38,14 @@
 		}
 	}
 
-	function handleSave() {
+	async function handleSave() {
+		if (node) {
+			try {
+				await api.saveAdapterConfig(node.id, configState);
+			} catch (e: any) {
+				console.warn('Adapter config save warning:', e);
+			}
+		}
 		onSave(configState);
 		saved = true;
 		setTimeout(() => {
@@ -48,7 +55,7 @@
 </script>
 
 {#if node}
-	{@const effectiveType = node.adapterType || (node.id.includes('storage') || node.id.includes('database') || node.id.includes('slack') || node.id.includes('email') || node.id.includes('template') ? 'custom' : 'managed')}
+	{@const effectiveType = node.adapterType || (node.id.includes('storage') || node.id.includes('database') || node.id.includes('slack') || node.id.includes('email') || node.id.includes('webhook') || node.id.includes('template') ? 'custom' : 'managed')}
 	<aside class="w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl shrink-0 max-h-[640px] h-fit">
 		<!-- Header with Title & Mode -->
 		<div class="flex items-center justify-between border-b border-white/10 pb-2.5">
@@ -79,11 +86,19 @@
 								<input type="checkbox" id={key} bind:checked={configState[key]} class="w-4 h-4 rounded bg-surface-800 border-white/20 text-orbit-cyan cursor-pointer" />
 								<span class="text-slate-300 text-xs">{configState[key] ? 'Enabled' : 'Disabled'}</span>
 							</div>
-						{:else}
+						{:else if typeof value === 'number'}
 							<input
-								type={key.includes('key') || key.includes('secret') || key.includes('webhook') ? 'password' : 'text'}
+								type="number"
 								id={key}
 								bind:value={configState[key]}
+								class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
+							/>
+						{:else}
+							<input
+								type={!key.includes('url') && (key.includes('key') || key.includes('secret') || key.includes('password') || key.includes('token')) ? 'password' : 'text'}
+								id={key}
+								bind:value={configState[key]}
+								placeholder={key.includes('url') ? 'https://...' : ''}
 								class="w-full px-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-slate-100 focus:outline-none focus:border-orbit-cyan/60"
 							/>
 						{/if}

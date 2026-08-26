@@ -132,3 +132,17 @@ class WorkflowService:
             return True, "Adapter probe succeeded."
         except Exception as e:
             return False, f"Connection test failed: {e}"
+
+    _custom_adapter_configs: dict[str, dict[str, Any]] = {}
+
+    @classmethod
+    def save_adapter_config(cls, adapter_id: str, config: dict[str, Any]) -> dict[str, Any]:
+        """Saves adapter configuration parameters and credentials in runtime memory or vault."""
+        cls._custom_adapter_configs[str(adapter_id)] = config
+        logger.info("Saved configuration for adapter %s", adapter_id)
+        return {
+            "adapter_id": adapter_id,
+            "status": "saved",
+            "message": f"Configuration for adapter '{adapter_id}' saved successfully.",
+            "config": config,
+        }

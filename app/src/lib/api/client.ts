@@ -60,6 +60,12 @@ export class ApiClient {
 			body: JSON.stringify({ adapter_id: adapterId, config })
 		});
 	}
+	async saveAdapterConfig(adapterId: string, config: Record<string, any>): Promise<{ status: string; message: string }> {
+		return this.request<{ status: string; message: string }>(`/workflows/adapters/${adapterId}/config`, {
+			method: 'POST',
+			body: JSON.stringify({ config })
+		});
+	}
 }
 
 export const api = new ApiClient();

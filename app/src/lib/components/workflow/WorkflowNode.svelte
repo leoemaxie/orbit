@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Play, Search, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Mail, Sparkles, Trash2, GripVertical } from '@lucide/svelte';
+	import { Play, Search, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Mail, Sparkles, Radio, Trash2, GripVertical } from '@lucide/svelte';
 	import type { WorkflowNodeData } from './types';
 
 	interface Props {
@@ -22,7 +22,8 @@
 		Cloud,
 		MessageSquare,
 		Mail,
-		Sparkles
+		Sparkles,
+		Radio
 	};
 
 	const iconCategoryMap: Record<string, any> = {
