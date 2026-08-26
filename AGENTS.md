@@ -80,7 +80,54 @@ Orbit adapters operate under clean separation between platform execution credent
 
 ---
 
-## 5. Code & Commit Hygiene
+## 5. CLI Engineering & Architecture Standards (`cli/`)
+
+### Binary Entrypoint & CI Alignment
+* **Primary Binary Name:** The operator binary is named **`orbc`** (Orbit CLI).
+* **Canonical Entrypoint:** Located strictly at `cli/cmd/orbc/main.go` calling `commands.Execute()`.
+* **CI Workflow Target:** `.github/workflows/build-cli.yml` must target `./cmd/orbc` across all compilation matrices.
+
+### Configuration Precedence Hierarchy
+The CLI resolves configuration values using strict precedence (highest to lowest):
+1. **Command-Line Flags** (e.g. `--api-url`, `--format`, `--timeout`)
+2. **Environment Variables** (e.g. `ORBC_API_URL`, `ORBC_FORMAT`, `ORBC_TIMEOUT`)
+3. **Persistent User Config** (`~/.orbc/config.yaml` via `orbc config set ...`)
+4. **Compile-Time Defaults** (`DefaultAPIURL` baked in via Go `-ldflags -X`)
+
+### Cross-Platform Compilation Standard
+* **Pure Go (CGO-Free):** Keep CLI free of external C dependencies (`CGO_ENABLED=0`) for static cross-platform binaries across Linux (amd64, arm64), macOS (Apple Silicon / Intel), and Windows.
+* **Release LDFLAGS:** Always strip debug symbols and inject production backend URL:
+  ```bash
+  go build -ldflags "-s -w -X github.com/leoemaxie/orbit/cli/internal/config.DefaultAPIURL=${PROD_URL}" -o bin/orbc ./cmd/orbc
+  ```
+
+### Output Formatting & Terminal Ergonomics
+* All listing and data-fetching commands (`data`, `list`, `runs`, `show`) must support `--format` with three standard formats:
+  * `table`: Clean ASCII tables via `tablewriter` for human terminals.
+  * `json`: Raw indented JSON for piping and jq scripting.
+  * `csv`: Comma-separated values for direct spreadsheet ingestion.
+* Use terminal spinners (`briandowns/spinner`) for long-running asynchronous goals and pipeline polling.
+* Use colored status badges (`fatih/color`) with automatic terminal detection.
+
+---
+
+## 6. Mandatory Feature Testing Standards
+
+### Rule
+**Never ship a new feature, adapter, pipeline stage, or CLI command without accompanying automated tests.**
+
+### Guidelines & Scope
+* **Backend (`core/tests/`):**
+  * Write `pytest` / `pytest-asyncio` suites for all new adapters, services, and API endpoints.
+  * **Mock External Services:** Always mock outbound HTTP calls (`httpx.AsyncClient`, LLM APIs, search engines, transactional email gateways) using `unittest.mock.AsyncMock` so tests run fast, reliably, and offline.
+  * **Edge-Case Coverage:** Test both the happy path and defensive failure paths (missing API keys, rate limits, network timeouts, invalid inputs).
+* **CLI (`cli/`):**
+  * Write Go table-driven unit tests (`*_test.go`) for command flag parsing, configuration precedence resolution, error parsing, and output formatters.
+* **Pre-Commit Verification:** Run test suites locally (`pytest core/tests/` and `cd cli && go test ./...`) before committing to guarantee zero regressions.
+
+---
+
+## 7. Code & Commit Hygiene
 
 * **Conventional Commits:** Use standard Conventional Commit prefixes (`feat(...)`, `fix(...)`, `refactor(...)`, `test(...)`, `chore(...)`).
 * **Intent-Driven Messages:** Summarize architectural intent and system impact; avoid verbose enumerations of individual variable names.
