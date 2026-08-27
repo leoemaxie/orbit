@@ -5,6 +5,7 @@
 	import { orbitStore } from '$lib/state/orbit.svelte';
 	import DesktopSidebar from '$lib/components/layout/DesktopSidebar.svelte';
 	import MobileNav from '$lib/components/layout/MobileNav.svelte';
+	import MobileBottomNav from '$lib/components/layout/MobileBottomNav.svelte';
 	import DaemonAlert from '$lib/components/layout/DaemonAlert.svelte';
 
 	let { children } = $props();
@@ -75,8 +76,11 @@
 		<DaemonAlert />
 
 		<!-- Page Viewport -->
-		<main class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
+		<main class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 pb-24 md:pb-8 space-y-6 md:space-y-8">
 			{@render children()}
 		</main>
 	</div>
+
+	<!-- Mobile Bottom Navigation Bar -->
+	<MobileBottomNav {navItems} />
 </div>
