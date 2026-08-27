@@ -52,7 +52,9 @@ cd mcp
 pip install -e .
 ```
 
-### 2. Run in Stdio Mode
+### 2. Run Modes
+
+#### Local Stdio Mode (Default)
 
 ```bash
 # Option A: Python module execution
@@ -61,6 +63,27 @@ python -m orbit.server
 # Option B: Installed binary entrypoint
 orbc-mcp
 ```
+
+#### Remote SSE Mode (HTTP / Server-Sent Events)
+
+For hosting Orbit MCP remotely over HTTP/SSE:
+
+```bash
+# Option A: CLI flag
+python -m orbit.server --transport sse --host 0.0.0.0 --port 8001
+# or
+orbc-mcp --transport sse --host 0.0.0.0 --port 8001
+
+# Option B: Environment variables
+MCP_TRANSPORT=sse MCP_HOST=0.0.0.0 MCP_PORT=8001 python -m orbit.server
+
+# Option C: Production ASGI server (Uvicorn / Docker)
+uvicorn orbit.server:app --host 0.0.0.0 --port 8001
+```
+
+Once running, the remote SSE endpoint is accessible at:
+* SSE Stream: `http://<host>:8001/sse`
+* Message POST endpoint: `http://<host>:8001/messages/`
 
 ---
 
@@ -90,6 +113,7 @@ Add to your `claude_desktop_config.json`:
 
 Add to `.cursor/mcp.json` or `.gemini/mcp.json`:
 
+**Local Stdio:**
 ```json
 {
   "mcpServers": {
@@ -101,6 +125,17 @@ Add to `.cursor/mcp.json` or `.gemini/mcp.json`:
         "ORBIT_API_URL": "http://127.0.0.1:8000",
         "PYTHONPATH": "src"
       }
+    }
+  }
+}
+```
+
+**Remote SSE:**
+```json
+{
+  "mcpServers": {
+    "orbit": {
+      "url": "http://<remote-host>:8001/sse"
     }
   }
 }

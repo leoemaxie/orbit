@@ -8,6 +8,9 @@ class MCPSettings(BaseSettings):
     orbit_api_url: str = "http://localhost:8000"
     request_timeout: float = 120.0
     debug: bool = False
+    mcp_transport: str = "stdio"
+    mcp_host: str = "0.0.0.0"
+    mcp_port: int = 8001
 
 
 @lru_cache

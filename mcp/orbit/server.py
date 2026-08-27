@@ -173,16 +173,71 @@ def audit_run_failure(run_id: str) -> str:
     return AUDIT_FAILURE_PROMPT.format(run_id=run_id)
 
 
+import argparse
+
+# Export ASGI app for running directly with `uvicorn orbit.server:app` in container / remote deployments
+if hasattr(mcp, "sse_app"):
+    try:
+        app = mcp.sse_app()
+    except Exception:
+        app = None
+else:
+    app = None
+
+
 def main():
-    """Main entrypoint for standard stdio orbc MCP transport."""
-    if hasattr(mcp, "run"):
-        try:
-            mcp.run(transport="stdio")
-        except TypeError:
-            mcp.run()
+    """Main entrypoint supporting local stdio and remote SSE MCP transports."""
+    from orbit.config import get_mcp_settings
+
+    parser = argparse.ArgumentParser(description="Orbit MCP Server (orbc)")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse"],
+        default=None,
+        help="Transport protocol: 'stdio' for local client pipes, 'sse' for remote HTTP/SSE (default: stdio or MCP_TRANSPORT)",
+    )
+    parser.add_argument(
+        "--host",
+        default=None,
+        help="Host interface for SSE server (default: 0.0.0.0 or MCP_HOST)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port for SSE server (default: 8001 or MCP_PORT)",
+    )
+    args, _ = parser.parse_known_args()
+
+    settings = get_mcp_settings()
+    transport = (args.transport or settings.mcp_transport or "stdio").lower()
+    host = args.host or settings.mcp_host or "0.0.0.0"
+    port = args.port or settings.mcp_port or 8001
+
+    if hasattr(mcp, "settings"):
+        mcp.settings.host = host
+        mcp.settings.port = port
+
+    if transport == "sse":
+        logger.info(f"Starting Orbit MCP Server over SSE on http://{host}:{port}/sse ...")
+        if hasattr(mcp, "run"):
+            try:
+                mcp.run(transport="sse")
+            except TypeError:
+                mcp.run()
+        else:
+            import anyio
+            anyio.run(mcp.run_sse_async)
     else:
-        import anyio
-        anyio.run(mcp.run_stdio_async)
+        logger.info("Starting Orbit MCP Server over stdio ...")
+        if hasattr(mcp, "run"):
+            try:
+                mcp.run(transport="stdio")
+            except TypeError:
+                mcp.run()
+        else:
+            import anyio
+            anyio.run(mcp.run_stdio_async)
 
 
 if __name__ == "__main__":
