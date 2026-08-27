@@ -5,6 +5,7 @@
 	interface NavItem {
 		href: string;
 		label: string;
+		shortLabel?: string;
 		icon: Component<{ size?: number; class?: string }>;
 	}
 
@@ -41,7 +42,7 @@
 				</div>
 
 				<span class="text-[10px] font-sans tracking-tight mt-0.5 leading-tight {active ? 'text-orbit-cyan font-semibold' : 'text-slate-400'}">
-					{item.label}
+					{item.shortLabel ?? item.label}
 				</span>
 			</a>
 		{/each}

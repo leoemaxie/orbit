@@ -24,10 +24,10 @@
 	});
 
 	const navItems = [
-		{ href: '/', label: 'Overview', icon: Radio },
-		{ href: '/automations', label: 'Automation Fleet', icon: Layers },
-		{ href: '/workflows', label: 'Workflows', icon: GitBranch },
-		{ href: '/data', label: 'Data Warehouse', icon: Database }
+		{ href: '/', label: 'Overview', shortLabel: 'Overview', icon: Radio },
+		{ href: '/automations', label: 'Automation Fleet', shortLabel: 'Automation', icon: Layers },
+		{ href: '/workflows', label: 'Workflows', shortLabel: 'Workflows', icon: GitBranch },
+		{ href: '/data', label: 'Data Warehouse', shortLabel: 'Warehouse', icon: Database }
 	];
 </script>
 
