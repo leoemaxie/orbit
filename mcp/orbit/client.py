@@ -1,3 +1,5 @@
+import asyncio
+import json
 import logging
 from typing import Any, Optional
 import httpx
@@ -72,3 +74,53 @@ class OrbitBackendClient:
             resp = await client.get(f"{self.base_url}/api/v1/automations/{automation_id}/runs")
             resp.raise_for_status()
             return resp.json()
+
+    async def stream_run_and_wait(
+        self,
+        run_id: str,
+        timeout: float = 300.0,
+        progress_callback: Optional[Any] = None,
+    ) -> dict[str, Any]:
+        """
+        Connects to the live SSE telemetry stream of a run and streams events until completion.
+        Ensures long-running agentic execution completes reliably with live progress reports.
+        """
+        url = f"{self.base_url}/api/v1/runs/{run_id}/stream"
+        last_snapshot: dict[str, Any] = {}
+
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                async with client.stream("GET", url, headers={"Accept": "text/event-stream"}) as response:
+                    response.raise_for_status()
+
+                    current_event = "message"
+                    data_lines: list[str] = []
+
+                    async for line in response.aiter_lines():
+                        line = line.strip()
+                        if line.startswith("event:"):
+                            current_event = line[6:].strip()
+                        elif line.startswith("data:"):
+                            data_lines.append(line[5:].strip())
+                        elif not line and data_lines:
+                            raw_data = "\n".join(data_lines)
+                            data_lines = []
+                            try:
+                                payload = json.loads(raw_data)
+                                last_snapshot = payload
+                                if progress_callback and callable(progress_callback):
+                                    if asyncio.iscoroutinefunction(progress_callback):
+                                        await progress_callback(current_event, payload)
+                                    else:
+                                        progress_callback(current_event, payload)
+
+                                if current_event == "complete" or payload.get("status") in ("verified", "failed"):
+                                    return payload
+                            except Exception:
+                                pass
+        except Exception as err:
+            logger.warning(f"SSE stream interrupted for run {run_id}, falling back to poll: {err}")
+
+        if not last_snapshot or last_snapshot.get("status") not in ("verified", "failed"):
+            return await self.get_run(run_id)
+        return last_snapshot

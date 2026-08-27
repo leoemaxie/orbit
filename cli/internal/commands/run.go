@@ -8,6 +8,12 @@ import (
 	"github.com/leoemaxie/orbit/cli/internal/ui"
 )
 
+var streamFlag bool
+
+func init() {
+	runCmd.Flags().BoolVarP(&streamFlag, "stream", "s", false, "Stream live execution telemetry and logs via SSE")
+}
+
 var runCmd = &cobra.Command{
 	Use:   "run <automation-id>",
 	Short: "Execute an automation on-demand",
@@ -19,6 +25,15 @@ var runCmd = &cobra.Command{
 }
 
 func executeRun(automationID string) error {
+	if streamFlag {
+		run, err := client.RunAutomation(automationID)
+		if err != nil {
+			ui.Error("Failed to trigger run: %v", err)
+			return err
+		}
+		return executeWatch(run.ID)
+	}
+
 	if jsonFlag {
 		run, err := client.RunAutomation(automationID)
 		if err != nil {

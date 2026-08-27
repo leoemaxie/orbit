@@ -9,7 +9,8 @@ import (
 )
 
 type Client struct {
-	http *resty.Client
+	http    *resty.Client
+	baseURL string
 }
 
 func NewClient(baseURL string, timeout time.Duration) *Client {
@@ -20,7 +21,11 @@ func NewClient(baseURL string, timeout time.Duration) *Client {
 		SetHeader("Accept", "application/json").
 		SetHeader("User-Agent", "Orbit-CLI/0.2.0")
 
-	return &Client{http: r}
+	return &Client{http: r, baseURL: baseURL}
+}
+
+func (c *Client) BaseURL() string {
+	return c.baseURL
 }
 
 func (c *Client) Health() (*HealthResponse, error) {

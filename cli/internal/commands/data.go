@@ -12,17 +12,38 @@ import (
 var (
 	formatFlag    string
 	validOnlyFlag bool
+	followFlag    bool
 )
 
 var dataCmd = &cobra.Command{
 	Use:   "data <run-id>",
 	Short: "View and export extracted records for a run",
 	Example: `  orbc data 8f2c34a1
+  orbc data 8f2c34a1 --follow
   orbc data 8f2c34a1 --format csv > results.csv
   orbc data 8f2c34a1 --format json | jq .`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		runID := args[0]
+
+		if followFlag {
+			ui.Header(fmt.Sprintf("🛰️ Orbit Data Stream — Tailing records for Run %s", runID[:8]))
+			return client.StreamRunResults(runID, func(record *orbc.ResultOut) error {
+				if validOnlyFlag && !record.Valid {
+					return nil
+				}
+				if formatFlag == "json" {
+					return formatters.PrintJSON(record)
+				}
+				statusIcon := ui.Green("✓")
+				if !record.Valid {
+					statusIcon = ui.Yellow("⚠")
+				}
+				fmt.Printf("[%s] ID: %s | URL: %s\n", statusIcon, record.ID[:8], record.URL)
+				return nil
+			})
+		}
+
 		run, err := client.GetRun(runID)
 		if err != nil {
 			ui.Error("Failed to fetch data for run: %v", err)
@@ -57,4 +78,5 @@ var dataCmd = &cobra.Command{
 func init() {
 	dataCmd.Flags().StringVarP(&formatFlag, "format", "f", "table", "Output format: table, json, csv")
 	dataCmd.Flags().BoolVar(&validOnlyFlag, "valid-only", false, "Show only records that passed validation")
+	dataCmd.Flags().BoolVarP(&followFlag, "follow", "w", false, "Follow / stream incoming data records in real time")
 }

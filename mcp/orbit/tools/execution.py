@@ -5,13 +5,19 @@ from orbit.client import OrbitBackendClient
 async def run_automation_tool(automation_id: str, client: OrbitBackendClient) -> dict[str, Any]:
     """
     Triggers an on-demand autonomous run for a registered automation.
-    Executes the full pipeline: discovery -> retrieval -> extraction -> validation -> condition evaluation -> verification.
+    Executes the full pipeline via SSE streaming: discovery -> retrieval -> extraction -> validation -> condition evaluation -> verification.
 
     Args:
         automation_id: The UUID of the automation to execute.
     """
     try:
-        run = await client.run_automation(automation_id)
+        initial_run = await client.run_automation(automation_id)
+        run_id = initial_run.get("id")
+        if not run_id:
+            return {"success": False, "error": "Failed to initialize run"}
+
+        # Stream live telemetry until completion
+        run = await client.stream_run_and_wait(str(run_id))
         valid_results = [r for r in run.get("results", []) if r.get("valid")]
 
         return {
@@ -37,7 +43,7 @@ async def run_automation_tool(automation_id: str, client: OrbitBackendClient) ->
 async def execute_goal_tool(goal: str, client: OrbitBackendClient) -> dict[str, Any]:
     """
     One-shot execution: Interprets a natural language goal, creates an automation,
-    immediately executes the full agent loop, and returns the extracted structured results.
+    immediately executes the full agent loop with live streaming telemetry, and returns verified records.
 
     Args:
         goal: Natural language web data objective.
@@ -49,8 +55,13 @@ async def execute_goal_tool(goal: str, client: OrbitBackendClient) -> dict[str, 
         if not auto_id:
             return {"success": False, "error": "Failed to create automation"}
 
-        # Step 2: Run
-        run = await client.run_automation(str(auto_id))
+        # Step 2: Trigger & Stream
+        initial_run = await client.run_automation(str(auto_id))
+        run_id = initial_run.get("id")
+        if not run_id:
+            return {"success": False, "error": "Failed to initialize run"}
+
+        run = await client.stream_run_and_wait(str(run_id))
         valid_results = [r for r in run.get("results", []) if r.get("valid")]
 
         return {
