@@ -1,5 +1,8 @@
 import { PUBLIC_API_URL } from '$env/static/public';
 import type { AutomationListOut, AutomationOut, GoalRequest, HealthStatus, RunOut } from './types';
+import { createSSEConnection, type SSEOptions, type SSEConnection } from './sse';
+
+export { createSSEConnection, type SSEOptions, type SSEConnection };
 
 export class ApiClient {
 	private baseUrl: string;
@@ -49,30 +52,23 @@ export class ApiClient {
 	}
 	streamRun(runId: string, onUpdate: (run: RunOut) => void, onError?: (err: any) => void): () => void {
 		const url = this.getRunStreamUrl(runId);
-		const eventSource = new EventSource(url);
-
-		const handleMessage = (e: MessageEvent) => {
-			try {
-				const data = JSON.parse(e.data);
-				onUpdate(data);
-			} catch (err) {
-				console.error('Failed to parse SSE payload:', err);
+		const conn = createSSEConnection<RunOut>({
+			url,
+			onEvent: {
+				snapshot: (data) => onUpdate(data),
+				update: (data) => onUpdate(data),
+				complete: (data) => {
+					onUpdate(data);
+					conn.close();
+				}
+			},
+			onError: (err) => {
+				if (onError) onError(err);
 			}
-		};
-
-		eventSource.addEventListener('snapshot', handleMessage);
-		eventSource.addEventListener('update', handleMessage);
-		eventSource.addEventListener('complete', (e) => {
-			handleMessage(e);
-			eventSource.close();
 		});
 
-		eventSource.onerror = (err) => {
-			if (onError) onError(err);
-		};
-
 		return () => {
-			eventSource.close();
+			conn.close();
 		};
 	}
 	async listAutomationRuns(automationId: string): Promise<RunOut[]> {

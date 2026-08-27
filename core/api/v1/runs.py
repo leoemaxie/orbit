@@ -4,7 +4,6 @@ import os
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from core.agent.orchestrator import AgentOrchestrator
@@ -13,6 +12,7 @@ from core.api.serializers import run_to_out
 from core.db.orm import Automation, Run
 from core.db.session import SessionLocal
 from core.events.bus import event_bus
+from core.events.sse import format_sse, format_sse_ping, sse_response
 from core.events.types import OrbitEvent
 from core.models.enums import RunStatus
 from core.models.schemas import RunOut
@@ -44,11 +44,11 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
 
     async def event_generator():
         # 1. Send initial snapshot immediately
-        yield f"event: snapshot\ndata: {initial_payload.model_dump_json()}\n\n"
+        yield format_sse(data=initial_payload, event="snapshot")
 
         # If already completed or failed, close the stream cleanly
         if initial_payload.status in (RunStatus.verified, RunStatus.failed):
-            yield f"event: complete\ndata: {initial_payload.model_dump_json()}\n\n"
+            yield format_sse(data=initial_payload, event="complete")
             return
 
         queue: asyncio.Queue[OrbitEvent | None] = asyncio.Queue()
@@ -74,7 +74,7 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
                         if current_run:
                             out = run_to_out(current_run)
                             event_name = "complete" if out.status in (RunStatus.verified, RunStatus.failed) else "update"
-                            yield f"event: {event_name}\ndata: {out.model_dump_json()}\n\n"
+                            yield format_sse(data=out, event=event_name)
 
                             if out.status in (RunStatus.verified, RunStatus.failed):
                                 break
@@ -84,21 +84,13 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
                         if current_run:
                             out = run_to_out(current_run)
                             if out.status in (RunStatus.verified, RunStatus.failed):
-                                yield f"event: complete\ndata: {out.model_dump_json()}\n\n"
+                                yield format_sse(data=out, event="complete")
                                 break
-                    yield ": ping\n\n"
+                    yield format_sse_ping()
         finally:
             event_bus.unsubscribe(_on_event)
 
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache, no-transform",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+    return sse_response(event_generator())
 
 
 @router.get("/runs/{run_id}/dossier")
