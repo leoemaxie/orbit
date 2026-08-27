@@ -69,7 +69,7 @@
 
 {#if node}
 	{@const effectiveType = node.adapterType || (node.id.includes('storage') || node.id.includes('database') || node.id.includes('slack') || node.id.includes('webhook') || node.id.includes('template') ? 'custom' : node.id.includes('email') ? 'both' : 'managed')}
-	<aside class="w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl shrink-0 max-h-[640px] h-fit">
+	<aside class="w-full lg:w-80 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl shrink-0 max-h-[640px] h-fit">
 		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-white/10 pb-2.5">
 			<div class="flex items-center gap-2 min-w-0">

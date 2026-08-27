@@ -42,6 +42,9 @@
 	}
 
 	onMount(() => {
+		if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+			paletteOpen = false;
+		}
 		loadTopology();
 	});
 
@@ -49,6 +52,9 @@
 		const { x, y } = calculateNextPosition(nodes);
 		nodes.push(createNodeFromTemplate(template, x, y));
 		persistLocalNodes(nodes);
+		if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+			paletteOpen = false;
+		}
 	}
 
 	function handleUpdatePosition(id: string, x: number, y: number) {

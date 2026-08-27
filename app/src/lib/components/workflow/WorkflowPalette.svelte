@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Search, Plus, Play, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Mail, Sparkles, Radio, ChevronLeft } from '@lucide/svelte';
+	import { Search, Plus, Play, Globe, FileText, Database, ShieldCheck, Cloud, MessageSquare, Mail, Sparkles, Radio, ChevronLeft, X } from '@lucide/svelte';
 	import type { NodeTemplate } from './types';
 
 	interface Props {
@@ -38,16 +38,21 @@
 	}
 </script>
 
-<aside class="w-72 bg-surface-900 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 shadow-xl shrink-0 h-[640px]">
+<aside class="w-full lg:w-72 bg-surface-900 border border-white/10 rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3 sm:gap-4 shadow-xl shrink-0 max-h-[300px] sm:max-h-[360px] lg:max-h-none lg:h-[640px]">
 	<div class="flex items-center justify-between">
-		<h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">Adapter Library</h2>
+		<div class="flex items-center gap-2">
+			<h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">Adapter Library</h2>
+			<span class="text-[10px] font-mono text-slate-400 bg-surface-800 px-1.5 py-0.5 rounded border border-white/5">{filteredTemplates.length}</span>
+		</div>
 		<button
 			type="button"
 			onclick={onClose}
-			class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-surface-800 transition-colors"
+			class="flex items-center gap-1 px-2 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-surface-800 transition-colors text-xs font-mono"
 			title="Collapse sidebar"
 		>
-			<ChevronLeft size={16} />
+			<span class="lg:hidden">Hide</span>
+			<ChevronLeft size={16} class="hidden lg:inline" />
+			<X size={14} class="lg:hidden" />
 		</button>
 	</div>
 
@@ -82,7 +87,7 @@
 				<button
 					type="button"
 					onclick={() => onAddNode(template)}
-					class="p-1 rounded bg-surface-700 hover:bg-orbit-cyan hover:text-void text-slate-300 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+					class="p-1.5 rounded bg-surface-700 hover:bg-orbit-cyan hover:text-void text-slate-300 transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100 shrink-0"
 					title="Add to canvas"
 				>
 					<Plus size={13} />
