@@ -3,7 +3,8 @@ import logging
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from core.agent.orchestrator import AgentOrchestrator
@@ -11,6 +12,8 @@ from core.api.dependencies import get_db
 from core.api.serializers import run_to_out
 from core.db.orm import Automation, Run
 from core.db.session import SessionLocal
+from core.events.bus import event_bus
+from core.events.types import OrbitEvent
 from core.models.enums import RunStatus
 from core.models.schemas import RunOut
 
@@ -27,6 +30,75 @@ def get_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     return run_to_out(run)
+
+
+@router.get("/runs/{run_id}/stream")
+async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Session, Depends(get_db)]):
+    """
+    Streams live run telemetry, stage transitions, reasoning logs, and status updates via Server-Sent Events (SSE).
+    """
+    run = db.query(Run).filter(Run.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    initial_payload = run_to_out(run)
+
+    async def event_generator():
+        # 1. Send initial snapshot immediately
+        yield f"event: snapshot\ndata: {initial_payload.model_dump_json()}\n\n"
+
+        # If already completed or failed, close the stream cleanly
+        if initial_payload.status in (RunStatus.verified, RunStatus.failed):
+            yield f"event: complete\ndata: {initial_payload.model_dump_json()}\n\n"
+            return
+
+        queue: asyncio.Queue[OrbitEvent | None] = asyncio.Queue()
+
+        async def _on_event(evt: OrbitEvent):
+            if evt.run_id == run_id:
+                await queue.put(evt)
+
+        event_bus.subscribe(_on_event)
+
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+
+                try:
+                    evt = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    if evt is None:
+                        break
+
+                    with SessionLocal() as poll_db:
+                        current_run = poll_db.query(Run).filter(Run.id == run_id).first()
+                        if current_run:
+                            out = run_to_out(current_run)
+                            event_name = "complete" if out.status in (RunStatus.verified, RunStatus.failed) else "update"
+                            yield f"event: {event_name}\ndata: {out.model_dump_json()}\n\n"
+
+                            if out.status in (RunStatus.verified, RunStatus.failed):
+                                break
+                except asyncio.TimeoutError:
+                    with SessionLocal() as poll_db:
+                        current_run = poll_db.query(Run).filter(Run.id == run_id).first()
+                        if current_run:
+                            out = run_to_out(current_run)
+                            if out.status in (RunStatus.verified, RunStatus.failed):
+                                yield f"event: complete\ndata: {out.model_dump_json()}\n\n"
+                                break
+                    yield ": ping\n\n"
+        finally:
+            event_bus.unsubscribe(_on_event)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/runs/{run_id}/dossier")

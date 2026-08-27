@@ -85,19 +85,19 @@
 			</div>
 
 			<!-- Bottom Toolbar in Prompt Box -->
-			<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-white/5">
+			<div class="flex items-center justify-between gap-2 pt-3 border-t border-white/5">
 				<div class="flex items-center gap-2">
 					<button
 						type="button"
 						onclick={() => (goalText = goalText ? `${goalText} (country: Nigeria)` : 'Track ')}
-						class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-800 hover:bg-surface-700 border border-white/5 text-xs text-slate-300 hover:text-white transition-colors font-sans"
+						class="inline-flex items-center gap-1.5 px-2.5 md:px-3 py-1 rounded-lg bg-surface-800 hover:bg-surface-700 border border-white/5 text-xs text-slate-300 hover:text-white transition-colors font-sans"
 						title="Add country, domain, or website context"
 					>
 						<Plus size={13} class="text-orbit-cyan" />
 						<span>Add context</span>
 					</button>
 
-					<span class="text-[11px] font-mono text-slate-500 hidden sm:inline">
+					<span class="text-[11px] font-mono text-slate-500 hidden md:inline">
 						Press <kbd class="px-1.5 py-0.5 rounded bg-surface-800 text-slate-400 border border-white/10 text-[10px]">Ctrl+Enter</kbd> to run
 					</span>
 				</div>
@@ -108,11 +108,12 @@
 					size="md"
 					{loading}
 					disabled={!goalText.trim()}
-					class="shrink-0 font-medium"
+					class="shrink-0 font-medium py-1.5 px-3 md:py-2 md:px-4 text-xs md:text-sm"
 				>
-					<Sparkles size={15} />
-					<span>Start Mission</span>
-					<ArrowRight size={14} />
+					<Sparkles size={14} />
+					<span class="inline md:hidden">Start</span>
+					<span class="hidden md:inline">Start Mission</span>
+					<ArrowRight size={14} class="hidden md:inline" />
 				</Button>
 			</div>
 		</div>
@@ -123,14 +124,14 @@
 		<div class="flex items-center gap-1.5 text-xs text-slate-400 px-1 font-mono">
 			<span>Examples:</span>
 		</div>
-		<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+		<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
 			{#each promptPills as pill}
 				<button
 					type="button"
 					onclick={() => selectPill(pill.goal)}
-					class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-900/80 hover:bg-surface-800 border border-white/10 hover:border-orbit-cyan/40 text-xs text-slate-300 hover:text-slate-100 transition-all shrink-0 font-sans shadow-sm"
+					class="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-3.5 py-1.5 rounded-full bg-surface-900/80 hover:bg-surface-800 border border-white/10 hover:border-orbit-cyan/40 text-xs text-slate-300 hover:text-slate-100 transition-all shrink-0 font-sans shadow-sm active:scale-95 whitespace-nowrap"
 				>
-					<pill.icon size={13} class="text-orbit-cyan" />
+					<pill.icon size={13} class="text-orbit-cyan shrink-0" />
 					<span>{pill.label}</span>
 				</button>
 			{/each}

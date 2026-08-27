@@ -22,9 +22,41 @@
 	let selectedNode = $state<string | null>(null);
 	const runId = $derived(page.params.id);
 
+	let closeStream: (() => void) | null = null;
+
+	function connectStream(id: string) {
+		if (closeStream) {
+			closeStream();
+			closeStream = null;
+		}
+
+		closeStream = api.streamRun(
+			id,
+			(updatedRun) => {
+				run = updatedRun;
+				loading = false;
+			},
+			async () => {
+				// Fallback to direct HTTP fetch if SSE connection encounters network failure
+				try {
+					const data = await api.getRun(id);
+					run = data;
+				} catch {} finally {
+					loading = false;
+				}
+			}
+		);
+	}
+
 	async function loadRunDetails() {
 		if (!runId) return;
-		try { run = await api.getRun(runId); } catch (err) { console.error(err); } finally { loading = false; }
+		try {
+			run = await api.getRun(runId);
+		} catch (err) {
+			console.error(err);
+		} finally {
+			loading = false;
+		}
 	}
 
 	async function handleRerun() {
@@ -32,16 +64,22 @@
 		rerunning = true;
 		try {
 			const updated = await orbitStore.retryRun(run.id);
-			if (updated) { run = updated; loadRunDetails(); }
-		} finally { rerunning = false; }
+			if (updated) {
+				run = updated;
+				if (runId) connectStream(runId);
+			}
+		} finally {
+			rerunning = false;
+		}
 	}
 
 	onMount(() => {
-		loadRunDetails();
-		const interval = setInterval(() => {
-			if (run && run.status !== 'verified' && run.status !== 'failed') loadRunDetails();
-		}, 1500);
-		return () => clearInterval(interval);
+		if (runId) {
+			connectStream(runId);
+		}
+		return () => {
+			if (closeStream) closeStream();
+		};
 	});
 </script>
 

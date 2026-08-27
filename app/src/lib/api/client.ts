@@ -44,6 +44,37 @@ export class ApiClient {
 		return this.request<RunOut>(`/runs/${runId}/retry`, { method: 'POST' });
 	}
 	async getRun(runId: string): Promise<RunOut> { return this.request<RunOut>(`/runs/${runId}`); }
+	getRunStreamUrl(runId: string): string {
+		return `${this.baseUrl}/runs/${runId}/stream`;
+	}
+	streamRun(runId: string, onUpdate: (run: RunOut) => void, onError?: (err: any) => void): () => void {
+		const url = this.getRunStreamUrl(runId);
+		const eventSource = new EventSource(url);
+
+		const handleMessage = (e: MessageEvent) => {
+			try {
+				const data = JSON.parse(e.data);
+				onUpdate(data);
+			} catch (err) {
+				console.error('Failed to parse SSE payload:', err);
+			}
+		};
+
+		eventSource.addEventListener('snapshot', handleMessage);
+		eventSource.addEventListener('update', handleMessage);
+		eventSource.addEventListener('complete', (e) => {
+			handleMessage(e);
+			eventSource.close();
+		});
+
+		eventSource.onerror = (err) => {
+			if (onError) onError(err);
+		};
+
+		return () => {
+			eventSource.close();
+		};
+	}
 	async listAutomationRuns(automationId: string): Promise<RunOut[]> {
 		return this.request<RunOut[]>(`/automations/${automationId}/runs`);
 	}

@@ -145,6 +145,15 @@ class AgentOrchestrator:
             if not urls:
                 run.status = RunStatus.discovering
                 self._safe_commit(db)
+                await event_bus.publish(
+                    OrbitEvent(
+                        event_type="run.stage",
+                        run_id=run.id,
+                        automation_id=automation.id,
+                        message=f"Discovery started for query: {plan.search_query}",
+                        payload={"stage": "discovering"},
+                    )
+                )
 
                 current_query = plan.search_query
                 max_discovery_retries = 3
@@ -179,6 +188,15 @@ class AgentOrchestrator:
                     run.error = "Discovery failed: no relevant web sources could be identified after multiple self-healing attempts."
                     run.finished_at = datetime.now(timezone.utc)
                     self._safe_commit(db)
+                    await event_bus.publish(
+                        OrbitEvent(
+                            event_type="run.failed",
+                            run_id=run.id,
+                            automation_id=automation.id,
+                            message=run.error,
+                            payload={"stage": "discovering", "error": run.error},
+                        )
+                    )
                     return run
             else:
                 logger.info(f"Resuming run {run.id}: reusing {len(urls)} checkpointed discovery source(s).")
@@ -195,6 +213,15 @@ class AgentOrchestrator:
             # ────────────────────────────────────────────────
             run.status = RunStatus.retrieving
             self._safe_commit(db)
+            await event_bus.publish(
+                OrbitEvent(
+                    event_type="run.stage",
+                    run_id=run.id,
+                    automation_id=automation.id,
+                    message=f"Retrieval started for {len(urls)} source URL(s)",
+                    payload={"stage": "retrieving", "sources": urls},
+                )
+            )
 
             pages: dict[str, str | None] = {}
             max_retrieval_retries = 3
@@ -264,6 +291,15 @@ class AgentOrchestrator:
             # ────────────────────────────────────────────────
             run.status = RunStatus.extracting
             self._safe_commit(db)
+            await event_bus.publish(
+                OrbitEvent(
+                    event_type="run.stage",
+                    run_id=run.id,
+                    automation_id=automation.id,
+                    message=f"Extraction started across {len(pages)} retrieved page(s)",
+                    payload={"stage": "extracting"},
+                )
+            )
 
             extracted_records: list[dict[str, Any]] = []
             valid_pages = [(u, c) for u, c in pages.items() if c]
@@ -296,6 +332,15 @@ class AgentOrchestrator:
             # ────────────────────────────────────────────────
             run.status = RunStatus.validating
             self._safe_commit(db)
+            await event_bus.publish(
+                OrbitEvent(
+                    event_type="run.stage",
+                    run_id=run.id,
+                    automation_id=automation.id,
+                    message="Validation and anomaly detection started",
+                    payload={"stage": "validating"},
+                )
+            )
 
             # Statistical anomaly check across all numeric fields in plan schema
             annotated_records = self.anomaly_detector.filter_and_annotate_outliers(

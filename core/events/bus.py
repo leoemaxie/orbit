@@ -25,6 +25,9 @@ class EventBus:
     def subscribe(self, callback: Subscriber) -> None:
         self.broker.subscribe(callback)
 
+    def unsubscribe(self, callback: Subscriber) -> None:
+        self.broker.unsubscribe(callback)
+
     async def publish(self, event: OrbitEvent) -> None:
         await self.broker.publish(event)
 

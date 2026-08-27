@@ -40,6 +40,11 @@ class EventBroker(ABC):
         """Subscribes a listener callback to event notifications."""
         pass
 
+    @abstractmethod
+    def unsubscribe(self, callback: Subscriber) -> None:
+        """Unsubscribes a listener callback."""
+        pass
+
 
 class InMemoryEventBroker(EventBroker):
     """In-memory event broker for local execution, tests, and standalone deployments."""
@@ -50,6 +55,10 @@ class InMemoryEventBroker(EventBroker):
 
     def subscribe(self, callback: Subscriber) -> None:
         self._subscribers.append(callback)
+
+    def unsubscribe(self, callback: Subscriber) -> None:
+        if callback in self._subscribers:
+            self._subscribers.remove(callback)
 
     async def publish(self, event: OrbitEvent) -> None:
         logger.debug(f"[InMemoryBroker] Event: {event.event_type} (run={event.run_id})")
@@ -92,6 +101,9 @@ class RedisEventBroker(EventBroker):
 
     def subscribe(self, callback: Subscriber) -> None:
         self._local_fallback.subscribe(callback)
+
+    def unsubscribe(self, callback: Subscriber) -> None:
+        self._local_fallback.unsubscribe(callback)
 
     async def publish(self, event: OrbitEvent) -> None:
         # 1. Dispatch to local in-process subscribers
