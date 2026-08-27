@@ -1,7 +1,11 @@
 import asyncio
 import logging
 from typing import Any
-from mcp.server.fastmcp import FastMCP
+
+try:
+    from mcp.server.mcpserver import MCPServer
+except (ImportError, ModuleNotFoundError):
+    from mcp.server.fastmcp import FastMCP as MCPServer
 
 from orbit.client import OrbitBackendClient
 from orbit.prompts.templates import AUDIT_FAILURE_PROMPT, WORKFLOW_DESIGN_PROMPT
@@ -22,8 +26,8 @@ from orbit.tools.inspection import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("orbc.server")
 
-# Initialize FastMCP Server with tool name 'orbc'
-mcp = FastMCP("orbc")
+# Initialize MCP Server with tool name 'orbc'
+mcp = MCPServer("orbc")
 client = OrbitBackendClient()
 resource_provider = OrbitResourceProvider(client)
 
@@ -171,7 +175,14 @@ def audit_run_failure(run_id: str) -> str:
 
 def main():
     """Main entrypoint for standard stdio orbc MCP transport."""
-    mcp.run(transport="stdio")
+    if hasattr(mcp, "run"):
+        try:
+            mcp.run(transport="stdio")
+        except TypeError:
+            mcp.run()
+    else:
+        import anyio
+        anyio.run(mcp.run_stdio_async)
 
 
 if __name__ == "__main__":
