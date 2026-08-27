@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Sparkles, ArrowRight, Plus, Cpu, FileText, DollarSign, Database, Activity } from '@lucide/svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { orbitStore } from '$lib/state/orbit.svelte';
 
 	interface Props {
 		onSubmit: (goal: string) => void;
@@ -69,6 +70,13 @@
 		></div>
 
 		<div class="relative bg-surface-900 border border-white/10 group-focus-within:border-orbit-cyan/40 rounded-2xl p-4 md:p-5 shadow-2xl transition-colors space-y-3">
+			{#if loading && orbitStore.goalReasoningStage}
+				<div class="px-3 py-1.5 rounded-lg bg-orbit-cyan/10 border border-orbit-cyan/30 text-orbit-cyan text-xs font-mono flex items-center gap-2 animate-in fade-in duration-200">
+					<Sparkles size={13} class="animate-spin text-orbit-cyan shrink-0" />
+					<span class="truncate">{orbitStore.goalReasoningStage.message}</span>
+				</div>
+			{/if}
+
 			<div class="flex items-start gap-3">
 				<textarea
 					bind:value={goalText}

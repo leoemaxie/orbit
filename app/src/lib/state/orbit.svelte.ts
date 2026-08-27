@@ -64,21 +64,53 @@ export class OrbitStore {
 		}
 	}
 
+	goalReasoningStage = $state<{ stage: string; message: string } | null>(null);
+
 	async createGoal(goal: string): Promise<AutomationOut | null> {
 		this.interpretingGoal = true;
+		this.goalReasoningStage = { stage: 'analyzing', message: 'Analyzing goal objective...' };
 		this.errorMessage = null;
-		try {
-			const res = await api.createAutomation({ goal });
-			this.automations = [res, ...this.automations];
-			this.totalAutomations += 1;
-			this.selectedAutomation = res;
-			return res;
-		} catch (err: any) {
-			this.errorMessage = err.message || 'Goal interpretation failed';
-			return null;
-		} finally {
-			this.interpretingGoal = false;
-		}
+
+		return new Promise<AutomationOut | null>((resolve) => {
+			let resolved = false;
+
+			const closeStream = api.streamGoalPlan(
+				goal,
+				(data) => {
+					this.goalReasoningStage = data;
+				},
+				() => {},
+				(res) => {
+					if (!resolved) {
+						resolved = true;
+						this.automations = [res, ...this.automations];
+						this.totalAutomations += 1;
+						this.selectedAutomation = res;
+						this.interpretingGoal = false;
+						this.goalReasoningStage = null;
+						resolve(res);
+					}
+				},
+				async (err) => {
+					if (!resolved) {
+						resolved = true;
+						try {
+							const res = await api.createAutomation({ goal });
+							this.automations = [res, ...this.automations];
+							this.totalAutomations += 1;
+							this.selectedAutomation = res;
+							resolve(res);
+						} catch (fallbackErr: any) {
+							this.errorMessage = fallbackErr.message || err?.message || 'Goal interpretation failed';
+							resolve(null);
+						} finally {
+							this.interpretingGoal = false;
+							this.goalReasoningStage = null;
+						}
+					}
+				}
+			);
+		});
 	}
 
 	async triggerRun(automationId: string): Promise<RunOut | null> {

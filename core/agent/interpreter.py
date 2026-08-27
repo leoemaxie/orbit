@@ -1,9 +1,14 @@
+import asyncio
+from collections.abc import AsyncGenerator
+from typing import Any
+
 from core.llm.client import DefaultLLMClient
 from core.llm.prompts import GOAL_INTERPRETER_PROMPT
 from core.models.execution_plan import (
     DynamicExtractionSchema,
     ExecutionPlan,
     ExtractionField,
+    MissingParameter,
 )
 
 
@@ -15,13 +20,34 @@ class GoalInterpreter:
     def __init__(self, llm_client: DefaultLLMClient | None = None):
         self.llm = llm_client or DefaultLLMClient()
 
-    async def interpret(self, goal: str) -> ExecutionPlan:
+    async def interpret_stream(self, goal: str) -> AsyncGenerator[dict[str, Any], None]:
+        """
+        Interprets natural language goals and yields progress reasoning events as the plan is synthesized.
+        """
+        yield {"event": "reasoning", "data": {"stage": "analyzing", "message": "Analyzing natural language objective..."}}
+        await asyncio.sleep(0.05)
+
+        yield {"event": "reasoning", "data": {"stage": "synthesizing", "message": "Querying LLM reasoning engine for schema and extraction rules..."}}
         raw = await self.llm.call_json(
             system_prompt=GOAL_INTERPRETER_PROMPT,
             user_prompt=f"USER GOAL: {goal}",
             temperature=0.0,
         )
 
+        yield {"event": "reasoning", "data": {"stage": "validating", "message": "Validating entity schema, field types, and target adapters..."}}
+        plan = self._build_plan_from_raw(raw, goal)
+
+        yield {"event": "plan", "data": plan.model_dump()}
+
+    async def interpret(self, goal: str) -> ExecutionPlan:
+        raw = await self.llm.call_json(
+            system_prompt=GOAL_INTERPRETER_PROMPT,
+            user_prompt=f"USER GOAL: {goal}",
+            temperature=0.0,
+        )
+        return self._build_plan_from_raw(raw, goal)
+
+    def _build_plan_from_raw(self, raw: dict[str, Any], goal: str) -> ExecutionPlan:
         # Parse dynamic extraction schema
         schema_raw = raw.get("extraction_schema", {})
         fields = [

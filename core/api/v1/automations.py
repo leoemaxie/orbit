@@ -11,6 +11,7 @@ from core.api.dependencies import get_db
 from core.api.serializers import automation_to_out, run_to_out
 from core.db.orm import Automation, Run
 from core.db.session import SessionLocal
+from core.events.sse import format_sse, sse_response
 from core.models.enums import RunStatus
 from core.models.schemas import AutomationListOut, AutomationOut, GoalRequest, RunOut
 
@@ -20,6 +21,43 @@ router = APIRouter(prefix="/automations", tags=["Automations"])
 
 interpreter = GoalInterpreter()
 orchestrator = AgentOrchestrator()
+
+
+@router.get("/plan/stream")
+async def stream_goal_plan(goal: str):
+    """
+    Streams LLM goal interpretation, reasoning tokens, and execution plan synthesis via Server-Sent Events (SSE).
+    """
+    if not goal or not goal.strip():
+        raise HTTPException(status_code=400, detail="A goal description must be provided.")
+
+    target_goal = goal.strip()
+
+    async def event_generator():
+        try:
+            final_plan_dict = None
+            async for evt in interpreter.interpret_stream(target_goal):
+                if evt["event"] == "plan":
+                    final_plan_dict = evt["data"]
+                yield format_sse(data=evt["data"], event=evt["event"])
+
+            if final_plan_dict:
+                with SessionLocal() as db:
+                    automation = Automation(
+                        raw_goal=target_goal,
+                        plan=final_plan_dict,
+                        active=True,
+                    )
+                    db.add(automation)
+                    db.commit()
+                    db.refresh(automation)
+                    out = automation_to_out(automation)
+                yield format_sse(data=out, event="complete")
+        except Exception as e:
+            logger.exception("Error during streaming goal interpretation: %s", e)
+            yield format_sse(data={"detail": str(e)}, event="error")
+
+    return sse_response(event_generator())
 
 
 @router.post("", response_model=AutomationOut)

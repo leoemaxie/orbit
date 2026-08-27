@@ -37,6 +37,35 @@ export class ApiClient {
 	async createAutomation(payload: GoalRequest): Promise<AutomationOut> {
 		return this.request<AutomationOut>('/automations', { method: 'POST', body: JSON.stringify(payload) });
 	}
+	streamGoalPlan(
+		goal: string,
+		onReasoning: (data: { stage: string; message: string }) => void,
+		onPlan: (plan: any) => void,
+		onComplete: (auto: AutomationOut) => void,
+		onError?: (err: any) => void
+	): () => void {
+		const url = `${this.baseUrl}/automations/plan/stream?goal=${encodeURIComponent(goal)}`;
+		const conn = createSSEConnection({
+			url,
+			onEvent: {
+				reasoning: (data) => onReasoning(data),
+				plan: (data) => onPlan(data),
+				complete: (data) => {
+					onComplete(data);
+					conn.close();
+				},
+				error: (err) => {
+					if (onError) onError(err);
+					conn.close();
+				}
+			},
+			onError: (err) => {
+				if (onError) onError(err);
+			}
+		});
+
+		return () => conn.close();
+	}
 	async deleteAutomation(id: string): Promise<{ message: string }> {
 		return this.request<{ message: string }>(`/automations/${id}`, { method: 'DELETE' });
 	}
