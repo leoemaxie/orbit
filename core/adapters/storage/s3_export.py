@@ -80,13 +80,16 @@ class S3ExportSink:
         try:
             headers = {"User-Agent": "Orbit-S3-Probe/1.0"}
             async with httpx.AsyncClient(timeout=8.0) as client:
-                try:
-                    res = await client.head(target_host, headers=headers)
-                    if res.status_code in (200, 204, 301, 302, 307, 400, 403, 404):
-                        return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
-                except (httpx.HTTPError, Exception):
-                    pass
-            return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
+                res = await client.head(target_host, headers=headers)
+                if res.status_code in (200, 204, 301, 302, 307):
+                    return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
+                if res.status_code == 403:
+                    return False, f"Amazon S3 access denied (HTTP 403) for bucket '{self.bucket_name}'. Please verify bucket permissions."
+                if res.status_code == 404:
+                    return False, f"Amazon S3 bucket '{self.bucket_name}' not found (HTTP 404). Please verify bucket name and region."
+                return False, f"Amazon S3 endpoint returned HTTP {res.status_code}. Please check bucket configuration."
+        except httpx.ConnectError:
+            return False, f"Could not reach Amazon S3 endpoint for bucket '{self.bucket_name}'. Please check network connection."
         except Exception as e:
             logger.error("S3 connection test failed: %s", e)
             return False, "Could not establish connection to the S3 bucket. Please verify the bucket name and cloud credentials."

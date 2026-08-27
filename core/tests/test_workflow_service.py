@@ -23,10 +23,16 @@ def test_get_adapter_topology_modes():
 
 @pytest.mark.asyncio
 async def test_test_adapter_connection():
-    # Test S3 connection probe
-    ok, msg = await WorkflowService.test_adapter_connection("7", {"bucket_name": "orbit-test"})
-    assert ok is True
-    assert "orbit-test" in msg
+    # Test S3 connection probe with mock
+    from unittest.mock import AsyncMock, MagicMock, patch
+    mock_head_resp = MagicMock(status_code=200)
+    with patch("httpx.AsyncClient.head", new_callable=AsyncMock) as mock_head:
+        mock_head.return_value = mock_head_resp
+        ok, msg = await WorkflowService.test_adapter_connection(
+            "7", {"bucket_name": "orbit-test", "access_key": "AKIA123", "secret_key": "secret123"}
+        )
+        assert ok is True
+        assert "orbit-test" in msg
 
     # Test Database connection probe with sqlite in-memory
     ok_db, msg_db = await WorkflowService.test_adapter_connection(

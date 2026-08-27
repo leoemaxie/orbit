@@ -33,15 +33,19 @@ def test_deploy_workflow():
 
 
 def test_test_adapter_connection_api():
-    payload = {
-        "adapter_id": "7",
-        "config": {"bucket_name": "orbit-production"}
-    }
-    response = client.post("/api/v1/workflows/test-connection", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert "orbit-production" in data["message"]
+    from unittest.mock import AsyncMock, MagicMock, patch
+    mock_s3 = MagicMock(status_code=200)
+    with patch("httpx.AsyncClient.head", new_callable=AsyncMock) as mock_head:
+        mock_head.return_value = mock_s3
+        payload = {
+            "adapter_id": "7",
+            "config": {"bucket_name": "orbit-production", "access_key": "AKIA123", "secret_key": "secret123"}
+        }
+        response = client.post("/api/v1/workflows/test-connection", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "orbit-production" in data["message"]
 
     # Test Database probe via API
     db_payload = {
