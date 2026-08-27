@@ -14,9 +14,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # LLM
-    llm_api_key: str = Field(default="", validation_alias=AliasChoices("LLM_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY"))
-    llm_model: str = Field(default="anthropic/claude-3.5-sonnet", validation_alias=AliasChoices("LLM_MODEL", "OPENROUTER_MODEL"))
-    llm_base_url: str = Field(default="https://openrouter.ai/api/v1", validation_alias=AliasChoices("LLM_BASE_URL", "OPENROUTER_BASE_URL"))
+    llm_provider: str = Field(default="gemini", validation_alias=AliasChoices("LLM_PROVIDER", "AI_PROVIDER"))
+    llm_api_key: str = Field(default="", validation_alias=AliasChoices("LLM_API_KEY"))
+    llm_model: str = Field(default="gemini-2.5-flash", validation_alias=AliasChoices("LLM_MODEL"))
+    llm_base_url: str = Field(default="https://openrouter.ai/api/v1", validation_alias=AliasChoices("LLM_BASE_URL"))
 
     # Web Data Retrieval & Discovery
     retrieval_api_key: str = Field(default="", validation_alias=AliasChoices("RETRIEVAL_API_KEY", "PROXY_API_KEY", "BRIGHTDATA_API_KEY"))
@@ -49,14 +50,14 @@ class Settings(BaseSettings):
     broker_project_id: str = Field(default="", validation_alias=AliasChoices("BROKER_PROJECT_ID", "GCP_PROJECT_ID", "CLOUD_PROJECT_ID"))
     broker_key_prefix: str = Field(default="orb", validation_alias=AliasChoices("BROKER_KEY_PREFIX", "REDIS_KEY_PREFIX", "KEY_PREFIX"))
 
+    # Unified Caching (Provider-Agnostic with Memory/Redis backends)
+    cache_backend: str = Field(default="memory", validation_alias=AliasChoices("CACHE_BACKEND", "CACHE_TYPE"))
+    cache_url: str = Field(default="redis://localhost:6379/1", validation_alias=AliasChoices("CACHE_URL", "REDIS_CACHE_URL"))
+    cache_enabled: bool = Field(default=True, validation_alias=AliasChoices("CACHE_ENABLED", "ENABLE_CACHE"))
+    cache_default_ttl: int = Field(default=300, validation_alias=AliasChoices("CACHE_DEFAULT_TTL", "CACHE_TTL"))
 
-    # Backward compatibility accessors
-    @property
-    def openrouter_api_key(self) -> str: return self.llm_api_key
-    @property
-    def openrouter_model(self) -> str: return self.llm_model
-    @property
-    def openrouter_base_url(self) -> str: return self.llm_base_url
+
+
     @property
     def brightdata_api_key(self) -> str: return self.retrieval_api_key
     @property

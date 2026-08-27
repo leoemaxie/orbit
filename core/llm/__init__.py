@@ -1,5 +1,5 @@
 from core.llm.base import LLMClient
-from core.llm.client import DefaultLLMClient
+from core.llm.factory import get_llm_client
 from core.llm.prompts import (
     DYNAMIC_EXTRACTION_PROMPT,
     FAILURE_BRAIN_PROMPT,
@@ -8,8 +8,8 @@ from core.llm.prompts import (
 
 __all__ = [
     "DYNAMIC_EXTRACTION_PROMPT",
-    "DefaultLLMClient",
     "FAILURE_BRAIN_PROMPT",
     "GOAL_INTERPRETER_PROMPT",
     "LLMClient",
+    "get_llm_client",
 ]

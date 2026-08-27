@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
 
 from core.app import create_app
@@ -20,9 +21,10 @@ def test_stream_goal_plan_validation_error(app_client):
     assert "goal description must be provided" in response.json()["detail"].lower()
 
 
-@patch("core.agent.interpreter.DefaultLLMClient.call_json", new_callable=AsyncMock)
-def test_stream_goal_plan_success(mock_llm, app_client):
-    mock_llm.return_value = {
+@patch("core.llm.factory.get_llm_client")
+def test_stream_goal_plan_success(mock_get_llm, app_client):
+    mock_client = AsyncMock()
+    mock_client.call_json.return_value = {
         "objective": "Track GPU prices",
         "domain": "compute",
         "search_query": "gpu prices",
@@ -32,6 +34,7 @@ def test_stream_goal_plan_success(mock_llm, app_client):
             "fields": [{"name": "price", "type": "number", "required": True}],
         },
     }
+    mock_get_llm.return_value = mock_client
 
     response = app_client.get("/api/v1/automations/plan/stream?goal=Track%20GPU%20prices")
     assert response.status_code == 200

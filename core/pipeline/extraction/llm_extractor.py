@@ -1,7 +1,8 @@
 import json
 from typing import Any
 
-from core.llm.client import DefaultLLMClient
+from core.llm.base import LLMClient
+from core.llm.factory import get_llm_client
 from core.llm.prompts import DYNAMIC_EXTRACTION_PROMPT
 from core.models.execution_plan import ExecutionPlan
 
@@ -9,10 +10,10 @@ from core.models.execution_plan import ExecutionPlan
 class LLMExtractor:
     """Schema-driven LLM extraction that adapts to any entity schema."""
 
-    llm: DefaultLLMClient
+    llm: LLMClient
 
-    def __init__(self, llm_client: DefaultLLMClient | None = None):
-        self.llm = llm_client or DefaultLLMClient()
+    def __init__(self, llm_client: LLMClient | None = None):
+        self.llm = llm_client or get_llm_client()
 
     async def extract(
         self, url: str, content: str, plan: ExecutionPlan
