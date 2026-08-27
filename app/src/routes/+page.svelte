@@ -30,14 +30,18 @@
 	}
 </script>
 
-<div class="max-w-5xl mx-auto space-y-10 pb-16">
-	<!-- Heroic Overview Header (Workflow & Data Operations Focused) -->
-	<div class="text-center space-y-2.5 pt-2 md:pt-4">
-		<h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight font-display flex items-center justify-center gap-2.5">
-			<Globe size={28} class="text-orbit-cyan" />
-			<span>What web data operations do you want to automate?</span>
+<div class="max-w-5xl mx-auto space-y-8 sm:space-y-12 pb-16">
+	<!-- Heroic Overview Header (Gemini-Inspired Dominant Gradient Layout) -->
+	<div class="text-left sm:text-center space-y-3 pt-6 sm:pt-12 md:pt-16">
+		<h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight font-display leading-[1.14]">
+			<span class="bg-gradient-to-r from-orbit-cyan via-sky-300 to-orbit-violet bg-clip-text text-transparent block">
+				What web data operations
+			</span>
+			<span class="text-slate-100 block mt-1 sm:mt-2">
+				do you want to automate?
+			</span>
 		</h1>
-		<p class="hidden sm:block text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto font-sans leading-relaxed">
+		<p class="hidden sm:block text-xs sm:text-sm text-slate-400 max-w-2xl sm:mx-auto font-sans leading-relaxed">
 			Define your objective in plain English. Orbit autonomously handles web discovery, structured extraction, anomaly validation, condition alerts, and downstream workflows.
 		</p>
 	</div>
@@ -89,7 +93,7 @@
 					onRun={handleRunNow}
 				/>
 			{:else}
-				<div class="col-span-full border border-dashed border-white/10 rounded-2xl p-10 text-center space-y-3 bg-surface-900/40">
+				<div class="col-span-full border border-dashed border-white/10 rounded-2xl p-6 sm:p-10 text-center space-y-3 bg-surface-900/40">
 					<div class="w-12 h-12 rounded-full bg-surface-800 border border-white/5 flex items-center justify-center mx-auto text-orbit-cyan">
 						<Globe size={22} />
 					</div>

@@ -15,12 +15,12 @@
 </script>
 
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-	<div>
+	<div class="hidden sm:block">
 		<h1 class="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2 font-display">
 			<GitBranch size={22} class="text-orbit-cyan" />
 			<span>Pipeline Studio</span>
 		</h1>
-		<p class="hidden sm:block text-xs text-slate-400 font-sans mt-0.5">
+		<p class="text-xs text-slate-400 font-sans mt-0.5">
 			Orchestrate source discovery, LLM schema extraction, databases, S3 storage, and notifications.
 		</p>
 	</div>

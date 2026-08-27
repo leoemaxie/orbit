@@ -39,15 +39,15 @@
 	}
 </script>
 
-<div class="max-w-6xl mx-auto space-y-6">
-	<!-- Header -->
-	<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+<div class="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+	<!-- Desktop Header -->
+	<div class="hidden sm:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2 font-display">
 				<Layers size={22} class="text-orbit-cyan" />
 				<span>Automation Fleet</span>
 			</h1>
-			<p class="hidden sm:block text-xs text-slate-400 font-sans mt-1">
+			<p class="text-xs text-slate-400 font-sans mt-1">
 				Your active automated data pipelines. Monitor recurring data extraction schedules, inspect data schemas, and execute runs on demand.
 			</p>
 		</div>
@@ -60,17 +60,24 @@
 		</a>
 	</div>
 
-	<!-- Filter & Search Bar -->
-	<div class="flex items-center gap-3 bg-surface-900 border border-white/10 p-3 rounded-xl">
-		<div class="relative flex-1">
+	<!-- Filter & Search Bar (with inline New Mission button on mobile) -->
+	<div class="flex items-center gap-2 sm:gap-3 bg-surface-900 border border-white/10 p-2.5 sm:p-3 rounded-xl">
+		<div class="relative flex-1 min-w-0">
 			<Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
 			<input
 				type="text"
 				bind:value={searchQuery}
-				placeholder="Search automations by goal, domain, or objective..."
+				placeholder="Search automations..."
 				class="w-full pl-8 pr-3 py-1.5 bg-surface-800 border border-white/10 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-orbit-cyan/50 font-mono"
 			/>
 		</div>
+
+		<a href="/" class="sm:hidden shrink-0">
+			<Button variant="primary" size="sm" class="px-2.5 text-xs">
+				<Plus size={14} />
+				<span>New</span>
+			</Button>
+		</a>
 	</div>
 
 	<!-- Desktop View: Automations Table -->

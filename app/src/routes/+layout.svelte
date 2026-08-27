@@ -33,7 +33,7 @@
 
 <div class="min-h-screen flex flex-col md:flex-row bg-void text-slate-100 font-sans">
 	<!-- Mobile Header & Navigation Drawer -->
-	<MobileNav {navItems} />
+	<MobileNav />
 
 	<!-- Desktop Navigation Sidebar -->
 	<DesktopSidebar {navItems} />
