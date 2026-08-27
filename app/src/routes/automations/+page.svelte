@@ -47,7 +47,7 @@
 				<Layers size={22} class="text-orbit-cyan" />
 				<span>Automation Fleet</span>
 			</h1>
-			<p class="text-xs text-slate-400 font-sans mt-1">
+			<p class="hidden sm:block text-xs text-slate-400 font-sans mt-1">
 				Your active automated data pipelines. Monitor recurring data extraction schedules, inspect data schemas, and execute runs on demand.
 			</p>
 		</div>

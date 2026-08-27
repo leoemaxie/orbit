@@ -20,7 +20,7 @@
 			<GitBranch size={22} class="text-orbit-cyan" />
 			<span>Pipeline Studio</span>
 		</h1>
-		<p class="text-xs text-slate-400 font-sans mt-0.5">
+		<p class="hidden sm:block text-xs text-slate-400 font-sans mt-0.5">
 			Orchestrate source discovery, LLM schema extraction, databases, S3 storage, and notifications.
 		</p>
 	</div>

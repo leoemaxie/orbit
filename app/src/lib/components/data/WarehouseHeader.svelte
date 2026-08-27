@@ -21,7 +21,7 @@
 				<Database size={24} class="text-orbit-cyan" />
 				<span>Data Warehouse</span>
 			</h1>
-			<p class="text-xs text-slate-400 font-sans mt-1">
+			<p class="hidden sm:block text-xs text-slate-400 font-sans mt-1">
 				Mission-segregated data repository of validated entities, schema tables, and anomalies.
 			</p>
 		</div>

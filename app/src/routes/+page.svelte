@@ -37,7 +37,7 @@
 			<Globe size={28} class="text-orbit-cyan" />
 			<span>What web data operations do you want to automate?</span>
 		</h1>
-		<p class="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto font-sans leading-relaxed">
+		<p class="hidden sm:block text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto font-sans leading-relaxed">
 			Define your objective in plain English. Orbit autonomously handles web discovery, structured extraction, anomaly validation, condition alerts, and downstream workflows.
 		</p>
 	</div>
