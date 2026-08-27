@@ -11,7 +11,7 @@
 	let {
 		onSubmit,
 		loading = false,
-		placeholder = 'Describe your web data objective or workflow — e.g. Track GPU pricing across cloud providers every 6 hours, alert if H100 drops below $2.50, and sync to database...'
+		placeholder = 'Describe your web data objective — e.g. Track GPU pricing across cloud providers every 6h and sync to DB...'
 	}: Props = $props();
 
 	let goalText = $state('');
