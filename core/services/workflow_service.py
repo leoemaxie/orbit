@@ -5,6 +5,7 @@ from typing import Any
 
 from core.adapters.storage.database_sink import DatabaseExportSink
 from core.adapters.storage.s3_export import S3ExportSink
+from core.cache.service import cache_service
 from core.config.settings import get_settings
 from core.security.vault import SecretVault
 
@@ -99,23 +100,23 @@ class WorkflowService:
                     "sender_address": s.email_sender_address or "Orbit Alerts <alerts@orbit.dev>",
                     "smtp_host": "smtp.mailgun.org",
                     "smtp_port": 587,
-                    "smtp_username": "",
+                    "smtp_username": "postmaster@company.com",
                     "smtp_password": "",
                     "use_tls": True,
+                    "api_key": SecretVault.mask_secret(s.email_api_key),
+                    "base_url": "https://api.orbit.dev/v1/emails",
                 },
             },
             {
                 "id": "11", "label": "Outbound Webhooks", "category": "notify", "mode": "custom",
-                "engine": "HMAC-SHA256 Signed Webhook Emitter", "iconName": "Play",
-                "description": "Secure signed webhook events with automated retry policy and record streaming",
+                "engine": "Signed HTTP POST Dispatcher", "iconName": "Radio",
+                "description": "Signed HMAC-SHA256 webhooks for real-time downstream ingestion",
                 "status": "optional",
-                "config": {
-                    "webhook_url": "",
-                    "signing_secret": "",
-                },
+                "config": {"webhook_url": "", "signing_secret": "", "timeout_sec": 10},
             },
         ]
 
+        # Overlay any locally updated/saved configurations
         for adapter in topology:
             saved_cfg = cls._custom_adapter_configs.get(str(adapter["id"])) or cls._custom_adapter_configs.get(str(adapter["label"]).lower())
             if saved_cfg:
@@ -125,7 +126,20 @@ class WorkflowService:
 
     @classmethod
     async def test_adapter_connection(cls, adapter_id: str, config: dict[str, Any]) -> tuple[bool, str]:
-        """Performs a secure live connectivity test without logging raw credentials."""
+        """Performs a secure live connectivity test with transient 30s probe caching."""
+        cache_key = cache_service.key_for_probe(str(adapter_id), config)
+        cached_probe = await cache_service.get(cache_key)
+        if cached_probe is not None and isinstance(cached_probe, (list, tuple)) and len(cached_probe) == 2:
+            return bool(cached_probe[0]), str(cached_probe[1])
+
+        res = await cls._execute_adapter_probe(adapter_id, config)
+        if res and isinstance(res, (list, tuple)) and len(res) == 2:
+            await cache_service.set(cache_key, list(res), ttl_seconds=30)
+        return res
+
+    @classmethod
+    async def _execute_adapter_probe(cls, adapter_id: str, config: dict[str, Any]) -> tuple[bool, str]:
+        """Executes adapter probe dispatch without logging raw secrets."""
         clean_id = str(adapter_id).lower()
         try:
             # 1. Database Warehouse Sink

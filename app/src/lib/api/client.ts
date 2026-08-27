@@ -4,11 +4,42 @@ import { createSSEConnection, type SSEOptions, type SSEConnection } from './sse'
 
 export { createSSEConnection, type SSEOptions, type SSEConnection };
 
+interface CacheEntry<T> {
+	data: T;
+	expiresAt: number;
+}
+
 export class ApiClient {
 	private baseUrl: string;
+	private cache = new Map<string, CacheEntry<any>>();
 
 	constructor(baseUrl: string = PUBLIC_API_URL || 'http://localhost:8000/api/v1') {
 		this.baseUrl = baseUrl.replace(/\/+$/, '');
+	}
+
+	private getCached<T>(key: string): T | null {
+		const entry = this.cache.get(key);
+		if (entry && Date.now() < entry.expiresAt) {
+			return entry.data;
+		}
+		if (entry) this.cache.delete(key);
+		return null;
+	}
+
+	private setCache<T>(key: string, data: T, ttlMs: number = 30000): void {
+		this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+	}
+
+	public invalidateCache(pattern?: string): void {
+		if (!pattern) {
+			this.cache.clear();
+			return;
+		}
+		for (const key of this.cache.keys()) {
+			if (key.includes(pattern)) {
+				this.cache.delete(key);
+			}
+		}
 	}
 
 	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -32,9 +63,19 @@ export class ApiClient {
 	}
 
 	async getHealth(): Promise<HealthStatus> { return this.request<HealthStatus>('/health'); }
-	async listAutomations(): Promise<AutomationListOut> { return this.request<AutomationListOut>('/automations'); }
+	async listAutomations(useCache: boolean = true): Promise<AutomationListOut> {
+		const key = 'automations:list';
+		if (useCache) {
+			const cached = this.getCached<AutomationListOut>(key);
+			if (cached) return cached;
+		}
+		const res = await this.request<AutomationListOut>('/automations');
+		this.setCache(key, res, 15000);
+		return res;
+	}
 	async getAutomation(id: string): Promise<AutomationOut> { return this.request<AutomationOut>(`/automations/${id}`); }
 	async createAutomation(payload: GoalRequest): Promise<AutomationOut> {
+		this.invalidateCache('automations');
 		return this.request<AutomationOut>('/automations', { method: 'POST', body: JSON.stringify(payload) });
 	}
 	streamGoalPlan(
@@ -51,6 +92,7 @@ export class ApiClient {
 				reasoning: (data) => onReasoning(data),
 				plan: (data) => onPlan(data),
 				complete: (data) => {
+					this.invalidateCache('automations');
 					onComplete(data);
 					conn.close();
 				},
@@ -67,12 +109,15 @@ export class ApiClient {
 		return () => conn.close();
 	}
 	async deleteAutomation(id: string): Promise<{ message: string }> {
+		this.invalidateCache('automations');
 		return this.request<{ message: string }>(`/automations/${id}`, { method: 'DELETE' });
 	}
 	async runAutomation(id: string): Promise<RunOut> {
+		this.invalidateCache('automations');
 		return this.request<RunOut>(`/automations/${id}/run`, { method: 'POST' });
 	}
 	async retryRun(runId: string): Promise<RunOut> {
+		this.invalidateCache('automations');
 		return this.request<RunOut>(`/runs/${runId}/retry`, { method: 'POST' });
 	}
 	async getRun(runId: string): Promise<RunOut> { return this.request<RunOut>(`/runs/${runId}`); }
@@ -87,6 +132,7 @@ export class ApiClient {
 				snapshot: (data) => onUpdate(data),
 				update: (data) => onUpdate(data),
 				complete: (data) => {
+					this.invalidateCache('automations');
 					onUpdate(data);
 					conn.close();
 				}
@@ -126,9 +172,28 @@ export class ApiClient {
 	async listAutomationRuns(automationId: string): Promise<RunOut[]> {
 		return this.request<RunOut[]>(`/automations/${automationId}/runs`);
 	}
-	async getWorkflowTopology(): Promise<any[]> { return this.request<any[]>('/workflows/topology'); }
-	async getPipeline(): Promise<any[]> { return this.request<any[]>('/workflows/pipeline'); }
+	async getWorkflowTopology(useCache: boolean = true): Promise<any[]> {
+		const key = 'workflows:topology';
+		if (useCache) {
+			const cached = this.getCached<any[]>(key);
+			if (cached) return cached;
+		}
+		const res = await this.request<any[]>('/workflows/topology');
+		this.setCache(key, res, 60000);
+		return res;
+	}
+	async getPipeline(useCache: boolean = true): Promise<any[]> {
+		const key = 'workflows:pipeline';
+		if (useCache) {
+			const cached = this.getCached<any[]>(key);
+			if (cached) return cached;
+		}
+		const res = await this.request<any[]>('/workflows/pipeline');
+		this.setCache(key, res, 30000);
+		return res;
+	}
 	async deployWorkflow(nodes: any[]): Promise<{ status: string; message: string }> {
+		this.invalidateCache('workflows');
 		return this.request<{ status: string; message: string }>('/workflows/deploy', {
 			method: 'POST',
 			body: JSON.stringify({ nodes })
@@ -141,6 +206,7 @@ export class ApiClient {
 		});
 	}
 	async saveAdapterConfig(adapterId: string, config: Record<string, any>): Promise<{ status: string; message: string }> {
+		this.invalidateCache('workflows');
 		return this.request<{ status: string; message: string }>(`/workflows/adapters/${adapterId}/config`, {
 			method: 'POST',
 			body: JSON.stringify({ config })

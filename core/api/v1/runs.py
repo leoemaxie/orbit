@@ -174,16 +174,27 @@ async def stream_run_results(run_id: str, request: Request, db: Annotated[Sessio
 
 
 @router.get("/runs/{run_id}/dossier")
-def get_run_dossier(run_id: str, db: Annotated[Session, Depends(get_db)]):
-    """Streams the generated and redacted PDF/HTML report dossier for interactive inspection."""
+def get_run_dossier(run_id: str, request: Request, db: Annotated[Session, Depends(get_db)]):
+    """Streams the generated and redacted PDF/HTML report dossier with RFC 7234 ETag caching."""
     run = db.query(Run).filter(Run.id == run_id).first()
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
 
+    updated_ts = int(run.finished_at.timestamp() if run.finished_at else (run.created_at.timestamp() if run.created_at else 0))
+    etag = f'W/"{run.id[:8]}-{updated_ts}"'
+
+    headers = {
+        "ETag": etag,
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600" if run.status in (RunStatus.verified, RunStatus.failed) else "no-cache",
+    }
+
+    if request.headers.get("if-none-match") == etag or request.headers.get("If-None-Match") == etag:
+        return Response(status_code=304, headers=headers)
+
     pdf_path = os.path.join("exports", run.automation_id, run.id, "dossier.pdf")
     if os.path.exists(pdf_path):
         with open(pdf_path, "rb") as f:
-            return Response(content=f.read(), media_type="application/pdf")
+            return Response(content=f.read(), media_type="application/pdf", headers=headers)
 
     # Generate interactive HTML fallback if PDF file is not on local disk
     html_report = f"""
@@ -200,7 +211,7 @@ def get_run_dossier(run_id: str, db: Annotated[Session, Depends(get_db)]):
     <p>PII Entities Masked: <strong>Active (Nutrient Redactor)</strong></p>
     </body></html>
     """
-    return Response(content=html_report.encode("utf-8"), media_type="text/html")
+    return Response(content=html_report.encode("utf-8"), media_type="text/html", headers=headers)
 
 
 @router.post("/runs/{run_id}/retry", response_model=RunOut)
