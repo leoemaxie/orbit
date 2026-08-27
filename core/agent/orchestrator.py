@@ -372,6 +372,16 @@ class AgentOrchestrator:
             run.status = RunStatus.storing
             self._safe_commit(db)
 
+            await event_bus.publish(
+                OrbitEvent(
+                    event_type="run.records",
+                    run_id=run.id,
+                    automation_id=automation.id,
+                    message=f"Validated and stored {valid_count} verified record(s)",
+                    payload={"validated_count": valid_count, "total_extracted": len(annotated_records)},
+                )
+            )
+
             # Export sinks (local file / S3 cloud storage / document dossier)
             has_persisted = True
             dossier_url: str | None = None

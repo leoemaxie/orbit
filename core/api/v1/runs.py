@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from core.agent.orchestrator import AgentOrchestrator
 from core.api.dependencies import get_db
-from core.api.serializers import run_to_out
-from core.db.orm import Automation, Run
+from core.api.serializers import result_to_out, run_to_out
+from core.db.orm import Automation, Result, Run
 from core.db.session import SessionLocal
 from core.events.bus import event_bus
 from core.events.sse import format_sse, format_sse_ping, sse_response
@@ -86,6 +86,86 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
                             if out.status in (RunStatus.verified, RunStatus.failed):
                                 yield format_sse(data=out, event="complete")
                                 break
+                    yield format_sse_ping()
+        finally:
+            event_bus.unsubscribe(_on_event)
+
+    return sse_response(event_generator())
+
+
+@router.get("/runs/{run_id}/results/stream")
+async def stream_run_results(run_id: str, request: Request, db: Annotated[Session, Depends(get_db)]):
+    """
+    Streams extracted and validated data entities incrementally via Server-Sent Events (SSE).
+    """
+    run = db.query(Run).filter(Run.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    async def event_generator():
+        sent_ids = set()
+
+        # 1. Stream existing records first
+        with SessionLocal() as cur_db:
+            existing_results = cur_db.query(Result).filter(Result.run_id == run_id).all()
+            for res in existing_results:
+                sent_ids.add(res.id)
+                yield format_sse(data=result_to_out(res), event="record")
+
+        # If already finished, terminate
+        with SessionLocal() as cur_db:
+            cur_run = cur_db.query(Run).filter(Run.id == run_id).first()
+            if cur_run and cur_run.status in (RunStatus.verified, RunStatus.failed):
+                yield format_sse(data={"total": len(sent_ids), "status": cur_run.status.value}, event="complete")
+                return
+
+        queue: asyncio.Queue[OrbitEvent | None] = asyncio.Queue()
+
+        async def _on_event(evt: OrbitEvent):
+            if evt.run_id == run_id:
+                await queue.put(evt)
+
+        event_bus.subscribe(_on_event)
+
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+
+                try:
+                    evt = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    if evt is None:
+                        break
+
+                    with SessionLocal() as cur_db:
+                        new_results = (
+                            cur_db.query(Result)
+                            .filter(Result.run_id == run_id, ~Result.id.in_(sent_ids) if sent_ids else True)
+                            .all()
+                        )
+                        for res in new_results:
+                            sent_ids.add(res.id)
+                            yield format_sse(data=result_to_out(res), event="record")
+
+                        cur_run = cur_db.query(Run).filter(Run.id == run_id).first()
+                        if cur_run and cur_run.status in (RunStatus.verified, RunStatus.failed):
+                            yield format_sse(data={"total": len(sent_ids), "status": cur_run.status.value}, event="complete")
+                            break
+                except asyncio.TimeoutError:
+                    with SessionLocal() as cur_db:
+                        new_results = (
+                            cur_db.query(Result)
+                            .filter(Result.run_id == run_id, ~Result.id.in_(sent_ids) if sent_ids else True)
+                            .all()
+                        )
+                        for res in new_results:
+                            sent_ids.add(res.id)
+                            yield format_sse(data=result_to_out(res), event="record")
+
+                        cur_run = cur_db.query(Run).filter(Run.id == run_id).first()
+                        if cur_run and cur_run.status in (RunStatus.verified, RunStatus.failed):
+                            yield format_sse(data={"total": len(sent_ids), "status": cur_run.status.value}, event="complete")
+                            break
                     yield format_sse_ping()
         finally:
             event_bus.unsubscribe(_on_event)

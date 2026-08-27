@@ -15,6 +15,17 @@ def automation_to_out(a: Automation) -> AutomationOut:
     )
 
 
+def result_to_out(res) -> ResultOut:
+    return ResultOut(
+        id=res.id,
+        url=res.url,
+        data=res.data or {},
+        valid=res.valid,
+        validation_errors=res.validation_errors,
+        created_at=res.created_at.isoformat() if getattr(res, "created_at", None) else "",
+    )
+
+
 def run_to_out(r: Run) -> RunOut:
     return RunOut(
         id=r.id,
@@ -30,15 +41,5 @@ def run_to_out(r: Run) -> RunOut:
         condition_message=r.condition_message,
         reasoning_log=r.reasoning_log,
         error=sanitize_error_message(r.error),
-        results=[
-            ResultOut(
-                id=res.id,
-                url=res.url,
-                data=res.data or {},
-                valid=res.valid,
-                validation_errors=res.validation_errors,
-                created_at=res.created_at.isoformat(),
-            )
-            for res in r.results
-        ],
+        results=[result_to_out(res) for res in r.results],
     )

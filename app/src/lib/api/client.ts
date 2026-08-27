@@ -100,6 +100,29 @@ export class ApiClient {
 			conn.close();
 		};
 	}
+	streamRunResults(
+		runId: string,
+		onRecord: (record: ResultOut) => void,
+		onComplete?: (status: any) => void,
+		onError?: (err: any) => void
+	): () => void {
+		const url = `${this.baseUrl}/runs/${runId}/results/stream`;
+		const conn = createSSEConnection({
+			url,
+			onEvent: {
+				record: (data) => onRecord(data),
+				complete: (data) => {
+					onComplete?.(data);
+					conn.close();
+				}
+			},
+			onError: (err) => {
+				if (onError) onError(err);
+			}
+		});
+
+		return () => conn.close();
+	}
 	async listAutomationRuns(automationId: string): Promise<RunOut[]> {
 		return this.request<RunOut[]>(`/automations/${automationId}/runs`);
 	}
