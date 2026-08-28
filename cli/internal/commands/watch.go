@@ -3,10 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/leoemaxie/orbit/cli/internal/formatters"
 	"github.com/leoemaxie/orbit/cli/internal/ui"
 	"github.com/leoemaxie/orbit/cli/pkg/orbc"
+	"github.com/spf13/cobra"
 )
 
 var watchCmd = &cobra.Command{
@@ -19,12 +19,8 @@ var watchCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	rootCmd.AddCommand(watchCmd)
-}
-
 func executeWatch(runID string) error {
-	ui.Header(fmt.Sprintf("??? Orbit Stream � Tailing Run %s", runID[:8]))
+	ui.Header(fmt.Sprintf("🛰️ Orbit Stream — Tailing Run %s", runID[:8]))
 	lastStatus := ""
 
 	err := client.StreamRunTelemetry(runID, func(event string, run *orbc.RunOut) error {

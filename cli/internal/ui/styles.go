@@ -22,6 +22,12 @@ func PrintBanner() {
 	fmt.Println(Gray("─────────────────────────────────────────────────────────────"))
 }
 
+// Header prints a styled section header.
+func Header(title string) {
+	fmt.Printf("%s\n", Cyan(title))
+	fmt.Println(Gray("─────────────────────────────────────────────────────────────"))
+}
+
 // FormatStatus returns a colored status badge.
 func FormatStatus(status string) string {
 	switch status {

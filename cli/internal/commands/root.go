@@ -59,6 +59,7 @@ func init() {
 	RootCmd.AddCommand(rmCmd)
 	RootCmd.AddCommand(scheduleCmd)
 	RootCmd.AddCommand(workflowCmd)
+	RootCmd.AddCommand(watchCmd)
 	RootCmd.AddCommand(configCmd)
 	RootCmd.AddCommand(versionCmd)
 }
