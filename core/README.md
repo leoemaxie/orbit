@@ -48,60 +48,40 @@ core/
 
 - Python 3.10+
 - PostgreSQL 15+ (local or Docker container)
-- API Keys:
-  - [OpenRouter](https://openrouter.ai/) (LLM reasoning & extraction engine)
-  - [Bright Data](https://brightdata.com/) (Web Unlocker proxy infrastructure)
-  - [SerpApi](https://serpapi.com/) (Google search discovery engine)
+- Redis
+- Platform API Keys (Refer to [`.env.example`](.env.example))
 
 ### 2. Installation
 
-From the project root:
-
 ```bash
 # Create virtual environment
-python -m venv core/venv
+python -m venv venv
 
 # Activate virtual environment
 # Windows (PowerShell):
-.\core\venv\Scripts\Activate.ps1
+.\venv\Scripts\Activate.ps1
 # macOS / Linux:
-source core/venv/bin/activate
+source venv/bin/activate
 
 # Install core package with development dependencies
-pip install -e "core/.[dev]"
+pip install -e ".[dev]"
 ```
 
 ### 3. Environment Configuration
 
-Create a `.env` file in the project root (or copy from `core/.env.example`):
-
-```ini
-# LLM Configuration
-OPENROUTER_API_KEY=sk-or-v1-...
-OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
-
-# Web Discovery & Proxy Infrastructure
-BRIGHTDATA_API_KEY=...
-BRIGHTDATA_ZONE=your_unlocker_zone
-SERPAPI_API_KEY=...
-
-# Persistence Store
-DATABASE_URL=postgresql+psycopg2://orbit:orbit@localhost:5432/orbit
-
-# Scheduler & Alerting
-ENABLE_SCHEDULER=true
-DEFAULT_WEBHOOK_URL=https://webhook.site/...
-```
-
-### 4. Database Setup
-
-Start PostgreSQL via Docker:
+Create a `.env` file by copying the template from [`.env.example`](.env.example):
 
 ```bash
-docker run --name orbit-pg -e POSTGRES_USER=orbit -e POSTGRES_PASSWORD=orbit -e POSTGRES_DB=orbit -p 5432:5432 -d postgres:16
+# Windows (PowerShell):
+Copy-Item .env.example .env
+
+# macOS / Linux:
+cp .env.example .env
 ```
 
-### 5. Run the Server
+Configure your database connection and platform execution credentials in `.env`.
+
+### 4. Run the Server
 
 ```bash
 uvicorn core.app:app --host 0.0.0.0 --port 8000 --reload
