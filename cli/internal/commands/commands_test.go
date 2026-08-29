@@ -396,4 +396,47 @@ func TestCommand_APIErrorDoesNotShowUsage(t *testing.T) {
 	}
 }
 
+func TestCommand_Config(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("USERPROFILE", tmpHome)
+	t.Setenv("HOME", tmpHome)
+
+	t.Run("config set and config show key", func(t *testing.T) {
+		out, err := executeCommand("config", "set", "api-url", "http://localhost:8000")
+		if err != nil {
+			t.Fatalf("config set api-url failed: %v, out: %s", err, out)
+		}
+		if !strings.Contains(out, "Configuration updated") {
+			t.Errorf("unexpected output from config set: %s", out)
+		}
+
+		outShow, err := executeCommand("config", "show", "api_url")
+		if err != nil {
+			t.Fatalf("config show api_url failed: %v, out: %s", err, outShow)
+		}
+		if !strings.Contains(outShow, "http://localhost:8000") {
+			t.Errorf("expected config show api_url to return 'http://localhost:8000', got: %s", outShow)
+		}
+
+		outGet, err := executeCommand("config", "get", "api-url")
+		if err != nil {
+			t.Fatalf("config get api-url failed: %v, out: %s", err, outGet)
+		}
+		if !strings.Contains(outGet, "http://localhost:8000") {
+			t.Errorf("expected config get api-url to return 'http://localhost:8000', got: %s", outGet)
+		}
+	})
+
+	t.Run("config show all", func(t *testing.T) {
+		outAll, err := executeCommand("config", "show")
+		if err != nil {
+			t.Fatalf("config show failed: %v, out: %s", err, outAll)
+		}
+		if !strings.Contains(outAll, "http://localhost:8000") || !strings.Contains(outAll, "API URL") {
+			t.Errorf("unexpected config show output: %s", outAll)
+		}
+	})
+}
+
+
 

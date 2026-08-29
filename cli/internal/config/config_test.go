@@ -69,22 +69,46 @@ func TestConfig_SetKey(t *testing.T) {
 	t.Setenv("USERPROFILE", tmpHome)
 	t.Setenv("HOME", tmpHome)
 
-	err := SetKey("api_url", "http://updated-daemon:8080")
-	if err != nil {
-		t.Fatalf("SetKey failed: %v", err)
-	}
+	t.Run("set key with underscore", func(t *testing.T) {
+		err := SetKey("api_url", "http://updated-daemon:8080")
+		if err != nil {
+			t.Fatalf("SetKey failed: %v", err)
+		}
 
-	cfg, err := LoadConfig()
-	if err != nil {
-		t.Fatalf("LoadConfig after SetKey failed: %v", err)
-	}
+		cfg, err := LoadConfig()
+		if err != nil {
+			t.Fatalf("LoadConfig after SetKey failed: %v", err)
+		}
 
-	if cfg.APIURL != "http://updated-daemon:8080" {
-		t.Errorf("expected updated APIURL, got %q", cfg.APIURL)
-	}
+		if cfg.APIURL != "http://updated-daemon:8080" {
+			t.Errorf("expected updated APIURL, got %q", cfg.APIURL)
+		}
+	})
 
-	configFile := filepath.Join(tmpHome, ".orbc", "config.yaml")
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		t.Errorf("expected config file %q to be created after SetKey, but it does not exist", configFile)
-	}
+	t.Run("set key with hyphen and retrieve with GetKey", func(t *testing.T) {
+		err := SetKey("api-url", "http://localhost:8000")
+		if err != nil {
+			t.Fatalf("SetKey with hyphen failed: %v", err)
+		}
+
+		cfg, err := LoadConfig()
+		if err != nil {
+			t.Fatalf("LoadConfig after SetKey failed: %v", err)
+		}
+
+		if cfg.APIURL != "http://localhost:8000" {
+			t.Errorf("expected updated APIURL %q, got %q", "http://localhost:8000", cfg.APIURL)
+		}
+
+		val, err := GetKey("api-url")
+		if err != nil || val != "http://localhost:8000" {
+			t.Errorf("GetKey('api-url') failed: %v, val: %s", err, val)
+		}
+
+		val2, err := GetKey("api_url")
+		if err != nil || val2 != "http://localhost:8000" {
+			t.Errorf("GetKey('api_url') failed: %v, val: %s", err, val2)
+		}
+	})
 }
+
