@@ -78,19 +78,17 @@ The Orbit repository is structured as a monorepo:
 
 ### 1. Launch the Orbit Core Daemon
 
-Follow the [Core Setup Guide](./core/README.md) to start PostgreSQL and the backend daemon:
+Follow the [Core Setup Guide](./core/README.md) to start the backend daemon:
 
 ```bash
-# 1. Start PostgreSQL
-docker run --name orbit-pg -e POSTGRES_USER=orbit -e POSTGRES_PASSWORD=orbit -e POSTGRES_DB=orbit -p 5432:5432 -d postgres:16
+# 1. Navigate to core and configure environment
+cd core
+cp .env.example .env  # Windows: Copy-Item .env.example .env
 
-# 2. Configure environment
-cp core/.env.example .env
-
-# 3. Initialize virtual environment and start Core
-python -m venv core/venv
-source core/venv/bin/activate  # Windows: .\core\venv\Scripts\Activate.ps1
-pip install -e "core/.[dev]"
+# 2. Initialize virtual environment and start Core
+python -m venv venv
+source venv/bin/activate  # Windows: .\venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
 uvicorn core.app:app --host 0.0.0.0 --port 8000
 ```
 

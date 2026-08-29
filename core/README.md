@@ -79,7 +79,21 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Configure your database connection and platform execution credentials in `.env`.
+#### Mandatory Environment Variables
+
+Ensure the following essential variables are configured in your `.env` file:
+
+| Variable | Description | Example / Supported Values |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | Relational database connection string (PostgreSQL or local SQLite) | `postgresql+psycopg2://orbit:orbit@localhost:5432/orbit` or `sqlite:///./orbit.db` |
+| `LLM_PROVIDER` | LLM engine provider discriminator | `gemini` \| `openrouter` \| `openai` |
+| `LLM_API_KEY` | API authentication key for the chosen LLM provider | `your-api-key` |
+| `LLM_MODEL` | Target foundation model for plan synthesis and schema extraction | `gemini-2.5-flash`, `google/gemini-2.5-flash`, `gpt-4o-mini` |
+| `RETRIEVAL_API_KEY` | Web unlocker proxy / retrieval service API key | `your-proxy-unlocker-api-key` |
+| `BROKER_URL` | Message broker & lock connection URL (when `EVENT_BROKER_BACKEND=redis`) | `redis://localhost:6379/0` |
+| `BROKER_PROJECT_ID`| Google Cloud Project ID (when `EVENT_BROKER_BACKEND=pubsub`) | `your-gcloud-project-id` |
+
+> Refer to [`.env.example`](.env.example) for complete configuration options (including search engines, document parsers, S3 storage, and notification sinks).
 
 ### 4. Run the Server
 
