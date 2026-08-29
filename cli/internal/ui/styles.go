@@ -65,3 +65,11 @@ func Warning(format string, a ...interface{}) {
 func Error(format string, a ...interface{}) {
 	fmt.Printf("  %s %s\n", Red("✖"), fmt.Sprintf(format, a...))
 }
+
+// ShortID safely truncates an identifier to at most 8 characters without panicking.
+func ShortID(id string) string {
+	if len(id) > 8 {
+		return id[:8]
+	}
+	return id
+}

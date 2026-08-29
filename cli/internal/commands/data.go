@@ -27,7 +27,7 @@ var dataCmd = &cobra.Command{
 		runID := args[0]
 
 		if followFlag {
-			ui.Header(fmt.Sprintf("🛰️ Orbit Data Stream — Tailing records for Run %s", runID[:8]))
+			ui.Header(fmt.Sprintf("🛰️ Orbit Data Stream — Tailing records for Run %s", ui.ShortID(runID)))
 			return client.StreamRunResults(runID, func(record *orbc.ResultOut) error {
 				if validOnlyFlag && !record.Valid {
 					return nil
@@ -39,7 +39,7 @@ var dataCmd = &cobra.Command{
 				if !record.Valid {
 					statusIcon = ui.Yellow("⚠")
 				}
-				fmt.Printf("[%s] ID: %s | URL: %s\n", statusIcon, record.ID[:8], record.URL)
+				fmt.Printf("[%s] ID: %s | URL: %s\n", statusIcon, ui.ShortID(record.ID), record.URL)
 				return nil
 			})
 		}

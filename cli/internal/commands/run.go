@@ -42,7 +42,7 @@ func executeRun(automationID string) error {
 		return formatters.PrintJSON(run)
 	}
 
-	spinner := ui.NewSpinner(fmt.Sprintf("Executing autonomous agent run for %s...", automationID[:8]))
+	spinner := ui.NewSpinner(fmt.Sprintf("Executing autonomous agent run for %s...", ui.ShortID(automationID)))
 	spinner.Start()
 
 	run, err := client.RunAutomation(automationID)

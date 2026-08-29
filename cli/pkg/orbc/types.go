@@ -14,6 +14,16 @@ type DynamicExtractionSchema struct {
 	Description string            `json:"description,omitempty"`
 }
 
+type MissingParameter struct {
+	NodeID        string  `json:"node_id"`
+	AdapterType   string  `json:"adapter_type"`
+	ParameterName string  `json:"parameter_name"`
+	Label         string  `json:"label"`
+	Prompt        string  `json:"prompt"`
+	DefaultValue  *string `json:"default_value,omitempty"`
+	Required      bool    `json:"required"`
+}
+
 type ExecutionPlan struct {
 	Objective           string                  `json:"objective"`
 	Domain              string                  `json:"domain"`
@@ -27,6 +37,8 @@ type ExecutionPlan struct {
 	Timezone            string                  `json:"timezone"`
 	Condition           string                  `json:"condition,omitempty"`
 	NotificationChannel string                  `json:"notification_channel,omitempty"`
+	WorkflowNodes       []map[string]interface{} `json:"workflow_nodes,omitempty"`
+	MissingParameters   []MissingParameter      `json:"missing_parameters,omitempty"`
 }
 
 type GoalRequest struct {
@@ -84,8 +96,66 @@ type WorkflowNodeOut struct {
 	ID          string                 `json:"id"`
 	Label       string                 `json:"label"`
 	Category    string                 `json:"category"`
+	Mode        string                 `json:"mode,omitempty"`
+	Engine      string                 `json:"engine,omitempty"`
 	IconName    string                 `json:"iconName"`
 	Description string                 `json:"description"`
 	Status      string                 `json:"status"`
 	Config      map[string]interface{} `json:"config"`
+}
+
+type WorkflowDeployPayload struct {
+	Nodes []map[string]interface{} `json:"nodes"`
+}
+
+type WorkflowDeployResponse struct {
+	Status     string `json:"status"`
+	Message    string `json:"message"`
+	DeployedAt string `json:"deployed_at"`
+}
+
+type TestConnectionPayload struct {
+	AdapterID string                 `json:"adapter_id"`
+	Config    map[string]interface{} `json:"config"`
+}
+
+type TestConnectionResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+type SaveAdapterConfigPayload struct {
+	Config map[string]interface{} `json:"config"`
+}
+
+type SaveAdapterConfigResponse struct {
+	Status    string `json:"status"`
+	AdapterID string `json:"adapter_id"`
+	Message   string `json:"message"`
+	SavedAt   string `json:"saved_at"`
+}
+
+type ScheduledItem struct {
+	AutomationID string  `json:"automation_id"`
+	Objective    string  `json:"objective"`
+	Frequency    string  `json:"frequency"`
+	ScheduleTime *string `json:"schedule_time,omitempty"`
+	Timezone     string  `json:"timezone"`
+	NextRunAt    *string `json:"next_run_at,omitempty"`
+	IsDue        bool    `json:"is_due"`
+}
+
+type SchedulerStatusResponse struct {
+	ServerTimeUTC       string          `json:"server_time_utc"`
+	ActiveScheduleCount int             `json:"active_schedule_count"`
+	Schedules           []ScheduledItem `json:"schedules"`
+}
+
+type SchedulerTriggerResponse struct {
+	Status                 string                   `json:"status"`
+	DueCount               int                      `json:"due_count"`
+	TriggeredAutomationIDs []string                 `json:"triggered_automation_ids"`
+	Wait                   bool                     `json:"wait"`
+	ServerTimeUTC          string                   `json:"server_time_utc"`
+	Executions             []map[string]interface{} `json:"executions,omitempty"`
 }

@@ -20,7 +20,7 @@ var watchCmd = &cobra.Command{
 }
 
 func executeWatch(runID string) error {
-	ui.Header(fmt.Sprintf("🛰️ Orbit Stream — Tailing Run %s", runID[:8]))
+	ui.Header(fmt.Sprintf("🛰️ Orbit Stream — Tailing Run %s", ui.ShortID(runID)))
 	lastStatus := ""
 
 	err := client.StreamRunTelemetry(runID, func(event string, run *orbc.RunOut) error {

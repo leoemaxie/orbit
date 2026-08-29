@@ -68,6 +68,66 @@ func (c *Client) GetWorkflowTopology() ([]WorkflowNodeOut, error) {
 	return out, nil
 }
 
+func (c *Client) GetDeployedPipeline() ([]map[string]interface{}, error) {
+	var out []map[string]interface{}
+	r, err := c.http.R().SetResult(&out).Get("/api/v1/workflows/pipeline")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployed pipeline: %w", err)
+	}
+	if r.IsError() {
+		return nil, fmt.Errorf("failed to get deployed pipeline: %s (status %d)", r.String(), r.StatusCode())
+	}
+	return out, nil
+}
+
+func (c *Client) DeployWorkflow(nodes []map[string]interface{}) (*WorkflowDeployResponse, error) {
+	var out WorkflowDeployResponse
+	r, err := c.http.R().SetBody(WorkflowDeployPayload{Nodes: nodes}).SetResult(&out).Post("/api/v1/workflows/deploy")
+	if err != nil {
+		return nil, fmt.Errorf("failed to deploy workflow: %w", err)
+	}
+	if r.IsError() {
+		return nil, fmt.Errorf("failed to deploy workflow: %s (status %d)", r.String(), r.StatusCode())
+	}
+	return &out, nil
+}
+
+func (c *Client) TestAdapterConnection(adapterID string, config map[string]interface{}) (*TestConnectionResponse, error) {
+	var out TestConnectionResponse
+	r, err := c.http.R().SetBody(TestConnectionPayload{AdapterID: adapterID, Config: config}).SetResult(&out).Post("/api/v1/workflows/test-connection")
+	if err != nil {
+		return nil, fmt.Errorf("failed to test adapter connection %s: %w", adapterID, err)
+	}
+	if r.IsError() {
+		return nil, fmt.Errorf("failed to test adapter connection: %s (status %d)", r.String(), r.StatusCode())
+	}
+	return &out, nil
+}
+
+func (c *Client) SaveAdapterConfig(adapterID string, config map[string]interface{}) (*SaveAdapterConfigResponse, error) {
+	var out SaveAdapterConfigResponse
+	r, err := c.http.R().SetBody(SaveAdapterConfigPayload{Config: config}).SetResult(&out).Post(fmt.Sprintf("/api/v1/workflows/adapters/%s/config", adapterID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to save adapter config for %s: %w", adapterID, err)
+	}
+	if r.IsError() {
+		return nil, fmt.Errorf("failed to save adapter config: %s (status %d)", r.String(), r.StatusCode())
+	}
+	return &out, nil
+}
+
+func (c *Client) GetRunDossier(runID string) ([]byte, string, error) {
+	r, err := c.http.R().Get(fmt.Sprintf("/api/v1/runs/%s/dossier", runID))
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to fetch dossier for run %s: %w", runID, err)
+	}
+	if r.IsError() {
+		return nil, "", fmt.Errorf("failed to fetch dossier: %s (status %d)", r.String(), r.StatusCode())
+	}
+	contentType := r.Header().Get("Content-Type")
+	return r.Body(), contentType, nil
+}
+
 func (c *Client) StreamRunTelemetry(runID string, handler func(event string, run *RunOut) error) error {
 	url := fmt.Sprintf("%s/api/v1/runs/%s/stream", c.baseURL, runID)
 	req, err := http.NewRequest("GET", url, nil)

@@ -28,7 +28,7 @@ func executeRetry(runID string) error {
 		return formatters.PrintJSON(run)
 	}
 
-	spinner := ui.NewSpinner(fmt.Sprintf("Resuming run %s from last checkpoint...", runID[:8]))
+	spinner := ui.NewSpinner(fmt.Sprintf("Resuming run %s from last checkpoint...", ui.ShortID(runID)))
 	spinner.Start()
 
 	run, err := client.RetryRun(runID)

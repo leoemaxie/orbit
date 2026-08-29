@@ -282,3 +282,140 @@ func TestClient_ErrorMatrix(t *testing.T) {
 		}
 	})
 }
+
+func TestClient_SchedulerEndpoints(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/scheduler/status":
+			if r.Header.Get("X-Scheduler-Secret") != "test-secret" {
+				http.Error(w, `{"detail":"unauthorized"}`, http.StatusUnauthorized)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(SchedulerStatusResponse{
+				ServerTimeUTC:       "2026-08-23T12:00:00Z",
+				ActiveScheduleCount: 1,
+				Schedules: []ScheduledItem{
+					{
+						AutomationID: "auto-101",
+						Objective:    "Track Gold Prices",
+						Frequency:    "daily",
+						Timezone:     "UTC",
+						IsDue:        true,
+					},
+				},
+			})
+		case "/api/v1/scheduler/trigger-due":
+			_ = json.NewEncoder(w).Encode(SchedulerTriggerResponse{
+				Status:                 "success",
+				DueCount:               1,
+				TriggeredAutomationIDs: []string{"auto-101"},
+				Wait:                   false,
+				ServerTimeUTC:          "2026-08-23T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	client := NewClient(ts.URL, 5*time.Second)
+
+	// Test GetSchedulerStatus
+	status, err := client.GetSchedulerStatus("test-secret")
+	if err != nil {
+		t.Fatalf("GetSchedulerStatus() error = %v", err)
+	}
+	if status.ActiveScheduleCount != 1 || len(status.Schedules) != 1 || status.Schedules[0].AutomationID != "auto-101" {
+		t.Errorf("unexpected scheduler status: %+v", status)
+	}
+
+	// Test TriggerDueAutomations
+	triggerResp, err := client.TriggerDueAutomations(false, "test-secret")
+	if err != nil {
+		t.Fatalf("TriggerDueAutomations() error = %v", err)
+	}
+	if triggerResp.Status != "success" || triggerResp.DueCount != 1 {
+		t.Errorf("unexpected trigger response: %+v", triggerResp)
+	}
+}
+
+func TestClient_WorkflowEndpoints(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/workflows/pipeline":
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{
+				{"id": "node-1", "stage": "trigger"},
+			})
+		case "/api/v1/workflows/deploy":
+			_ = json.NewEncoder(w).Encode(WorkflowDeployResponse{
+				Status:     "deployed",
+				Message:    "Pipeline updated with 1 active adapter stages.",
+				DeployedAt: "2026-08-23T12:00:00Z",
+			})
+		case "/api/v1/workflows/test-connection":
+			_ = json.NewEncoder(w).Encode(TestConnectionResponse{
+				Success: true,
+				Message: "Connection successful",
+			})
+		case "/api/v1/workflows/adapters/slack/config":
+			_ = json.NewEncoder(w).Encode(SaveAdapterConfigResponse{
+				Status:    "saved",
+				AdapterID: "slack",
+				Message:   "Configuration saved",
+				SavedAt:   "2026-08-23T12:00:00Z",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	client := NewClient(ts.URL, 5*time.Second)
+
+	// Pipeline
+	pipeline, err := client.GetDeployedPipeline()
+	if err != nil || len(pipeline) != 1 {
+		t.Fatalf("GetDeployedPipeline() error = %v, pipeline = %+v", err, pipeline)
+	}
+
+	// Deploy
+	deployResp, err := client.DeployWorkflow([]map[string]interface{}{{"id": "node-1"}})
+	if err != nil || deployResp.Status != "deployed" {
+		t.Fatalf("DeployWorkflow() error = %v, resp = %+v", err, deployResp)
+	}
+
+	// Test connection
+	connResp, err := client.TestAdapterConnection("slack", map[string]interface{}{"url": "https://hooks.slack.com/xxx"})
+	if err != nil || !connResp.Success {
+		t.Fatalf("TestAdapterConnection() error = %v, resp = %+v", err, connResp)
+	}
+
+	// Save adapter config
+	saveResp, err := client.SaveAdapterConfig("slack", map[string]interface{}{"url": "https://hooks.slack.com/xxx"})
+	if err != nil || saveResp.Status != "saved" {
+		t.Fatalf("SaveAdapterConfig() error = %v, resp = %+v", err, saveResp)
+	}
+}
+
+func TestClient_GetRunDossier(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/runs/run-123/dossier" {
+			w.Header().Set("Content-Type", "application/pdf")
+			_, _ = w.Write([]byte("%PDF-1.4 mock content"))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer ts.Close()
+
+	client := NewClient(ts.URL, 5*time.Second)
+	content, contentType, err := client.GetRunDossier("run-123")
+	if err != nil {
+		t.Fatalf("GetRunDossier() error = %v", err)
+	}
+	if contentType != "application/pdf" || string(content) != "%PDF-1.4 mock content" {
+		t.Errorf("unexpected dossier response: type=%s, content=%s", contentType, string(content))
+	}
+}

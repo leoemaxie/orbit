@@ -3,6 +3,7 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -124,6 +125,32 @@ func setupMockServer() *httptest.Server {
 			_ = json.NewEncoder(w).Encode([]orbc.RunOut{mockRun})
 		case r.URL.Path == "/api/v1/runs/run-7777" && r.Method == http.MethodGet:
 			_ = json.NewEncoder(w).Encode(mockRun)
+		case r.URL.Path == "/api/v1/scheduler/status" && r.Method == http.MethodGet:
+			_ = json.NewEncoder(w).Encode(orbc.SchedulerStatusResponse{
+				ServerTimeUTC:       "2026-08-23T12:00:00Z",
+				ActiveScheduleCount: 1,
+				Schedules: []orbc.ScheduledItem{
+					{
+						AutomationID: "auto-5555",
+						Objective:    "Find laptops under $1000",
+						Frequency:    "daily",
+						Timezone:     "UTC",
+						IsDue:        false,
+					},
+				},
+			})
+		case r.URL.Path == "/api/v1/scheduler/trigger-due" && r.Method == http.MethodPost:
+			_ = json.NewEncoder(w).Encode(orbc.SchedulerTriggerResponse{
+				Status:                 "success",
+				DueCount:               1,
+				TriggeredAutomationIDs: []string{"auto-5555"},
+				Wait:                   false,
+				ServerTimeUTC:          "2026-08-23T12:00:00Z",
+			})
+		case strings.HasPrefix(r.URL.Path, "/api/v1/runs/") && strings.HasSuffix(r.URL.Path, "/stream"):
+			w.Header().Set("Content-Type", "text/event-stream")
+			payload, _ := json.Marshal(mockRun)
+			_, _ = fmt.Fprintf(w, "event: complete\ndata: %s\n\n", string(payload))
 		default:
 			http.NotFound(w, r)
 		}
@@ -309,3 +336,43 @@ func TestCommand_Version(t *testing.T) {
 		}
 	})
 }
+
+func TestCommand_Watch_ShortID(t *testing.T) {
+	ts := setupMockServer()
+	defer ts.Close()
+
+	out, err := executeCommand("watch", "dkdkd", "--api-url", ts.URL)
+	if err != nil {
+		t.Fatalf("watch with short ID failed: %v", err)
+	}
+
+	if !strings.Contains(out, "dkdkd") {
+		t.Errorf("expected watch output to contain short ID 'dkdkd': %s", out)
+	}
+}
+
+func TestCommand_Schedule(t *testing.T) {
+	ts := setupMockServer()
+	defer ts.Close()
+
+	t.Run("schedule list", func(t *testing.T) {
+		out, err := executeCommand("schedule", "list", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("schedule list failed: %v", err)
+		}
+		if !strings.Contains(out, "auto-555") {
+			t.Errorf("expected schedule list output to contain auto-555: %s", out)
+		}
+	})
+
+	t.Run("schedule trigger", func(t *testing.T) {
+		out, err := executeCommand("schedule", "trigger", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("schedule trigger failed: %v", err)
+		}
+		if !strings.Contains(out, "Scheduler hook triggered successfully") {
+			t.Errorf("expected trigger success message: %s", out)
+		}
+	})
+}
+
