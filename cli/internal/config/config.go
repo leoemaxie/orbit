@@ -24,7 +24,6 @@ func LoadConfig() (*Config, error) {
 	}
 
 	configDir := filepath.Join(home, ".orbc")
-	configFile := filepath.Join(configDir, "config.yaml")
 
 	viper.AddConfigPath(configDir)
 	// Also check fallback ~/.orbit for backward compatibility
@@ -39,12 +38,11 @@ func LoadConfig() (*Config, error) {
 	viper.SetEnvPrefix("ORBC")
 	viper.AutomaticEnv()
 
-	// If config file doesn't exist, create ~/.orbc/config.yaml with defaults
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		_ = os.MkdirAll(configDir, 0755)
-		_ = viper.WriteConfigAs(configFile)
-	} else {
-		_ = viper.ReadInConfig()
+	// Read config file if it exists, otherwise use defaults and environment variables
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("error reading config file: %w", err)
+		}
 	}
 
 	var cfg Config

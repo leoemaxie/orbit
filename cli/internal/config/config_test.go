@@ -30,10 +30,10 @@ func TestConfig_Defaults(t *testing.T) {
 		t.Errorf("expected Format %q, got %q", DefaultFormat, cfg.Format)
 	}
 
-	// Verify that the ~/.orbc/config.yaml file was auto-generated
+	// Verify that ~/.orbc/config.yaml is NOT eagerly generated on read
 	configFile := filepath.Join(tmpHome, ".orbc", "config.yaml")
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		t.Errorf("expected config file %q to be created, but does not exist", configFile)
+	if _, err := os.Stat(configFile); !os.IsNotExist(err) {
+		t.Errorf("expected config file %q to not exist on default read, but it was created", configFile)
 	}
 }
 
@@ -81,5 +81,10 @@ func TestConfig_SetKey(t *testing.T) {
 
 	if cfg.APIURL != "http://updated-daemon:8080" {
 		t.Errorf("expected updated APIURL, got %q", cfg.APIURL)
+	}
+
+	configFile := filepath.Join(tmpHome, ".orbc", "config.yaml")
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		t.Errorf("expected config file %q to be created after SetKey, but it does not exist", configFile)
 	}
 }
