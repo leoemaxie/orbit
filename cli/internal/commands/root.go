@@ -20,8 +20,10 @@ var (
 
 // RootCmd is the base command for orbc CLI.
 var RootCmd = &cobra.Command{
-	Use:   "orbc",
-	Short: "orbc - Autonomous Goal-Driven Web Data Operations CLI",
+	Use:           "orbc",
+	Short:         "orbc - Autonomous Goal-Driven Web Data Operations CLI",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Long: `orbc is an agentic web-data automation CLI for Orbit.
 Transform natural-language goals into recurring, verifiable web-data workflows.
 
@@ -30,6 +32,7 @@ Transform natural-language goals into recurring, verifiable web-data workflows.
 		var err error
 		cfg, err = config.LoadConfig()
 		if err != nil {
+			ui.Error("Error loading configuration: %v", err)
 			return fmt.Errorf("error loading configuration: %w", err)
 		}
 

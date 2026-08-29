@@ -376,3 +376,24 @@ func TestCommand_Schedule(t *testing.T) {
 	})
 }
 
+func TestCommand_APIErrorDoesNotShowUsage(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, `{"detail":"Automation not found"}`, http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	out, err := executeCommand("show", "invalid-id", "--api-url", ts.URL)
+	if err == nil {
+		t.Fatalf("expected command to return error on 404 API response")
+	}
+
+	if !strings.Contains(out, "Failed to fetch run") {
+		t.Errorf("expected output to contain API error message, got: %s", out)
+	}
+
+	if strings.Contains(out, "Usage:") || strings.Contains(out, "Flags:") {
+		t.Errorf("expected output NOT to contain help/usage text on API error, got: %s", out)
+	}
+}
+
+

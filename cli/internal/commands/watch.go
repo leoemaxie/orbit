@@ -54,6 +54,10 @@ func executeWatch(runID string) error {
 		return nil
 	})
 
+	if err != nil {
+		ui.Error("Stream error: %v", err)
+	}
+
 	return err
 }
 
