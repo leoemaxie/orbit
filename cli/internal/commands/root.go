@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/leoemaxie/orbit/cli/internal/config"
+	"github.com/leoemaxie/orbit/cli/internal/ui"
 	"github.com/leoemaxie/orbit/cli/pkg/orbc"
 	"github.com/spf13/cobra"
 )
@@ -70,7 +71,6 @@ func init() {
 // Execute runs the root command.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
