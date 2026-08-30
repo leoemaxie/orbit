@@ -70,8 +70,8 @@ def test_test_adapter_connection_api():
 
     # Test Email probe via API with valid recipient and mock
     from unittest.mock import AsyncMock, patch
-    with patch("core.adapters.communication.email.EmailNotificationAdapter.send_email", new_callable=AsyncMock) as mock_send:
-        mock_send.return_value = True
+    with patch("core.adapters.communication.email.EmailNotificationAdapter.test_managed_connection", new_callable=AsyncMock) as mock_test:
+        mock_test.return_value = (True, "Live managed email probe verified to user@example.com")
         valid_payload = {
             "adapter_id": "email_alert",
             "config": {"recipient_email": "user@example.com", "api_key": "test-key"}

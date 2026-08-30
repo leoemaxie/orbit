@@ -15,8 +15,12 @@ logger = logging.getLogger("core.services.workflow")
 class WorkflowService:
     """Core domain service for adapter topology discovery, DAG validation, and connection testing."""
 
-    @staticmethod
-    def get_adapter_topology() -> list[dict[str, Any]]:
+    _storage_path: Path = Path("exports/deployed_pipeline.json")
+    _deployed_pipeline: list[dict[str, Any]] = []
+    _custom_adapter_configs: dict[str, dict[str, Any]] = {}
+
+    @classmethod
+    def get_adapter_topology(cls) -> list[dict[str, Any]]:
         """Returns live adapter configurations across managed, custom, and both modes."""
         s = get_settings()
 
