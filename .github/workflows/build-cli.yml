@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROD_API_URL: "https://orbit-wtsx.onrender.com/api/v1"
+  PROD_API_URL: "https://orbit-wtsx.onrender.com"
 
 jobs:
   build:

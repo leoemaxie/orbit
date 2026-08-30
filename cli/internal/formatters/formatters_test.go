@@ -184,10 +184,10 @@ func TestRenderAutomationsTable(t *testing.T) {
 		RenderAutomationsTable(automations)
 	})
 
-	if !strings.Contains(out, "12345678...") || !strings.Contains(out, "Track PS5 prices daily") {
+	if !strings.Contains(out, "12345678") || !strings.Contains(out, "Track PS5 prices daily") {
 		t.Errorf("table output missing automation 1: %s", out)
 	}
-	if !strings.Contains(out, "87654321...") || !strings.Contains(out, "Monitor Remote Golang Jobs") {
+	if !strings.Contains(out, "87654321") || !strings.Contains(out, "Monitor Remote Golang Jobs") {
 		t.Errorf("table output missing automation 2: %s", out)
 	}
 	if !strings.Contains(out, "Yes") || !strings.Contains(out, "No") {
@@ -222,10 +222,10 @@ func TestRenderRunsTable(t *testing.T) {
 		RenderRunsTable(runs)
 	})
 
-	if !strings.Contains(out, "run-1111...") || !strings.Contains(out, "MATCHED") {
+	if !strings.Contains(out, "run-1111") || !strings.Contains(out, "MATCHED") {
 		t.Errorf("runs table output missing run 1 or MATCHED indicator: %s", out)
 	}
-	if !strings.Contains(out, "run-4444...") || !strings.Contains(out, "NO") {
+	if !strings.Contains(out, "run-4444") || !strings.Contains(out, "NO") {
 		t.Errorf("runs table output missing run 2 or NO indicator: %s", out)
 	}
 }

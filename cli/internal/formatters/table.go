@@ -45,7 +45,7 @@ func RenderAutomationsTable(automations []orbc.AutomationOut) {
 		}
 		idStr := a.ID
 		if len(idStr) > 8 {
-			idStr = idStr[:8] + "..."
+			idStr = idStr[:8]
 		}
 		table.Append([]string{
 			idStr,

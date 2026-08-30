@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from core.agent.interpreter import GoalInterpreter
 from core.agent.orchestrator import AgentOrchestrator
-from core.api.dependencies import get_db
+from core.api.dependencies import get_db, resolve_entity_by_id_or_prefix
 from core.api.serializers import automation_to_out, run_to_out
 from core.db.orm import Automation, Run
 from core.db.session import SessionLocal
@@ -100,19 +100,15 @@ def list_automations(db: Annotated[Session, Depends(get_db)]):
 
 @router.get("/{automation_id}", response_model=AutomationOut)
 def get_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
-    """Retrieves a single automation by its ID."""
-    automation = db.query(Automation).filter(Automation.id == automation_id).first()
-    if not automation:
-        raise HTTPException(status_code=404, detail="Automation not found")
+    """Retrieves a single automation by its ID or unambiguous prefix."""
+    automation = resolve_entity_by_id_or_prefix(db, Automation, automation_id, "automation")
     return automation_to_out(automation)
 
 
 @router.post("/{automation_id}/run", response_model=RunOut)
 async def run_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Triggers an on-demand autonomous run immediately in background and returns initial run metadata."""
-    automation = db.query(Automation).filter(Automation.id == automation_id).first()
-    if not automation:
-        raise HTTPException(status_code=404, detail="Automation not found")
+    automation = resolve_entity_by_id_or_prefix(db, Automation, automation_id, "automation")
 
     # 1. Create run record in discovering status
     run = Run(
@@ -142,9 +138,7 @@ async def run_automation(automation_id: str, db: Annotated[Session, Depends(get_
 @router.delete("/{automation_id}")
 def delete_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Deletes an automation and all its associated runs and results."""
-    automation = db.query(Automation).filter(Automation.id == automation_id).first()
-    if not automation:
-        raise HTTPException(status_code=404, detail="Automation not found")
+    automation = resolve_entity_by_id_or_prefix(db, Automation, automation_id, "automation")
 
     db.delete(automation)
     db.commit()

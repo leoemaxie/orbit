@@ -34,7 +34,7 @@ func RenderRunsTable(runs []orbc.RunOut) {
 		}
 		idStr := r.ID
 		if len(idStr) > 8 {
-			idStr = idStr[:8] + "..."
+			idStr = idStr[:8]
 		}
 		table.Append([]string{
 			idStr,

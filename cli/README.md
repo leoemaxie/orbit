@@ -14,13 +14,13 @@ By default, the CLI can connect to the public hosted production instance, a self
 
 ```bash
 # 1. Connect to Hosted Production Daemon (Persistent Config)
-orbc config set api_url https://orbit-wtsx.onrender.com/api/v1
+orbc config set api_url https://orbit-wtsx.onrender.com
 
 # 2. Connect to Hosted Production Daemon (One-off Command Flag)
-orbc --api-url https://orbit-wtsx.onrender.com/api/v1 list
+orbc --api-url https://orbit-wtsx.onrender.com list
 
 # 3. Connect via Environment Variable
-export ORBC_API_URL=https://orbit-wtsx.onrender.com/api/v1
+export ORBC_API_URL=https://orbit-wtsx.onrender.com
 ```
 
 ---
@@ -33,7 +33,7 @@ Requires Go 1.23+:
 
 ```bash
 cd cli
-go build -ldflags "-s -w -X github.com/leoemaxie/orbit/cli/internal/config.DefaultAPIURL=https://orbit-wtsx.onrender.com/api/v1" -o bin/orbc ./cmd/orbc
+go build -ldflags "-s -w -X github.com/leoemaxie/orbit/cli/internal/config.DefaultAPIURL=https://orbit-wtsx.onrender.com" -o bin/orbc ./cmd/orbc
 # Output binary is generated at bin/orbc with production URL baked in
 ```
 

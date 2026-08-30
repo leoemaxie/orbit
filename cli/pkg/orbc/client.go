@@ -17,6 +17,8 @@ type Client struct {
 
 func NewClient(baseURL string, timeout time.Duration) *Client {
 	baseURL = strings.TrimRight(baseURL, "/")
+	baseURL = strings.TrimSuffix(baseURL, "/api/v1")
+	baseURL = strings.TrimRight(baseURL, "/")
 	r := resty.New().
 		SetBaseURL(baseURL).
 		SetTimeout(timeout).

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
 from core.agent.orchestrator import AgentOrchestrator
-from core.api.dependencies import get_db
+from core.api.dependencies import get_db, resolve_entity_by_id_or_prefix
 from core.api.serializers import result_to_out, run_to_out
 from core.db.orm import Automation, Result, Run
 from core.db.session import SessionLocal
@@ -26,9 +26,7 @@ orchestrator = AgentOrchestrator()
 @router.get("/runs/{run_id}", response_model=RunOut)
 def get_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     """Retrieves detailed execution audit trail and results for a specific run."""
-    run = db.query(Run).filter(Run.id == run_id).first()
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+    run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")
     return run_to_out(run)
 
 
@@ -37,9 +35,8 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
     """
     Streams live run telemetry, stage transitions, reasoning logs, and status updates via Server-Sent Events (SSE).
     """
-    run = db.query(Run).filter(Run.id == run_id).first()
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+    run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")
+    canonical_run_id = run.id
     initial_payload = run_to_out(run)
 
     async def event_generator():
@@ -54,7 +51,7 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
         queue: asyncio.Queue[OrbitEvent | None] = asyncio.Queue()
 
         async def _on_event(evt: OrbitEvent):
-            if evt.run_id == run_id:
+            if evt.run_id == canonical_run_id:
                 await queue.put(evt)
 
         event_bus.subscribe(_on_event)
@@ -70,7 +67,7 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
                         break
 
                     with SessionLocal() as poll_db:
-                        current_run = poll_db.query(Run).filter(Run.id == run_id).first()
+                        current_run = poll_db.query(Run).filter(Run.id == canonical_run_id).first()
                         if current_run:
                             out = run_to_out(current_run)
                             event_name = "complete" if out.status in (RunStatus.verified, RunStatus.failed) else "update"
@@ -80,7 +77,7 @@ async def stream_run_telemetry(run_id: str, request: Request, db: Annotated[Sess
                                 break
                 except asyncio.TimeoutError:
                     with SessionLocal() as poll_db:
-                        current_run = poll_db.query(Run).filter(Run.id == run_id).first()
+                        current_run = poll_db.query(Run).filter(Run.id == canonical_run_id).first()
                         if current_run:
                             out = run_to_out(current_run)
                             if out.status in (RunStatus.verified, RunStatus.failed):
@@ -98,23 +95,22 @@ async def stream_run_results(run_id: str, request: Request, db: Annotated[Sessio
     """
     Streams extracted and validated data entities incrementally via Server-Sent Events (SSE).
     """
-    run = db.query(Run).filter(Run.id == run_id).first()
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+    run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")
+    canonical_run_id = run.id
 
     async def event_generator():
         sent_ids = set()
 
         # 1. Stream existing records first
         with SessionLocal() as cur_db:
-            existing_results = cur_db.query(Result).filter(Result.run_id == run_id).all()
+            existing_results = cur_db.query(Result).filter(Result.run_id == canonical_run_id).all()
             for res in existing_results:
                 sent_ids.add(res.id)
                 yield format_sse(data=result_to_out(res), event="record")
 
         # If already finished, terminate
         with SessionLocal() as cur_db:
-            cur_run = cur_db.query(Run).filter(Run.id == run_id).first()
+            cur_run = cur_db.query(Run).filter(Run.id == canonical_run_id).first()
             if cur_run and cur_run.status in (RunStatus.verified, RunStatus.failed):
                 yield format_sse(data={"total": len(sent_ids), "status": cur_run.status.value}, event="complete")
                 return
@@ -122,7 +118,7 @@ async def stream_run_results(run_id: str, request: Request, db: Annotated[Sessio
         queue: asyncio.Queue[OrbitEvent | None] = asyncio.Queue()
 
         async def _on_event(evt: OrbitEvent):
-            if evt.run_id == run_id:
+            if evt.run_id == canonical_run_id:
                 await queue.put(evt)
 
         event_bus.subscribe(_on_event)
@@ -140,14 +136,14 @@ async def stream_run_results(run_id: str, request: Request, db: Annotated[Sessio
                     with SessionLocal() as cur_db:
                         new_results = (
                             cur_db.query(Result)
-                            .filter(Result.run_id == run_id, ~Result.id.in_(sent_ids) if sent_ids else True)
+                            .filter(Result.run_id == canonical_run_id, ~Result.id.in_(sent_ids) if sent_ids else True)
                             .all()
                         )
                         for res in new_results:
                             sent_ids.add(res.id)
                             yield format_sse(data=result_to_out(res), event="record")
 
-                        cur_run = cur_db.query(Run).filter(Run.id == run_id).first()
+                        cur_run = cur_db.query(Run).filter(Run.id == canonical_run_id).first()
                         if cur_run and cur_run.status in (RunStatus.verified, RunStatus.failed):
                             yield format_sse(data={"total": len(sent_ids), "status": cur_run.status.value}, event="complete")
                             break
@@ -155,14 +151,14 @@ async def stream_run_results(run_id: str, request: Request, db: Annotated[Sessio
                     with SessionLocal() as cur_db:
                         new_results = (
                             cur_db.query(Result)
-                            .filter(Result.run_id == run_id, ~Result.id.in_(sent_ids) if sent_ids else True)
+                            .filter(Result.run_id == canonical_run_id, ~Result.id.in_(sent_ids) if sent_ids else True)
                             .all()
                         )
                         for res in new_results:
                             sent_ids.add(res.id)
                             yield format_sse(data=result_to_out(res), event="record")
 
-                        cur_run = cur_db.query(Run).filter(Run.id == run_id).first()
+                        cur_run = cur_db.query(Run).filter(Run.id == canonical_run_id).first()
                         if cur_run and cur_run.status in (RunStatus.verified, RunStatus.failed):
                             yield format_sse(data={"total": len(sent_ids), "status": cur_run.status.value}, event="complete")
                             break
@@ -176,12 +172,10 @@ async def stream_run_results(run_id: str, request: Request, db: Annotated[Sessio
 @router.get("/runs/{run_id}/dossier")
 def get_run_dossier(run_id: str, request: Request, db: Annotated[Session, Depends(get_db)]):
     """Streams the generated and redacted PDF/HTML report dossier with RFC 7234 ETag caching."""
-    run = db.query(Run).filter(Run.id == run_id).first()
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+    run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")
 
     updated_ts = int(run.finished_at.timestamp() if run.finished_at else (run.created_at.timestamp() if run.created_at else 0))
-    etag = f'W/"{run.id[:8]}-{updated_ts}"'
+    etag = f'W/"{run.id[:12]}-{updated_ts}"'
 
     headers = {
         "ETag": etag,
@@ -200,12 +194,12 @@ def get_run_dossier(run_id: str, request: Request, db: Annotated[Session, Depend
     html_report = f"""
     <!DOCTYPE html>
     <html>
-    <head><meta charset="utf-8"><title>Orbit Executive Briefing - Run {run.id[:8]}</title>
+    <head><meta charset="utf-8"><title>Orbit Executive Briefing - Run {run.id[:12]}</title>
     <style>body{{font-family:system-ui;background:#090d16;color:#e2e8f0;padding:2rem;}}
     .badge{{background:#06b6d420;color:#06b6d4;padding:4px 8px;border-radius:4px;font-family:monospace;}}</style>
     </head>
     <body>
-    <h2>🛰️ Orbit Report Dossier <span class="badge">Run: {run.id[:8]}</span></h2>
+    <h2>🛰️ Orbit Report Dossier <span class="badge">Run: {run.id[:12]}</span></h2>
     <p>Extraction Status: <strong>{run.status.value}</strong> | Records: {run.extracted_count}</p>
     <hr style="border:1px solid #1e293b;margin:1.5rem 0;"/>
     <p>PII Entities Masked: <strong>Active (Nutrient Redactor)</strong></p>
@@ -217,9 +211,7 @@ def get_run_dossier(run_id: str, request: Request, db: Annotated[Session, Depend
 @router.post("/runs/{run_id}/retry", response_model=RunOut)
 async def retry_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     """Resumes and retries execution of an existing run from its last checkpoint in background."""
-    run = db.query(Run).filter(Run.id == run_id).first()
-    if not run:
-        raise HTTPException(status_code=404, detail="Run not found")
+    run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")
 
     automation = db.query(Automation).filter(Automation.id == run.automation_id).first()
     if not automation:
@@ -247,5 +239,6 @@ async def retry_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
 @router.get("/automations/{automation_id}/runs", response_model=list[RunOut])
 def list_automation_runs(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Lists past execution history for a given automation."""
-    runs = db.query(Run).filter(Run.automation_id == automation_id).order_by(Run.started_at.desc()).all()
+    automation = resolve_entity_by_id_or_prefix(db, Automation, automation_id, "automation")
+    runs = db.query(Run).filter(Run.automation_id == automation.id).order_by(Run.started_at.desc()).all()
     return [run_to_out(r) for r in runs]
