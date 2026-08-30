@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     document_converter_api_key: str = Field(default="", validation_alias=AliasChoices("DOCUMENT_CONVERTER_API_KEY", "FOXIT_API_KEY"))
     document_converter_base_url: str = "https://api.foxit.com/v1"
     document_generator_api_key: str = Field(default="", validation_alias=AliasChoices("DOCUMENT_GENERATOR_API_KEY", "NUTRIENT_API_KEY"))
-    document_generator_base_url: str = "https://api.nutrient.io/v1"
+    document_generator_base_url: str = "https://api.nutrient.io"
     document_redactor_api_key: str = Field(default="", validation_alias=AliasChoices("DOCUMENT_REDACTOR_API_KEY", "NUTRIENT_API_KEY"))
-    document_redactor_base_url: str = "https://api.nutrient.io/v1"
+    document_redactor_base_url: str = "https://api.nutrient.io"
 
     # Email Notifications (Provider-Agnostic Managed Outbound Gateway)
     email_api_key: str = Field(default="", validation_alias=AliasChoices("EMAIL_API_KEY", "MAIL_API_KEY", "SMTP_API_KEY"))

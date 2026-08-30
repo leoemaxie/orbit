@@ -54,13 +54,31 @@ th {{ background: #e2e8f0; }}
         if not self.api_key:
             return html.encode("utf-8")
 
-        url = f"{self.base_url}/render/html-to-pdf"
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
-        payload = {"html": html, "pdf_options": {"page_size": "A4", "margin": "10mm"}}
+        # Support both https://api.nutrient.io and custom endpoint URLs
+        base = self.base_url.rstrip("/")
+        url = f"{base}/build" if not base.endswith("/build") else base
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+
+        instructions = json.dumps({
+            "parts": [
+                {
+                    "html": "document.html",
+                    "layout": {
+                        "size": "A4",
+                        "margin": {"top": 10, "bottom": 10, "left": 10, "right": 10},
+                    },
+                }
+            ]
+        })
+
+        files = {
+            "document.html": ("document.html", html.encode("utf-8"), "text/html"),
+            "instructions": (None, instructions, "text/plain"),
+        }
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                res = await client.post(url, headers=headers, json=payload)
+                res = await client.post(url, headers=headers, files=files)
                 res.raise_for_status()
                 return res.content
         except Exception as e:

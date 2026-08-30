@@ -1,3 +1,4 @@
+import json
 import logging
 import httpx
 
@@ -21,14 +22,34 @@ class PiiDocumentRedactor:
         if not self.api_key:
             return file_bytes
 
-        entities = entity_types or ["EMAIL_ADDRESS", "US_SSN", "CREDIT_CARD_NUMBER", "PHONE_NUMBER"]
-        url = f"{self.base_url}/redaction/process"
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/octet-stream"}
-        params = {"entities": ",".join(entities), "replacement_text": "[REDACTED]"}
+        base = self.base_url.rstrip("/")
+        url = f"{base}/build" if not base.endswith("/build") else base
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+
+        instructions = json.dumps({
+            "parts": [
+                {"file": "document.pdf"}
+            ],
+            "actions": [
+                {
+                    "type": "createRedactions",
+                    "strategy": "preset",
+                    "preset": "email-address"
+                },
+                {
+                    "type": "applyRedactions"
+                }
+            ]
+        })
+
+        files = {
+            "document.pdf": ("document.pdf", file_bytes, "application/pdf"),
+            "instructions": (None, instructions, "text/plain"),
+        }
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                res = await client.post(url, headers=headers, params=params, content=file_bytes)
+                res = await client.post(url, headers=headers, files=files)
                 res.raise_for_status()
                 return res.content
         except Exception as e:
