@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	formatFlag    string
 	validOnlyFlag bool
 	followFlag    bool
 )
@@ -76,7 +75,6 @@ var dataCmd = &cobra.Command{
 }
 
 func init() {
-	dataCmd.Flags().StringVarP(&formatFlag, "format", "f", "table", "Output format: table, json, csv")
 	dataCmd.Flags().BoolVar(&validOnlyFlag, "valid-only", false, "Show only records that passed validation")
 	dataCmd.Flags().BoolVarP(&followFlag, "follow", "w", false, "Follow / stream incoming data records in real time")
 }

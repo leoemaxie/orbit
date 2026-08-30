@@ -22,7 +22,7 @@ func resetFlags() {
 	verboseFlag = false
 	runImmediatelyFlag = false
 	quietFlag = false
-	formatFlag = "table"
+	formatFlag = ""
 	validOnlyFlag = false
 	viper.Reset()
 }
@@ -437,6 +437,48 @@ func TestCommand_Config(t *testing.T) {
 		}
 	})
 }
+
+func TestCommand_FormatPrecedence(t *testing.T) {
+	ts := setupMockServer()
+	defer ts.Close()
+
+	t.Run("config format json outputs JSON automatically", func(t *testing.T) {
+		tmpHome := t.TempDir()
+		t.Setenv("USERPROFILE", tmpHome)
+		t.Setenv("HOME", tmpHome)
+		t.Setenv("ORBC_FORMAT", "json")
+
+		out, err := executeCommand("list", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("list failed: %v, out: %s", err, out)
+		}
+
+		var list orbc.AutomationListOut
+		if err := json.Unmarshal([]byte(out), &list); err != nil {
+			t.Fatalf("expected valid json when ORBC_FORMAT=json, got error: %v, raw: %s", err, out)
+		}
+		if list.Total != 1 || list.Items[0].ID != "auto-5555" {
+			t.Errorf("unexpected list output: %+v", list)
+		}
+	})
+
+	t.Run("explicit flag overrides config format", func(t *testing.T) {
+		tmpHome := t.TempDir()
+		t.Setenv("USERPROFILE", tmpHome)
+		t.Setenv("HOME", tmpHome)
+		t.Setenv("ORBC_FORMAT", "json")
+
+		out, err := executeCommand("list", "--format", "table", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("list --format table failed: %v, out: %s", err, out)
+		}
+
+		if !strings.Contains(out, "auto-555") {
+			t.Errorf("expected table output when overriding with --format table: %s", out)
+		}
+	})
+}
+
 
 
 

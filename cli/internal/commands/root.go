@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/leoemaxie/orbit/cli/internal/config"
 	"github.com/leoemaxie/orbit/cli/internal/ui"
@@ -13,6 +14,7 @@ import (
 var (
 	apiURLFlag  string
 	jsonFlag    bool
+	formatFlag  string
 	verboseFlag bool
 
 	cfg    *config.Config
@@ -43,13 +45,33 @@ Transform natural-language goals into recurring, verifiable web-data workflows.
 		}
 
 		client = orbc.NewClient(targetURL, cfg.Timeout)
+
+		// Format Precedence: CLI flag > Config file/Env > Default ("table")
+		resolvedFormat := cfg.Format
+		if formatFlag != "" {
+			resolvedFormat = formatFlag
+		}
+		if jsonFlag {
+			resolvedFormat = "json"
+		}
+
+		if strings.ToLower(resolvedFormat) == "json" {
+			jsonFlag = true
+			formatFlag = "json"
+		} else if strings.ToLower(resolvedFormat) == "csv" {
+			formatFlag = "csv"
+		} else {
+			formatFlag = "table"
+		}
+
 		return nil
 	},
 }
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&apiURLFlag, "api-url", "", "Orbit API Base URL (default: http://localhost:8000)")
-	RootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Output raw JSON")
+	RootCmd.PersistentFlags().StringVarP(&formatFlag, "format", "f", "", "Output format: table, json, csv")
+	RootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Output raw JSON (shorthand for --format json)")
 	RootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose logging")
 
 	// Add subcommands
