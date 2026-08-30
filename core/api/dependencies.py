@@ -52,7 +52,7 @@ def resolve_entity_by_id_or_prefix(
             detail="Invalid identifier prefix provided.",
         )
 
-    matches = db.query(model).filter(model.id.startswith(safe_prefix)).limit(5).all()
+    matches = db.query(model).filter(model.id.ilike(f"{safe_prefix}%")).limit(5).all()
 
     if not matches:
         raise HTTPException(

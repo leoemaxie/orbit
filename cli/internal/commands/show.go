@@ -13,11 +13,18 @@ var showCmd = &cobra.Command{
 	Short: "Inspect execution details and verification audit trail for a run",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runID := args[0]
-		run, err := client.GetRun(runID)
+		targetID := args[0]
+		run, err := client.GetRun(targetID)
 		if err != nil {
-			ui.Error("Failed to fetch run: %v", err)
-			return err
+			// Fallback: check if targetID is an automation ID
+			runs, listErr := client.ListRuns(targetID)
+			if listErr == nil && len(runs) > 0 {
+				run = &runs[0]
+				ui.Info("Showing latest run %s for automation %s\n", ui.Cyan(ui.ShortID(run.ID)), ui.Cyan(ui.ShortID(targetID)))
+			} else {
+				ui.Error("Failed to fetch run: %v", err)
+				return err
+			}
 		}
 
 		if jsonFlag {

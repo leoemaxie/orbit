@@ -23,11 +23,25 @@ var dataCmd = &cobra.Command{
   orbc data 8f2c34a1 --format json | jq .`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runID := args[0]
+		targetID := args[0]
+		resolvedRunID := targetID
+
+		run, err := client.GetRun(targetID)
+		if err != nil {
+			// Fallback: check if targetID is an automation ID
+			runs, listErr := client.ListRuns(targetID)
+			if listErr == nil && len(runs) > 0 {
+				run = &runs[0]
+				resolvedRunID = run.ID
+			} else {
+				ui.Error("Failed to fetch data for run: %v", err)
+				return err
+			}
+		}
 
 		if followFlag {
-			ui.Header(fmt.Sprintf("🛰️ Orbit Data Stream — Tailing records for Run %s", ui.ShortID(runID)))
-			return client.StreamRunResults(runID, func(record *orbc.ResultOut) error {
+			ui.Header(fmt.Sprintf("🛰️ Orbit Data Stream — Tailing records for Run %s", ui.ShortID(resolvedRunID)))
+			return client.StreamRunResults(resolvedRunID, func(record *orbc.ResultOut) error {
 				if validOnlyFlag && !record.Valid {
 					return nil
 				}
@@ -41,12 +55,6 @@ var dataCmd = &cobra.Command{
 				fmt.Printf("[%s] ID: %s | URL: %s\n", statusIcon, ui.ShortID(record.ID), record.URL)
 				return nil
 			})
-		}
-
-		run, err := client.GetRun(runID)
-		if err != nil {
-			ui.Error("Failed to fetch data for run: %v", err)
-			return err
 		}
 
 		results := run.Results

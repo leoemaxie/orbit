@@ -19,11 +19,23 @@ var watchCmd = &cobra.Command{
 	},
 }
 
-func executeWatch(runID string) error {
-	ui.Header(fmt.Sprintf("🛰️ Orbit Stream — Tailing Run %s", ui.ShortID(runID)))
+func executeWatch(targetID string) error {
+	resolvedRunID := targetID
+
+	// If targetID is an automation ID, resolve to its latest run
+	runs, err := client.ListRuns(targetID)
+	if err == nil && len(runs) > 0 {
+		resolvedRunID = runs[0].ID
+		ui.Info("Watching latest run %s for automation %s", ui.Cyan(ui.ShortID(resolvedRunID)), ui.Cyan(ui.ShortID(targetID)))
+	} else if err == nil && len(runs) == 0 {
+		ui.Warning("Automation %s has no execution runs yet. Trigger one with: orbc run %s", ui.Cyan(ui.ShortID(targetID)), targetID)
+		return fmt.Errorf("no runs found for automation %s", targetID)
+	}
+
+	ui.Header(fmt.Sprintf("🛰️ Orbit Stream — Tailing Run %s", ui.ShortID(resolvedRunID)))
 	lastStatus := ""
 
-	err := client.StreamRunTelemetry(runID, func(event string, run *orbc.RunOut) error {
+	streamErr := client.StreamRunTelemetry(resolvedRunID, func(event string, run *orbc.RunOut) error {
 		if run.Status != lastStatus {
 			lastStatus = run.Status
 			switch run.Status {
@@ -54,11 +66,11 @@ func executeWatch(runID string) error {
 		return nil
 	})
 
-	if err != nil {
-		ui.Error("Stream error: %v", err)
+	if streamErr != nil {
+		ui.Error("Stream error: %v", streamErr)
 	}
 
-	return err
+	return streamErr
 }
 
 func formatError(err *string) string {
