@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from core.agent.interpreter import GoalInterpreter
@@ -110,6 +110,25 @@ def get_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
 async def run_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Triggers an on-demand autonomous run immediately in background and returns initial run metadata."""
     automation = resolve_entity_by_id_or_prefix(db, Automation, automation_id, "automation")
+
+    # Layer 2: Prevent concurrent overlapping runs for the same automation
+    active_run = (
+        db.query(Run)
+        .filter(
+            Run.automation_id == automation.id,
+            ~Run.status.in_([RunStatus.verified, RunStatus.failed]),
+        )
+        .first()
+    )
+    if active_run:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Automation '{automation.id[:8]}' already has an active run in progress "
+                f"(run: {active_run.id[:8]}, status: '{active_run.status.value}'). "
+                "Please wait for the current run to complete before starting a new one."
+            ),
+        )
 
     # 1. Create run record in discovering status
     run = Run(

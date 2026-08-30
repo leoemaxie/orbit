@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from core.agent.orchestrator import AgentOrchestrator
@@ -213,6 +213,12 @@ def get_run_dossier(run_id: str, request: Request, db: Annotated[Session, Depend
 async def retry_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     """Resumes and retries execution of an existing run from its last checkpoint in background."""
     run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")
+
+    if run.status not in (RunStatus.verified, RunStatus.failed):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Run '{run.id[:8]}' is already active with status '{run.status.value}'. Cannot trigger concurrent retry.",
+        )
 
     automation = db.query(Automation).filter(Automation.id == run.automation_id).first()
     if not automation:
