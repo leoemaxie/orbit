@@ -22,7 +22,7 @@ from core.db.orm import (  # noqa: F401
     Run,
     WorkflowPipeline,
 )
-from core.db.session import Base, engine
+from core.db.session import Base, engine, ensure_schema_columns
 from core.scheduler.service import scheduler_service
 
 logger = logging.getLogger("core.app")
@@ -32,6 +32,7 @@ logger = logging.getLogger("core.app")
 async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
+        ensure_schema_columns(engine)
         logger.info("Database schemas and tables verified successfully.")
     except Exception as e:
         logger.warning(

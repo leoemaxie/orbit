@@ -17,11 +17,11 @@ def automation_to_out(a: Automation) -> AutomationOut:
 
 def result_to_out(res) -> ResultOut:
     return ResultOut(
-        id=res.id,
-        url=res.url,
-        data=res.data or {},
-        valid=res.valid,
-        validation_errors=res.validation_errors,
+        id=getattr(res, "id", ""),
+        url=getattr(res, "url", None),
+        data=getattr(res, "data", None) or {},
+        valid=getattr(res, "valid", True),
+        validation_errors=getattr(res, "validation_errors", None),
         created_at=res.created_at.isoformat() if getattr(res, "created_at", None) else "",
     )
 

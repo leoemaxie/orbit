@@ -76,6 +76,9 @@ class Result(Base):
 
     url: Mapped[str | None] = mapped_column(Text, nullable=True)
     data: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    valid: Mapped[bool] = mapped_column(Boolean, default=True)
+    validation_errors: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     run: Mapped["Run"] = relationship("Run", back_populates="results")
 

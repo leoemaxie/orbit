@@ -32,6 +32,25 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, expire_on_commit=
 Base = declarative_base()
 
 
+def ensure_schema_columns(eng):
+    """Safely adds missing columns to existing tables in development/SQLite/PostgreSQL."""
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(eng)
+        if "results" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("results")]
+            with eng.begin() as conn:
+                if "valid" not in columns:
+                    conn.execute(text("ALTER TABLE results ADD COLUMN valid BOOLEAN DEFAULT TRUE"))
+                if "validation_errors" not in columns:
+                    conn.execute(text("ALTER TABLE results ADD COLUMN validation_errors JSON"))
+                if "created_at" not in columns:
+                    conn.execute(text("ALTER TABLE results ADD COLUMN created_at TIMESTAMP"))
+    except Exception:
+        # Fall back cleanly if reflection/migration fails
+        pass
+
+
 def get_db():
     """FastAPI database session dependency."""
     db = SessionLocal()
