@@ -22,7 +22,7 @@ def test_deploy_workflow():
     payload = {
         "nodes": [
             {"id": "1", "label": "Schedule Trigger", "config": {}},
-            {"id": "2", "label": "Amazon S3 Storage", "config": {"bucket_name": "my-bucket"}},
+            {"id": "2", "label": "S3 Object Storage", "config": {"bucket_name": "my-bucket"}},
         ]
     }
     response = client.post("/api/v1/workflows/deploy", json=payload)

@@ -232,10 +232,10 @@ func renderWorkflowTopology() error {
 		adapters = []AdapterInfo{
 			{ID: "1", Stage: "1. Trigger", Adapter: "Schedule Trigger", Category: "Trigger", Mode: "both", Engine: "Cron & Webhook Engine", Status: "ACTIVE", Description: "Cron schedule & webhook trigger"},
 			{ID: "2", Stage: "2. Discovery", Adapter: "Source Discovery", Category: "Retrieval", Mode: "both", Engine: "Search Engine & Proxies", Status: "ACTIVE", Description: "Search engine & web proxy retrieval"},
-			{ID: "3", Stage: "3. Parser", Adapter: "Document & Table Parser", Category: "Document", Mode: "managed", Engine: "Docling Layout Engine", Status: "ACTIVE", Description: "Document layout analysis & table extraction"},
-			{ID: "5", Stage: "4. Extraction", Adapter: "LLM Schema Extraction", Category: "Extraction", Mode: "both", Engine: "LLM Gateway", Status: "ACTIVE", Description: "Structured JSON record extraction & validation"},
-			{ID: "6", Stage: "5. Reports", Adapter: "PDF Report Generator", Category: "Reports", Mode: "both", Engine: "Nutrient HTML Engine", Status: "ACTIVE", Description: "Automated PDF reports with PII data masking"},
-			{ID: "7", Stage: "6. Storage", Adapter: "Amazon S3 Storage", Category: "Storage", Mode: "custom", Engine: "Amazon S3 / R2 / MinIO", Status: "ACTIVE", Description: "S3 bucket archival & presigned download links"},
+			{ID: "3", Stage: "3. Parser", Adapter: "Document & Table Parser", Category: "Document", Mode: "managed", Engine: "Layout Analysis Engine", Status: "ACTIVE", Description: "Document layout analysis & table extraction"},
+			{ID: "5", Stage: "4. Extraction", Adapter: "LLM Schema Extraction", Category: "Extraction", Mode: "both", Engine: "LLM Extraction Engine", Status: "ACTIVE", Description: "Structured JSON record extraction & validation"},
+			{ID: "6", Stage: "5. Reports", Adapter: "PDF Report Generator", Category: "Reports", Mode: "both", Engine: "HTML-to-PDF Engine", Status: "ACTIVE", Description: "Automated PDF reports with PII data masking"},
+			{ID: "7", Stage: "6. Storage", Adapter: "S3 Object Storage", Category: "Storage", Mode: "custom", Engine: "S3-Compatible Storage", Status: "ACTIVE", Description: "S3 bucket archival & presigned download links"},
 			{ID: "9", Stage: "7. Notifications", Adapter: "Slack Notifications", Category: "Alerts", Mode: "custom", Engine: "Slack Incoming Webhook", Status: "ACTIVE", Description: "Slack alert webhook with report links"},
 		}
 	}

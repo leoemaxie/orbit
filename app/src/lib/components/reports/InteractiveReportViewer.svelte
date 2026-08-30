@@ -26,7 +26,7 @@
 			</div>
 			<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono">
 				<ShieldCheck size={12} />
-				<span>Nutrient PII Redacted</span>
+				<span>Compliance PII Redacted</span>
 			</div>
 		</div>
 
@@ -44,24 +44,24 @@
 			<a
 				href={reportUrl}
 				target="_blank"
-				rel="noreferrer"
-				class="p-1.5 rounded-lg bg-surface-800 border border-white/10 text-slate-300 hover:text-white transition-colors"
-				title="Open Fullscreen in New Tab"
+				rel="noopener noreferrer"
+				class="flex items-center gap-1 px-3 py-1 bg-surface-800 hover:bg-surface-700 border border-white/10 hover:border-white/20 text-slate-200 rounded-lg transition-colors"
 			>
-				<ExternalLink size={13} />
+				<ExternalLink size={12} />
+				<span>Open Tab</span>
 			</a>
 			<a
 				href={reportUrl}
-				download={`orbit_dossier_${run.id.slice(0, 8)}.pdf`}
-				class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-orbit-cyan/20 border border-orbit-cyan/40 text-orbit-cyan text-[11px] hover:bg-orbit-cyan/30 transition-colors"
+				download={`orbit_dossier_${run.id.slice(0, 8)}.html`}
+				class="flex items-center gap-1 px-3 py-1 bg-orbit-cyan/10 hover:bg-orbit-cyan/20 border border-orbit-cyan/30 text-orbit-cyan rounded-lg transition-colors font-medium"
 			>
 				<Download size={12} />
-				<span>Download</span>
+				<span>Export Report</span>
 			</a>
 		</div>
 	</div>
 
-	<!-- Interactive In-Browser Document Frame -->
+	<!-- Interactive Report Viewer Frame -->
 	<div class="relative bg-surface-950 min-h-[580px] h-[580px] w-full flex items-center justify-center overflow-hidden">
 		<iframe
 			src={reportUrl}
@@ -77,6 +77,6 @@
 			<CheckCircle2 size={13} class="text-emerald-400" />
 			<span>Automated Compliance Audit: SSN, Credit Cards & Emails masked prior to export.</span>
 		</div>
-		<span class="text-slate-500">Rendered via Nutrient Platform</span>
+		<span class="text-slate-500">Rendered via Document Intelligence Engine</span>
 	</div>
 </div>

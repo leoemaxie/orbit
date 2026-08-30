@@ -16,7 +16,7 @@ func TestCommand_Workflow(t *testing.T) {
 		if !strings.Contains(out, "Orbit Pipeline Studio Topology") {
 			t.Errorf("expected workflow header in output: %s", out)
 		}
-		if !strings.Contains(out, "Schedule Trigger") || !strings.Contains(out, "Amazon S3 Storage") {
+		if !strings.Contains(out, "Schedule Trigger") || !strings.Contains(out, "S3 Object Storage") {
 			t.Errorf("expected adapters in output: %s", out)
 		}
 	})

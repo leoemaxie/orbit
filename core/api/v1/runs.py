@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from core.agent.orchestrator import AgentOrchestrator
 from core.api.dependencies import get_db, resolve_entity_by_id_or_prefix
+from core.api.rate_limiter import rate_limit
 from core.api.serializers import result_to_out, run_to_out
 from core.db.orm import Automation, Result, Run
 from core.db.session import SessionLocal
@@ -202,13 +203,13 @@ def get_run_dossier(run_id: str, request: Request, db: Annotated[Session, Depend
     <h2>🛰️ Orbit Report Dossier <span class="badge">Run: {run.id[:12]}</span></h2>
     <p>Extraction Status: <strong>{run.status.value}</strong> | Records: {run.extracted_count}</p>
     <hr style="border:1px solid #1e293b;margin:1.5rem 0;"/>
-    <p>PII Entities Masked: <strong>Active (Nutrient Redactor)</strong></p>
+    <p>PII Entities Masked: <strong>Active (Document Compliance Redactor)</strong></p>
     </body></html>
     """
     return Response(content=html_report.encode("utf-8"), media_type="text/html", headers=headers)
 
 
-@router.post("/runs/{run_id}/retry", response_model=RunOut)
+@router.post("/runs/{run_id}/retry", response_model=RunOut, dependencies=[Depends(rate_limit("run"))])
 async def retry_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     """Resumes and retries execution of an existing run from its last checkpoint in background."""
     run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")

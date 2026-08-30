@@ -72,7 +72,7 @@ class S3ExportSink:
     async def test_connection(self) -> tuple[bool, str]:
         """Tests bucket reachability and credential authorization."""
         if not self.bucket_name:
-            return False, "Amazon S3 bucket name is required."
+            return False, "S3 bucket name is required."
         if not self.access_key or not self.secret_key:
             return False, "Access Key and Secret Key are required for custom S3 export."
 
@@ -82,14 +82,14 @@ class S3ExportSink:
             async with httpx.AsyncClient(timeout=8.0) as client:
                 res = await client.head(target_host, headers=headers)
                 if res.status_code in (200, 204, 301, 302, 307):
-                    return True, f"Amazon S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
+                    return True, f"S3 bucket '{self.bucket_name}' ({self.region}) connectivity verified successfully."
                 if res.status_code == 403:
-                    return False, f"Amazon S3 access denied (HTTP 403) for bucket '{self.bucket_name}'. Please verify bucket permissions."
+                    return False, f"S3 access denied (HTTP 403) for bucket '{self.bucket_name}'. Please verify bucket permissions."
                 if res.status_code == 404:
-                    return False, f"Amazon S3 bucket '{self.bucket_name}' not found (HTTP 404). Please verify bucket name and region."
-                return False, f"Amazon S3 endpoint returned HTTP {res.status_code}. Please check bucket configuration."
+                    return False, f"S3 bucket '{self.bucket_name}' not found (HTTP 404). Please verify bucket name and region."
+                return False, f"S3 endpoint returned HTTP {res.status_code}. Please check bucket configuration."
         except httpx.ConnectError:
-            return False, f"Could not reach Amazon S3 endpoint for bucket '{self.bucket_name}'. Please check network connection."
+            return False, f"Could not reach S3 endpoint for bucket '{self.bucket_name}'. Please check network connection."
         except Exception as e:
             logger.error("S3 connection test failed: %s", e)
             return False, "Could not establish connection to the S3 bucket. Please verify the bucket name and cloud credentials."

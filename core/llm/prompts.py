@@ -33,7 +33,7 @@ JSON Output Schema:
   "workflow_nodes": [
     {
       "typeId": "trigger_cron" | "proxy_discovery" | "schema_extractor" | "email_alert" | "slack_alert" | "sql_database" | "html_dossier" | "s3_storage",
-      "label": "Schedule Trigger" | "Source Discovery" | "LLM Schema Extraction" | "Email Notifications" | "Slack Notifications" | "Database" | "PDF Report Builder" | "Amazon S3 Storage",
+      "label": "Schedule Trigger" | "Source Discovery" | "LLM Schema Extraction" | "Email Notifications" | "Slack Notifications" | "Database" | "PDF Report Builder" | "S3 Object Storage",
       "category": "trigger" | "discovery" | "extraction" | "notify" | "storage" | "dossier",
       "adapterType": "managed" | "custom",
       "config": {}
