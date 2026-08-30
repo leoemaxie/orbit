@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from core.agent.interpreter import GoalInterpreter
 from core.agent.orchestrator import AgentOrchestrator
 from core.api.dependencies import get_db, resolve_entity_by_id_or_prefix
+from core.api.rate_limiter import rate_limit
 from core.api.serializers import automation_to_out, run_to_out
 from core.db.orm import Automation, Run
 from core.db.session import SessionLocal
@@ -23,7 +24,7 @@ interpreter = GoalInterpreter()
 orchestrator = AgentOrchestrator()
 
 
-@router.get("/plan/stream")
+@router.get("/plan/stream", dependencies=[Depends(rate_limit("goal"))])
 async def stream_goal_plan(goal: str):
     """
     Streams LLM goal interpretation, reasoning tokens, and execution plan synthesis via Server-Sent Events (SSE).
@@ -60,7 +61,7 @@ async def stream_goal_plan(goal: str):
     return sse_response(event_generator())
 
 
-@router.post("", response_model=AutomationOut)
+@router.post("", response_model=AutomationOut, dependencies=[Depends(rate_limit("goal"))])
 async def create_automation(payload: GoalRequest, db: Annotated[Session, Depends(get_db)]):
     """Interprets a natural-language goal into a dynamic execution plan and creates an automation."""
     try:
@@ -105,7 +106,7 @@ def get_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     return automation_to_out(automation)
 
 
-@router.post("/{automation_id}/run", response_model=RunOut)
+@router.post("/{automation_id}/run", response_model=RunOut, dependencies=[Depends(rate_limit("run"))])
 async def run_automation(automation_id: str, db: Annotated[Session, Depends(get_db)]):
     """Triggers an on-demand autonomous run immediately in background and returns initial run metadata."""
     automation = resolve_entity_by_id_or_prefix(db, Automation, automation_id, "automation")
