@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from typing import Any
@@ -64,7 +65,7 @@ class DatabaseExportSink:
                         "automation_id": automation_id,
                         "run_id": run_id,
                         "source_url": rec.get("url", ""),
-                        "data": str(rec.get("data", {})),
+                        "data": json.dumps(rec.get("data", {})),
                     })
             return True
         except Exception as e:
