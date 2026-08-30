@@ -152,6 +152,53 @@ func setupMockServer() *httptest.Server {
 				Wait:                   false,
 				ServerTimeUTC:          "2026-08-23T12:00:00Z",
 			})
+		case r.URL.Path == "/api/v1/workflows/topology" && r.Method == http.MethodGet:
+			_ = json.NewEncoder(w).Encode([]orbc.WorkflowNodeOut{
+				{
+					ID:          "9",
+					Label:       "Slack Notifications",
+					Category:    "notify",
+					Mode:        "custom",
+					Engine:      "Slack Incoming Webhook",
+					Status:      "active",
+					Description: "Slack alert webhooks with signed report links",
+				},
+			})
+		case r.URL.Path == "/api/v1/workflows/pipeline" && r.Method == http.MethodGet:
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{
+				{
+					"id":       "1",
+					"label":    "Schedule Trigger",
+					"category": "trigger",
+					"engine":   "Cron & Webhook Engine",
+					"status":   "active",
+				},
+				{
+					"id":       "9",
+					"label":    "Slack Notifications",
+					"category": "notify",
+					"engine":   "Slack Incoming Webhook",
+					"status":   "active",
+				},
+			})
+		case r.URL.Path == "/api/v1/workflows/deploy" && r.Method == http.MethodPost:
+			_ = json.NewEncoder(w).Encode(orbc.WorkflowDeployResponse{
+				Status:     "success",
+				PipelineID: "pipe-9999",
+				NodeCount:  2,
+				Message:    "Workflow pipeline deployed successfully",
+			})
+		case r.URL.Path == "/api/v1/workflows/test-connection" && r.Method == http.MethodPost:
+			_ = json.NewEncoder(w).Encode(orbc.TestConnectionResponse{
+				Success: true,
+				Message: "Slack webhook verified and reachable",
+			})
+		case strings.HasPrefix(r.URL.Path, "/api/v1/workflows/adapters/") && strings.HasSuffix(r.URL.Path, "/config") && r.Method == http.MethodPost:
+			_ = json.NewEncoder(w).Encode(orbc.SaveAdapterConfigResponse{
+				Status:    "success",
+				AdapterID: "slack",
+				Message:   "Configuration updated",
+			})
 		case strings.HasPrefix(r.URL.Path, "/api/v1/runs/") && strings.HasSuffix(r.URL.Path, "/stream"):
 			w.Header().Set("Content-Type", "text/event-stream")
 			payload, _ := json.Marshal(mockRun)
@@ -505,6 +552,69 @@ func TestCommand_FormatPrecedence(t *testing.T) {
 		}
 	})
 }
+
+func TestCommand_WorkflowSuite(t *testing.T) {
+	ts := setupMockServer()
+	defer ts.Close()
+
+	t.Run("workflow topology", func(t *testing.T) {
+		out, err := executeCommand("workflow", "topology", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("workflow topology failed: %v, out: %s", err, out)
+		}
+		if !strings.Contains(out, "Slack Notifications") || !strings.Contains(out, "Pipeline Studio") {
+			t.Errorf("unexpected topology output: %s", out)
+		}
+	})
+
+	t.Run("workflow pipeline list", func(t *testing.T) {
+		out, err := executeCommand("workflow", "pipeline", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("workflow pipeline failed: %v, out: %s", err, out)
+		}
+		if !strings.Contains(out, "Schedule Trigger") || !strings.Contains(out, "Slack Notifications") {
+			t.Errorf("unexpected pipeline output: %s", out)
+		}
+	})
+
+	t.Run("workflow test connection", func(t *testing.T) {
+		out, err := executeCommand("workflow", "test", "slack", "webhook_url=https://hooks.slack.com/test", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("workflow test failed: %v, out: %s", err, out)
+		}
+		if !strings.Contains(out, "PASSED") || !strings.Contains(out, "Slack webhook verified") {
+			t.Errorf("unexpected test connection output: %s", out)
+		}
+	})
+
+	t.Run("workflow config save", func(t *testing.T) {
+		out, err := executeCommand("workflow", "config", "slack", "webhook_url=https://hooks.slack.com/test", "channel=#alerts", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("workflow config failed: %v, out: %s", err, out)
+		}
+		if !strings.Contains(out, "Configuration saved successfully") {
+			t.Errorf("unexpected config output: %s", out)
+		}
+	})
+
+	t.Run("workflow deploy from file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		pipelineFile := filepath.Join(tmpDir, "pipeline.json")
+		pipelineContent := `[{"id":"1","label":"Schedule Trigger","category":"trigger"},{"id":"9","label":"Slack Notifications","category":"notify"}]`
+		if err := os.WriteFile(pipelineFile, []byte(pipelineContent), 0644); err != nil {
+			t.Fatalf("failed to write temp pipeline file: %v", err)
+		}
+
+		out, err := executeCommand("workflow", "deploy", pipelineFile, "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("workflow deploy failed: %v, out: %s", err, out)
+		}
+		if !strings.Contains(out, "Workflow pipeline deployed successfully") || !strings.Contains(out, "pipe-9999") {
+			t.Errorf("unexpected deploy output: %s", out)
+		}
+	})
+}
+
 
 
 
