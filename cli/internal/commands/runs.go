@@ -23,7 +23,11 @@ var runsCmd = &cobra.Command{
 		}
 
 		ui.PrintBanner()
-		formatters.RenderRunsTable(runs)
+		formatters.RenderRunsTable(runs, noTruncFlag)
 		return nil
 	},
+}
+
+func init() {
+	runsCmd.Flags().BoolVar(&noTruncFlag, "no-trunc", false, "Display full untruncated identifiers")
 }

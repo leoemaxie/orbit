@@ -20,7 +20,7 @@ func RenderTable(headers []string, rows [][]string) {
 }
 
 // RenderAutomationsTable renders a list of automations into an ASCII table.
-func RenderAutomationsTable(automations []orbc.AutomationOut) {
+func RenderAutomationsTable(automations []orbc.AutomationOut, noTrunc bool) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"ID", "OBJECTIVE", "DOMAIN", "FREQUENCY", "ACTIVE", "NEXT RUN"})
 	table.SetBorder(true)
@@ -44,7 +44,7 @@ func RenderAutomationsTable(automations []orbc.AutomationOut) {
 			activeStr = "No"
 		}
 		idStr := a.ID
-		if len(idStr) > 8 {
+		if !noTrunc && len(idStr) > 8 {
 			idStr = idStr[:8]
 		}
 		table.Append([]string{

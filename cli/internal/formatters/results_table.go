@@ -10,7 +10,7 @@ import (
 )
 
 // RenderRunsTable renders a list of runs into an ASCII table.
-func RenderRunsTable(runs []orbc.RunOut) {
+func RenderRunsTable(runs []orbc.RunOut, noTrunc bool) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"RUN ID", "STATUS", "EXTRACTED", "VALIDATED", "CONDITION", "STARTED AT"})
 	table.SetBorder(true)
@@ -33,7 +33,7 @@ func RenderRunsTable(runs []orbc.RunOut) {
 			}
 		}
 		idStr := r.ID
-		if len(idStr) > 8 {
+		if !noTrunc && len(idStr) > 8 {
 			idStr = idStr[:8]
 		}
 		table.Append([]string{

@@ -6,6 +6,8 @@ import (
 	"github.com/leoemaxie/orbit/cli/internal/ui"
 )
 
+var noTruncFlag bool
+
 var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
@@ -22,7 +24,11 @@ var listCmd = &cobra.Command{
 		}
 
 		ui.PrintBanner()
-		formatters.RenderAutomationsTable(list.Items)
+		formatters.RenderAutomationsTable(list.Items, noTruncFlag)
 		return nil
 	},
+}
+
+func init() {
+	listCmd.Flags().BoolVar(&noTruncFlag, "no-trunc", false, "Display full untruncated identifiers")
 }

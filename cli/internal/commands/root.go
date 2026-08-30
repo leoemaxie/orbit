@@ -55,13 +55,16 @@ Transform natural-language goals into recurring, verifiable web-data workflows.
 			resolvedFormat = "json"
 		}
 
-		if strings.ToLower(resolvedFormat) == "json" {
+		switch strings.ToLower(resolvedFormat) {
+		case "json":
 			jsonFlag = true
 			formatFlag = "json"
-		} else if strings.ToLower(resolvedFormat) == "csv" {
+		case "csv":
 			formatFlag = "csv"
-		} else {
+		case "table", "":
 			formatFlag = "table"
+		default:
+			return fmt.Errorf("unsupported format '%s', choose from table, json, csv", resolvedFormat)
 		}
 
 		return nil

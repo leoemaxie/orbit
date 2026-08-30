@@ -24,6 +24,11 @@ func resetFlags() {
 	quietFlag = false
 	formatFlag = ""
 	validOnlyFlag = false
+	followFlag = false
+	streamFlag = false
+	noTruncFlag = false
+	scheduleWaitFlag = false
+	scheduleSecretFlag = ""
 	viper.Reset()
 }
 
@@ -221,6 +226,17 @@ func TestCommand_List(t *testing.T) {
 		}
 	})
 
+	t.Run("no-trunc table output", func(t *testing.T) {
+		out, err := executeCommand("list", "--no-trunc", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("list --no-trunc failed: %v", err)
+		}
+
+		if !strings.Contains(out, "auto-5555") {
+			t.Errorf("list --no-trunc missing full ID auto-5555: %s", out)
+		}
+	})
+
 	t.Run("json output", func(t *testing.T) {
 		out, err := executeCommand("list", "--json", "--api-url", ts.URL)
 		if err != nil {
@@ -260,6 +276,17 @@ func TestCommand_Run_And_Runs(t *testing.T) {
 
 		if !strings.Contains(out, "run-7777") {
 			t.Errorf("runs table missing run-7777: %s", out)
+		}
+	})
+
+	t.Run("runs list history with no-trunc", func(t *testing.T) {
+		out, err := executeCommand("runs", "auto-5555", "--no-trunc", "--api-url", ts.URL)
+		if err != nil {
+			t.Fatalf("runs --no-trunc failed: %v", err)
+		}
+
+		if !strings.Contains(out, "run-7777") {
+			t.Errorf("runs table missing full run-7777: %s", out)
 		}
 	})
 }

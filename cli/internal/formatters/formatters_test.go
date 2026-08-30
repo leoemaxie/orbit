@@ -180,19 +180,34 @@ func TestRenderAutomationsTable(t *testing.T) {
 		},
 	}
 
-	out := captureOutput(func() {
-		RenderAutomationsTable(automations)
+	t.Run("truncated by default", func(t *testing.T) {
+		out := captureOutput(func() {
+			RenderAutomationsTable(automations, false)
+		})
+
+		if !strings.Contains(out, "12345678") || !strings.Contains(out, "Track PS5 prices daily") {
+			t.Errorf("table output missing automation 1: %s", out)
+		}
+		if strings.Contains(out, "12345678-abcd") {
+			t.Errorf("expected truncated ID, got full UUID: %s", out)
+		}
+		if !strings.Contains(out, "87654321") || !strings.Contains(out, "Monitor Remote Golang Jobs") {
+			t.Errorf("table output missing automation 2: %s", out)
+		}
+		if !strings.Contains(out, "Yes") || !strings.Contains(out, "No") {
+			t.Errorf("table output missing active status strings: %s", out)
+		}
 	})
 
-	if !strings.Contains(out, "12345678") || !strings.Contains(out, "Track PS5 prices daily") {
-		t.Errorf("table output missing automation 1: %s", out)
-	}
-	if !strings.Contains(out, "87654321") || !strings.Contains(out, "Monitor Remote Golang Jobs") {
-		t.Errorf("table output missing automation 2: %s", out)
-	}
-	if !strings.Contains(out, "Yes") || !strings.Contains(out, "No") {
-		t.Errorf("table output missing active status strings: %s", out)
-	}
+	t.Run("no-trunc displays full UUID", func(t *testing.T) {
+		out := captureOutput(func() {
+			RenderAutomationsTable(automations, true)
+		})
+
+		if !strings.Contains(out, "12345678-abcd-ef01-2345-6789abcdef01") {
+			t.Errorf("expected full untruncated UUID in output: %s", out)
+		}
+	})
 }
 
 func TestRenderRunsTable(t *testing.T) {
@@ -218,16 +233,31 @@ func TestRenderRunsTable(t *testing.T) {
 		},
 	}
 
-	out := captureOutput(func() {
-		RenderRunsTable(runs)
+	t.Run("truncated by default", func(t *testing.T) {
+		out := captureOutput(func() {
+			RenderRunsTable(runs, false)
+		})
+
+		if !strings.Contains(out, "run-1111") || !strings.Contains(out, "MATCHED") {
+			t.Errorf("runs table output missing run 1 or MATCHED indicator: %s", out)
+		}
+		if strings.Contains(out, "run-11112222-3333") {
+			t.Errorf("expected truncated run ID: %s", out)
+		}
+		if !strings.Contains(out, "run-4444") || !strings.Contains(out, "NO") {
+			t.Errorf("runs table output missing run 2 or NO indicator: %s", out)
+		}
 	})
 
-	if !strings.Contains(out, "run-1111") || !strings.Contains(out, "MATCHED") {
-		t.Errorf("runs table output missing run 1 or MATCHED indicator: %s", out)
-	}
-	if !strings.Contains(out, "run-4444") || !strings.Contains(out, "NO") {
-		t.Errorf("runs table output missing run 2 or NO indicator: %s", out)
-	}
+	t.Run("no-trunc displays full ID", func(t *testing.T) {
+		out := captureOutput(func() {
+			RenderRunsTable(runs, true)
+		})
+
+		if !strings.Contains(out, "run-11112222-3333") {
+			t.Errorf("expected full untruncated run ID in output: %s", out)
+		}
+	})
 }
 
 func TestRenderResultsTable(t *testing.T) {

@@ -79,7 +79,7 @@ var scheduleListCmd = &cobra.Command{
 
 		ui.PrintBanner()
 		ui.Info("Recurring Schedules Daemon:")
-		formatters.RenderAutomationsTable(scheduled)
+		formatters.RenderAutomationsTable(scheduled, noTruncFlag)
 		return nil
 	},
 }
