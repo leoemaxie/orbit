@@ -137,7 +137,15 @@ var workflowDeployCmd = &cobra.Command{
 			return formatters.PrintJSON(resp)
 		}
 
-		ui.Success("Workflow pipeline deployed successfully! (Pipeline ID: %s, Nodes: %d)", resp.PipelineID, resp.NodeCount)
+		nodeCount := resp.NodeCount
+		if nodeCount == 0 {
+			nodeCount = len(nodes)
+		}
+		if resp.PipelineID != "" {
+			ui.Success("Workflow pipeline deployed successfully! (Pipeline ID: %s, Nodes: %d)", resp.PipelineID, nodeCount)
+		} else {
+			ui.Success("Workflow pipeline deployed successfully! (Nodes: %d, Status: %s)", nodeCount, resp.Status)
+		}
 		return nil
 	},
 }

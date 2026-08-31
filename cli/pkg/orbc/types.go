@@ -111,7 +111,9 @@ type WorkflowDeployPayload struct {
 type WorkflowDeployResponse struct {
 	Status     string `json:"status"`
 	Message    string `json:"message"`
-	DeployedAt string `json:"deployed_at"`
+	DeployedAt string `json:"deployed_at,omitempty"`
+	PipelineID string `json:"pipeline_id,omitempty"`
+	NodeCount  int    `json:"node_count,omitempty"`
 }
 
 type TestConnectionPayload struct {

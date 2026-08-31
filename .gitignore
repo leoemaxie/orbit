@@ -14,7 +14,7 @@ BUILD.txt
 exports/
 deps.sh
 deploy.sh
-answers.md
+answer*.md
 demo/
 provision.sh
 deprovision.sh
