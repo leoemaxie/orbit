@@ -1,9 +1,7 @@
 __pycache__/
 *.pyc
 *.exe
-.env
 **/.env
-venv/
 **/venv/
 *.db
 .DS_Store
@@ -11,17 +9,10 @@ venv/
 **/build/
 **/*.egg-info/
 bin/
-**/bin/
 .zed/
 BUILD.txt
-**/BUILD.txt
 exports/
-**/exports/
 deps.sh
-**/deps.sh
 deploy.sh
-**/deploy.sh
 answers.md
 demo/
-**/demo/
-
