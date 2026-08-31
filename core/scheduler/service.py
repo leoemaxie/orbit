@@ -41,6 +41,9 @@ class SchedulerService:
                 trigger=IntervalTrigger(seconds=check_interval_seconds),
                 id="check_due_automations",
                 replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+                misfire_grace_time=check_interval_seconds * 2,
             )
             self.scheduler.start()
             self._is_running = True
