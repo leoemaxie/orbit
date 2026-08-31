@@ -67,52 +67,18 @@ export function calculateNextPosition(nodes: WorkflowNodeData[]): { x: number; y
 }
 
 export async function fetchInitialWorkflowNodes(): Promise<WorkflowNodeData[]> {
-	const pipeline = await api.getPipeline();
-	if (Array.isArray(pipeline) && pipeline.length > 0) {
-		persistLocalNodes(pipeline);
-		return pipeline;
+	try {
+		const pipeline = await api.getPipeline();
+		if (Array.isArray(pipeline) && pipeline.length > 0) {
+			persistLocalNodes(pipeline);
+			return pipeline;
+		}
+	} catch (e) {
+		console.warn('Failed to fetch deployed pipeline from backend:', e);
 	}
 
 	const local = getLocalNodes();
-	if (local) return local;
-
-	const topology = await api.getWorkflowTopology();
-	if (Array.isArray(topology) && topology.length > 0) {
-		const activeAdapters = topology.filter(
-			(t) => t.status === 'active' || (t.config && Object.values(t.config).some((v) => Boolean(v)))
-		);
-		const targetList = activeAdapters.length > 0 ? activeAdapters : topology.slice(0, 4);
-
-		let currentX = 40;
-		let currentY = 50;
-		const mappedNodes: WorkflowNodeData[] = targetList.map((t, i) => {
-			const node: WorkflowNodeData = {
-				id: `node_${t.id}_${Date.now()}_${i}`,
-				typeId: String(t.id),
-				label: t.label,
-				category: t.category,
-				adapterType: t.mode === 'managed' ? 'managed' : t.mode === 'both' ? 'both' : 'custom',
-				iconName: t.iconName || 'Database',
-				description: t.description,
-				status: t.status === 'active' ? 'configured' : 'active',
-				x: currentX,
-				y: currentY,
-				config: { ...t.config }
-			};
-			if (currentX + 260 > 680) {
-				currentX = 40;
-				currentY += 170;
-			} else {
-				currentX += 260;
-			}
-			return node;
-		});
-
-		if (mappedNodes.length > 0) {
-			persistLocalNodes(mappedNodes);
-			return mappedNodes;
-		}
-	}
+	if (local && local.length > 0) return local;
 
 	return JSON.parse(JSON.stringify(defaultTriggerNode));
 }
