@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from core.adapters.base import DocumentGenerator, DocumentParser, DocumentRedactor
 from core.adapters.documents.factory import DocumentAdapterFactory
+from core.adapters.storage.cloud_storage import CloudStorageSink
 from core.adapters.storage.database_sink import DatabaseExportSink
 from core.adapters.storage.local_export import LocalFileExportSink
 from core.adapters.storage.s3_export import S3ExportSink
@@ -73,6 +74,7 @@ class AgentOrchestrator:
     doc_parser: DocumentParser
     doc_generator: DocumentGenerator
     doc_redactor: DocumentRedactor
+    cloud_storage: CloudStorageSink
     s3_sink: S3ExportSink
     db_sink: DatabaseExportSink
 
@@ -92,6 +94,7 @@ class AgentOrchestrator:
         doc_parser: DocumentParser | None = None,
         doc_generator: DocumentGenerator | None = None,
         doc_redactor: DocumentRedactor | None = None,
+        cloud_storage: CloudStorageSink | None = None,
         s3_sink: S3ExportSink | None = None,
         db_sink: DatabaseExportSink | None = None,
     ):
@@ -109,6 +112,7 @@ class AgentOrchestrator:
         self.doc_parser = doc_parser or DocumentAdapterFactory.get_parser()
         self.doc_generator = doc_generator or DocumentAdapterFactory.get_generator()
         self.doc_redactor = doc_redactor or DocumentAdapterFactory.get_redactor()
+        self.cloud_storage = cloud_storage or CloudStorageSink()
         self.s3_sink = s3_sink or S3ExportSink()
         self.db_sink = db_sink or DatabaseExportSink()
 
@@ -441,15 +445,28 @@ class AgentOrchestrator:
             dossier_url: str | None = None
             if valid_records:
                 try:
-                    raw_dossier = await self.doc_generator.generate_dossier(
-                        automation.id, run.id, valid_records, plan_summary=plan.objective
+                    # Resolve dynamic document generator style & template ID from workflow nodes if configured
+                    doc_gen = self.doc_generator
+                    template_id = None
+                    if plan.workflow_nodes:
+                        for node in plan.workflow_nodes:
+                            if node.get("typeId") in ("pdf_report", "dossier", "template_report") or node.get("category") == "dossier":
+                                node_config = node.get("config", {})
+                                style = node_config.get("style") or ("template" if "template" in node.get("typeId", "") else "html")
+                                template_id = node_config.get("template_id") or node_config.get("template_guid")
+                                doc_gen = DocumentAdapterFactory.get_generator(style=style)
+                                break
+
+                    raw_dossier = await doc_gen.generate_dossier(
+                        automation.id, run.id, valid_records, plan_summary=plan.objective, template_id=template_id
                     )
                     dossier_bytes = await self.doc_redactor.redact_pii(raw_dossier)
 
+                    # Export to local, unified cloud storage (GCS / S3), and SQL sink
                     await self.export_sink.export_results(
                         automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
                     )
-                    await self.s3_sink.export_results(
+                    await self.cloud_storage.export_results(
                         automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
                     )
                     await self.db_sink.export_results(
@@ -514,7 +531,7 @@ class AgentOrchestrator:
                     self._safe_commit(db)
 
             # ────────────────────────────────────────────────
-            # 7. VERIFICATION STAGE (Concept Note Section 6.10)
+            # 7. VERIFICATION STAGE
             # ────────────────────────────────────────────────
             verification_report = self.verification.verify_run(
                 plan=plan,
