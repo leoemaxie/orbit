@@ -21,7 +21,7 @@ class SearchEngineDiscovery:
 
     async def discover(self, plan: ExecutionPlan, max_results: int = 10) -> list[str]:
         if not self.settings.search_engine_api_key:
-            raise ValueError("SEARCH_ENGINE_API_KEY (or SERPAPI_API_KEY) is not configured in settings or environment.")
+            raise ValueError("SEARCH_ENGINE_API_KEY is not configured in settings or environment.")
 
         domains = extract_domains_from_hints(plan.source_hints)
 

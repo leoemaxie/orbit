@@ -44,8 +44,8 @@ Orbit adapters operate under clean separation between platform execution credent
 
 ## 3. Configuration, Pydantic & Type Safety Standards
 
-* **Explicit Defaults:** Always use explicit `default="..."` or `default_factory=...` in Pydantic `Field(...)` declarations inside `core/config/settings.py` for Pyright and Uvicorn compatibility.
-* **Multi-Alias Support:** Use `validation_alias=AliasChoices(...)` with provider-agnostic aliases (e.g. `AliasChoices("EMAIL_API_KEY", "MAIL_API_KEY", "SMTP_API_KEY")`).
+* **Single Canonical Environment Variables:** Every setting maps to a single, strict, provider-agnostic uppercase environment variable (e.g. `LLM_API_KEY`, `RETRIEVAL_API_KEY`, `DOCUMENT_GENERATOR_API_KEY`, `EMAIL_API_KEY`). Avoid aliases and custom alias mappings to eliminate ambiguity and maintenance debt.
+* **Explicit Defaults & Documentation:** Always define explicit default values for settings in `core/config/settings.py` and document every variable in `.env.example`.
 * **Secret Masking:** Ensure all sensitive keys (passwords, secrets, tokens) are masked in UI and diagnostic logs using `SecretVault.mask_secret(...)`.
 * **Exception Safety:** When catching third-party client exceptions (e.g. `httpx.HTTPError`), safely inspect attributes with `getattr(err, "response", None)` before accessing nested fields like `status_code`.
 * **Enum Integrity:** Verify that run statuses match valid enum members (e.g., `RunStatus.verified`).
