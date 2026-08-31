@@ -154,6 +154,9 @@ class CloudPubSubEventBroker(EventBroker):
     def subscribe(self, callback: Subscriber) -> None:
         self._local_fallback.subscribe(callback)
 
+    def unsubscribe(self, callback: Subscriber) -> None:
+        self._local_fallback.unsubscribe(callback)
+
     async def publish(self, event: OrbitEvent) -> None:
         # 1. Dispatch to local subscribers
         await self._local_fallback.publish(event)

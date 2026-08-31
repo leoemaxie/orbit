@@ -96,6 +96,12 @@ async def test_cloud_pubsub_event_broker():
 
     assert broker.topic_name == "orb-events-topic"
 
+    received = []
+    def listener(evt: OrbitEvent):
+        received.append(evt)
+
+    broker.subscribe(listener)
+
     event = OrbitEvent(
         event_type="run.completed",
         run_id="run-555",
@@ -103,9 +109,14 @@ async def test_cloud_pubsub_event_broker():
     )
     await broker.publish(event)
 
+    assert len(received) == 1
     assert mock_pubsub.publish.called
     topic_path = mock_pubsub.publish.call_args[0][0]
     assert topic_path == "projects/orbit-gcp-prod/topics/orb-events-topic"
+
+    broker.unsubscribe(listener)
+    await broker.publish(event)
+    assert len(received) == 1
 
 
 def test_event_broker_factory_swappable():

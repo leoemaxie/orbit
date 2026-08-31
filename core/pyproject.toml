@@ -21,6 +21,7 @@ dependencies = [
     "apscheduler>=3.10.4",
     "jsonschema>=4.23.0",
     "cryptography>=43.0.0",
+    "redis>=5.0.8",
 ]
 
 [project.optional-dependencies]
