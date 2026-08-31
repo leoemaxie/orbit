@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.orm import Session
@@ -13,6 +13,7 @@ from core.adapters.storage.local_export import LocalFileExportSink
 from core.adapters.storage.s3_export import S3ExportSink
 from core.agent.brain import AgentBrain
 from core.agent.condition import ConditionEvaluator
+from core.config.settings import get_settings
 from core.db.orm import Automation, Result, Run
 from core.utils.sanitizer import sanitize_error_message
 from core.events.bus import event_bus
@@ -30,6 +31,29 @@ from core.pipeline.verification.engine import VerificationEngine
 from core.scheduler.cron import calculate_next_run
 
 logger = logging.getLogger("core.agent.orchestrator")
+
+
+class RunPoolManager:
+    """Manages the global bounded concurrency pool for active mission executions (Layer 3 Protection)."""
+
+    _semaphore: ClassVar[asyncio.Semaphore | None] = None
+    _active_count: ClassVar[int] = 0
+
+    @classmethod
+    def get_semaphore(cls) -> asyncio.Semaphore:
+        if cls._semaphore is None:
+            settings = get_settings()
+            cls._semaphore = asyncio.Semaphore(settings.max_concurrent_runs)
+        return cls._semaphore
+
+    @classmethod
+    def set_limit(cls, limit: int) -> None:
+        """Dynamically reconfigures the concurrency limit (useful for testing or runtime tuning)."""
+        cls._semaphore = asyncio.Semaphore(limit)
+
+    @classmethod
+    def get_active_count(cls) -> int:
+        return cls._active_count
 
 
 class AgentOrchestrator:
@@ -135,6 +159,36 @@ class AgentOrchestrator:
             )
         )
 
+        # Layer 3: Global Concurrency Pool (Wait and queue if capacity reached)
+        sem = RunPoolManager.get_semaphore()
+        if sem.locked():
+            run.status = RunStatus.pending
+            self._safe_commit(db)
+            await event_bus.publish(
+                OrbitEvent(
+                    event_type="run.stage",
+                    run_id=run.id,
+                    automation_id=automation.id,
+                    message="Mission queued in concurrency pool (waiting for execution slot)",
+                    payload={"stage": "pending"},
+                )
+            )
+
+        async with sem:
+            RunPoolManager._active_count += 1
+            try:
+                return await self._execute_run_internal(db, automation, run, plan, resume)
+            finally:
+                RunPoolManager._active_count = max(0, RunPoolManager._active_count - 1)
+
+    async def _execute_run_internal(
+        self,
+        db: Session,
+        automation: Automation,
+        run: Run,
+        plan: ExecutionPlan,
+        resume: bool = False,
+    ) -> Run:
         reasoning_trail: list[dict[str, Any]] = list(run.reasoning_log or [])
 
         try:

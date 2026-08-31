@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     rate_limit_run_per_minute: int = 20
     rate_limit_default_per_minute: int = 60
 
+    # Global Run Concurrency Pool (Layer 3 Protection)
+    max_concurrent_runs: int = 3
+
 
 @lru_cache
 def get_settings() -> Settings:
