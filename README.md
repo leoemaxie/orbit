@@ -32,32 +32,7 @@ Orbit synthesizes execution plans, derives typed JSON schemas, discovers authori
 
 Orbit is architected as a modular data platform consisting of an autonomous execution engine, a single-binary operator CLI, a mission control web dashboard, and extensible protocol adapters:
 
-```mermaid
-flowchart TD
-    User["Engineering & Data Teams / AI Agents"] --> Web["Web Console: Orbit UI (SvelteKit)"]
-    User --> CLI["CLI: orbc (Go)"]
-    User --> MCP["MCP Server (Model Context Protocol)"]
-
-    subgraph Ecosystem ["Orbit Platform Ecosystem"]
-        Web -->|REST / HTTP| API["REST API Gateway"]
-        CLI -->|REST / HTTP| API
-        MCP -->|Tool Protocol| API
-        
-        subgraph Engine ["Orbit Core Daemon"]
-            API --> Orchestrator["Agent Orchestrator"]
-            Scheduler["Scheduler Daemon (APScheduler)"] --> Orchestrator
-            Orchestrator --> LLM["Goal Interpreter & Agent Brain"]
-            Orchestrator --> Discovery["Multi-Source Discovery Engine"]
-            Orchestrator --> Retrieval["Resilient Proxy Retrieval"]
-            Orchestrator --> Extraction["Schema Extractor & Validator"]
-            Orchestrator --> Condition["Condition Evaluator"]
-            Orchestrator --> DB[("PostgreSQL Store")]
-        end
-    end
-
-    Orchestrator -->|Alerts| Sinks["Notification Sinks (Webhooks / Slack)"]
-    Orchestrator -->|Exports| DataStore["Downstream Data Sinks (CSV / JSON / Data Lake)"]
-```
+![Orbit System Architecture](assets/orbit_system_architecture.png)
 
 ---
 
@@ -67,8 +42,8 @@ The Orbit repository is structured as a monorepo:
 
 | Component | Directory | Description | Documentation |
 |---|---|---|---|
-| **Core Engine** | [`core/`](./core) | Python backend daemon: Agent Orchestrator, LLM pipeline, APScheduler, PostgreSQL ORM, and FastAPI REST API. | [Core Documentation](./core/README.md) |
-| **Web Console** | [`app/`](./app) | Operational telemetry console built with SvelteKit, Tailwind CSS v4, and Svelte 5 Runes. | [App Documentation](./app/README.md) |
+| **Core Engine** | [`core/`](./core) | Python backend daemon: Agent Orchestrator, LLM pipeline, APScheduler, PostgreSQL, Redis, Pub/Sub and FastAPI REST API. | [Core Documentation](./core/README.md) |
+| **Web Console** | [`app/`](./app) | Operational telemetry console built with SvelteKit, Tailwind CSS v4 | [App Documentation](./app/README.md) |
 | **Operator CLI (`orbc`)** | [`cli/`](./cli) | High-performance Go CLI for headless operations, pipeline triggers, dataset exports, and telemetry inspection. | [CLI Documentation](./cli/README.md) |
 | **MCP Server** | [`mcp/`](./mcp) | Model Context Protocol adapter enabling AI agents (Claude, Cursor, Antigravity, VS Code) to orchestrate Orbit. | [MCP Documentation](./mcp/README.md) |
 
@@ -89,7 +64,7 @@ cp .env.example .env  # Windows: Copy-Item .env.example .env
 python -m venv venv
 source venv/bin/activate  # Windows: .\venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-uvicorn core.app:app --host 0.0.0.0 --port 8000
+uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 2. Launch the Web Console
