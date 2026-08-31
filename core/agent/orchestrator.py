@@ -472,22 +472,37 @@ class AgentOrchestrator:
                         automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
                     )
 
-                    # 3. Cloud Object Storage (GCS / S3) — Trigger only if configured in workflow or settings
-                    has_cloud_node = any(
-                        node.get("typeId") in ("cloud_storage", "s3_storage", "s3", "gcs")
-                        or (node.get("category") == "storage" and "database" not in node.get("typeId", ""))
-                        for node in (plan.workflow_nodes or [])
+                    # 3. Platform Cloud Storage (Managed GCS / S3 for internal mission artifacts & UI downloads)
+                    await self.cloud_storage.export_results(
+                        automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
                     )
-                    settings = get_settings()
-                    if has_cloud_node or settings.storage_backend in ("gcs", "s3"):
-                        await self.cloud_storage.export_results(
-                            automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
-                        )
-                        dossier_url = self.s3_sink.generate_presigned_url(automation.id, run.id, "dossier.pdf")
 
-                    # 4. Database Persistence Sink — Trigger only if database node is configured
+                    # 4. User Destination S3 Sink — Trigger only if custom S3 node is in workflow DAG
+                    s3_node = None
+                    if plan.workflow_nodes:
+                        for node in plan.workflow_nodes:
+                            if node.get("typeId") in ("s3_storage", "s3", "7") or (node.get("category") == "storage" and "s3" in node.get("label", "").lower()):
+                                s3_node = node
+                                break
+
+                    if s3_node:
+                        cfg = s3_node.get("config", {})
+                        if cfg.get("access_key") and cfg.get("secret_key"):
+                            custom_s3 = S3ExportSink(
+                                bucket_name=cfg.get("bucket_name") or "orbit-exports",
+                                endpoint_url=cfg.get("endpoint_url") or None,
+                                access_key=cfg.get("access_key"),
+                                secret_key=cfg.get("secret_key"),
+                                region=cfg.get("region") or "us-east-1",
+                            )
+                            await custom_s3.export_results(
+                                automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
+                            )
+                            dossier_url = custom_s3.generate_presigned_url(automation.id, run.id, "dossier.pdf")
+
+                    # 5. Database Persistence Sink — Trigger only if database node is configured
                     has_db_node = any(
-                        node.get("typeId") in ("sql_database", "database", "postgres")
+                        node.get("typeId") in ("sql_database", "database", "postgres", "8")
                         or (node.get("category") == "storage" and "sql" in node.get("typeId", ""))
                         for node in (plan.workflow_nodes or [])
                     )
