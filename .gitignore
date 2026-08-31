@@ -16,3 +16,6 @@ deps.sh
 deploy.sh
 answers.md
 demo/
+provision.sh
+deprovision.sh
+scripts/
