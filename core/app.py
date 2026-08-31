@@ -20,6 +20,7 @@ from core.db.orm import (  # noqa: F401
     Automation,
     Result,
     Run,
+    Template,
     WorkflowPipeline,
 )
 from core.db.session import Base, engine, ensure_schema_columns

@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     email_sender_address: str = "Orbit Alerts <alerts@orbit.dev>"
     email_base_url: str = "https://api.orbit.dev/v1/emails"
 
+    # Cloud Object Storage (Provider-Agnostic: GCS / S3 / Local)
+    storage_backend: str = "local"
+    storage_bucket_name: str = "orbit-exports"
+    storage_region: str = "us-central1"
+    storage_project_id: str = ""
+    storage_access_key: str = ""
+    storage_secret_key: str = ""
+    storage_endpoint_url: str = ""
+
     # Message Broker & Distributed Lock (Provider-Agnostic)
     event_broker_backend: str = "memory"
     broker_url: str = "redis://localhost:6379/0"

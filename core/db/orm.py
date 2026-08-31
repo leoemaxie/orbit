@@ -106,3 +106,19 @@ class AdapterConfig(Base):
     config: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
 
+
+class Template(Base):
+    """Stored visual document templates and layout schemas."""
+
+    __tablename__ = "templates"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    format: Mapped[str] = mapped_column(String, default="pdf")  # pdf | html | docx
+    schema_definition: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
