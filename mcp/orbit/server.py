@@ -215,8 +215,17 @@ def main():
     port = args.port or settings.mcp_port or 8001
 
     if hasattr(mcp, "settings"):
-        mcp.settings.host = host
-        mcp.settings.port = port
+        for attr in ("host", "bind_host"):
+            if hasattr(mcp.settings, attr):
+                try:
+                    setattr(mcp.settings, attr, host)
+                except Exception:
+                    pass
+        if hasattr(mcp.settings, "port"):
+            try:
+                mcp.settings.port = port
+            except Exception:
+                pass
 
     if transport == "sse":
         logger.info(f"Starting Orbit MCP Server over SSE on http://{host}:{port}/sse ...")
@@ -224,8 +233,11 @@ def main():
             try:
                 mcp.run(transport="sse")
             except TypeError:
-                mcp.run()
-        else:
+                try:
+                    mcp.run(transport="sse", host=host, port=port)
+                except TypeError:
+                    mcp.run()
+        elif hasattr(mcp, "run_sse_async"):
             import anyio
             anyio.run(mcp.run_sse_async)
     else:
@@ -235,7 +247,7 @@ def main():
                 mcp.run(transport="stdio")
             except TypeError:
                 mcp.run()
-        else:
+        elif hasattr(mcp, "run_stdio_async"):
             import anyio
             anyio.run(mcp.run_stdio_async)
 
