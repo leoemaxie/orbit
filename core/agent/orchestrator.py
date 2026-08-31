@@ -39,6 +39,7 @@ class RunPoolManager:
 
     _semaphore: ClassVar[asyncio.Semaphore | None] = None
     _active_count: ClassVar[int] = 0
+    _active_run_ids: ClassVar[set[str]] = set()
 
     @classmethod
     def get_semaphore(cls) -> asyncio.Semaphore:
@@ -55,6 +56,18 @@ class RunPoolManager:
     @classmethod
     def get_active_count(cls) -> int:
         return cls._active_count
+
+    @classmethod
+    def is_run_active(cls, run_id: str) -> bool:
+        return run_id in cls._active_run_ids
+
+    @classmethod
+    def mark_active(cls, run_id: str) -> None:
+        cls._active_run_ids.add(run_id)
+
+    @classmethod
+    def mark_inactive(cls, run_id: str) -> None:
+        cls._active_run_ids.discard(run_id)
 
 
 class AgentOrchestrator:
@@ -180,9 +193,11 @@ class AgentOrchestrator:
 
         async with sem:
             RunPoolManager._active_count += 1
+            RunPoolManager.mark_active(run.id)
             try:
                 return await self._execute_run_internal(db, automation, run, plan, resume)
             finally:
+                RunPoolManager.mark_inactive(run.id)
                 RunPoolManager._active_count = max(0, RunPoolManager._active_count - 1)
 
     async def _execute_run_internal(

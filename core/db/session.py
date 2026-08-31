@@ -51,6 +51,28 @@ def ensure_schema_columns(eng):
         pass
 
 
+def cleanup_stale_runs():
+    """Resets orphaned runs from previous server sessions/crashes to failed state."""
+    try:
+        from datetime import datetime, timezone
+        from core.db.orm import Run
+        from core.models.enums import RunStatus
+        with SessionLocal() as db:
+            stale_runs = (
+                db.query(Run)
+                .filter(Run.status.notin_([RunStatus.verified, RunStatus.failed]))
+                .all()
+            )
+            if stale_runs:
+                for r in stale_runs:
+                    r.status = RunStatus.failed
+                    r.error = "Run interrupted by server restart or unexpected crash."
+                    r.finished_at = datetime.now(timezone.utc)
+                db.commit()
+    except Exception:
+        pass
+
+
 def get_db():
     """FastAPI database session dependency."""
     db = SessionLocal()

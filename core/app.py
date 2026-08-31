@@ -23,7 +23,7 @@ from core.db.orm import (  # noqa: F401
     Template,
     WorkflowPipeline,
 )
-from core.db.session import Base, engine, ensure_schema_columns
+from core.db.session import Base, cleanup_stale_runs, engine, ensure_schema_columns
 from core.scheduler.service import scheduler_service
 
 logger = logging.getLogger("core.app")
@@ -34,7 +34,8 @@ async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
         ensure_schema_columns(engine)
-        logger.info("Database schemas and tables verified successfully.")
+        cleanup_stale_runs()
+        logger.info("Database schemas, tables, and stale run recovery verified successfully.")
     except Exception as e:
         logger.warning(
             "Database connection failed during startup (%s). Ensure PostgreSQL is running on port 5432 or set DATABASE_URL=sqlite:///./orbit.db in your .env file.",

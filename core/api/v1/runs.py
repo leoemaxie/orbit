@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
-from core.agent.orchestrator import AgentOrchestrator
+from core.agent.orchestrator import AgentOrchestrator, RunPoolManager
 from core.api.dependencies import get_db, resolve_entity_by_id_or_prefix
 from core.api.rate_limiter import rate_limit
 from core.api.serializers import result_to_out, run_to_out
@@ -214,10 +214,10 @@ async def retry_run(run_id: str, db: Annotated[Session, Depends(get_db)]):
     """Resumes and retries execution of an existing run from its last checkpoint in background."""
     run = resolve_entity_by_id_or_prefix(db, Run, run_id, "run")
 
-    if run.status not in (RunStatus.verified, RunStatus.failed):
+    if RunPoolManager.is_run_active(run.id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Run '{run.id[:8]}' is already active with status '{run.status.value}'. Cannot trigger concurrent retry.",
+            detail=f"Run '{run.id[:8]}' is currently executing in background. Cannot trigger concurrent retry.",
         )
 
     automation = db.query(Automation).filter(Automation.id == run.automation_id).first()
