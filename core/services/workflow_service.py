@@ -62,8 +62,8 @@ class WorkflowService:
                 "id": "6", "label": "PDF Report Generator", "category": "dossier", "mode": "both",
                 "engine": "HTML-to-PDF Engine", "iconName": "ShieldCheck",
                 "description": "High-fidelity HTML-to-PDF reports with PII data masking",
-                "status": "active" if bool(s.document_generator_api_key) else "optional",
-                "config": {"format": "pdf", "pii_redaction": bool(s.document_redactor_api_key), "api_key": SecretVault.mask_secret(s.document_generator_api_key)},
+                "status": "active" if bool(s.document_dossier_api_key) else "optional",
+                "config": {"format": "pdf", "pii_redaction": bool(s.document_redactor_api_key), "api_key": SecretVault.mask_secret(s.document_dossier_api_key)},
             },
             {
                 "id": "7", "label": "S3 Object Storage", "category": "storage", "mode": "custom",

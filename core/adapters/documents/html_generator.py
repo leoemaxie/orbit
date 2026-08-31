@@ -13,8 +13,8 @@ class HtmlDossierGenerator:
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None):
         settings = get_settings()
-        self.api_key = api_key or settings.document_generator_api_key
-        self.base_url = (base_url or settings.document_generator_base_url).rstrip("/")
+        self.api_key = api_key or settings.document_dossier_api_key
+        self.base_url = (base_url or settings.document_dossier_base_url).rstrip("/")
 
     def _build_html_template(
         self, automation_id: str, run_id: str, records: list[dict[str, Any]], plan_summary: str | None

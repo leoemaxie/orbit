@@ -34,10 +34,12 @@ class Settings(BaseSettings):
     # Document Processing (Provider-Agnostic)
     document_converter_api_key: str = ""
     document_converter_base_url: str = "https://api.foxit.com/v1"
-    document_generator_api_key: str = ""
-    document_generator_base_url: str = "https://api.nutrient.io"
+    document_dossier_api_key: str = ""
+    document_dossier_base_url: str = "https://api.nutrient.io"
     document_redactor_api_key: str = ""
     document_redactor_base_url: str = "https://api.nutrient.io"
+    document_template_api_key: str = ""
+    document_template_base_url: str = "https://api.doctavian.com/v1"
 
     # Email Notifications (Provider-Agnostic Outbound Gateway)
     email_api_key: str = ""

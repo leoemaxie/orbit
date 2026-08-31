@@ -29,12 +29,14 @@ class DocumentAdapterFactory:
     def get_generator(style: str = "html") -> DocumentGenerator:
         """Returns dossier generator (html, template, or text)."""
         settings = get_settings()
-        if style == "template" and settings.document_generator_api_key:
+        if style == "template" and settings.document_template_api_key:
             return TemplateDossierGenerator()
-        if style == "html" and settings.document_generator_api_key:
+        if style == "html" and settings.document_dossier_api_key:
             return HtmlDossierGenerator()
-        if settings.document_generator_api_key:
+        if settings.document_dossier_api_key:
             return HtmlDossierGenerator()
+        if settings.document_template_api_key:
+            return TemplateDossierGenerator()
         return TextDossierGenerator()
 
     @staticmethod
