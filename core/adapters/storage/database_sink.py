@@ -61,11 +61,12 @@ class DatabaseExportSink:
                     VALUES (:automation_id, :run_id, :source_url, :data)
                 """)
                 for rec in records:
+                    rec_data = rec.get("data") if isinstance(rec, dict) and isinstance(rec.get("data"), dict) else (rec if isinstance(rec, dict) else {})
                     conn.execute(insert_stmt, {
                         "automation_id": automation_id,
                         "run_id": run_id,
-                        "source_url": rec.get("url", ""),
-                        "data": json.dumps(rec.get("data", {})),
+                        "source_url": rec.get("url", "") if isinstance(rec, dict) else "",
+                        "data": json.dumps(rec_data),
                     })
             return True
         except Exception as e:

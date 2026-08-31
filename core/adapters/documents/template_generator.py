@@ -30,7 +30,10 @@ class TemplateDossierGenerator:
             "run_id": run_id,
             "summary": plan_summary or "Orbit Data Briefing",
             "record_count": len(records),
-            "records": [r.get("data", {}) for r in records],
+            "records": [
+                r.get("data") if isinstance(r, dict) and isinstance(r.get("data"), dict) else (r if isinstance(r, dict) else {})
+                for r in records
+            ],
         }
 
         if not self.api_key:

@@ -40,7 +40,11 @@ class BaselineCache(ABC):
         numeric_values_by_field: dict[str, list[float]] = {}
 
         for r in records:
-            data = r.get("data", {})
+            if not isinstance(r, dict):
+                continue
+            data = r.get("data")
+            if not isinstance(data, dict):
+                data = r if not any(k in r for k in ("url", "extracted", "notes", "anomalies")) else {}
             for k, v in data.items():
                 if v is not None and not isinstance(v, bool):
                     try:

@@ -420,7 +420,7 @@ class AgentOrchestrator:
                 result_row = Result(
                     run_id=run.id,
                     url=rec.get("url"),
-                    data=rec.get("data", {}),
+                    data=rec.get("data") if isinstance(rec.get("data"), dict) else {},
                     valid=is_valid,
                     validation_errors=errors if errors else None,
                 )

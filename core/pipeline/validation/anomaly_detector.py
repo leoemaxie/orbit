@@ -7,6 +7,17 @@ from core.models.execution_plan import ExecutionPlan
 class AnomalyDetector:
     """Detects statistical outliers and anomalies across extracted records for any numeric metric."""
 
+    @staticmethod
+    def _extract_data(r: Any) -> dict[str, Any]:
+        if not isinstance(r, dict):
+            return {}
+        data = r.get("data")
+        if isinstance(data, dict):
+            return data
+        if not any(k in r for k in ("url", "extracted", "notes", "anomalies")):
+            return r
+        return {}
+
     def filter_and_annotate_outliers(
         self,
         records: list[dict[str, Any]],
@@ -29,7 +40,7 @@ class AnomalyDetector:
         # If no target fields specified or discovered via schema, discover numeric fields across records
         if not target_fields:
             for r in records:
-                data = r.get("data", {})
+                data = self._extract_data(r)
                 for k, v in data.items():
                     if v is not None and not isinstance(v, bool):
                         try:
@@ -41,7 +52,7 @@ class AnomalyDetector:
         for field_name in target_fields:
             values: list[float] = []
             for r in records:
-                data = r.get("data", {})
+                data = self._extract_data(r)
                 v = data.get(field_name)
                 if v is not None and not isinstance(v, bool):
                     try:
@@ -58,7 +69,7 @@ class AnomalyDetector:
 
             # Flag extreme statistical outliers (e.g. 10x higher or 10x lower than sample median)
             for r in records:
-                data = r.get("data", {})
+                data = self._extract_data(r)
                 v = data.get(field_name)
                 if v is not None and not isinstance(v, bool):
                     try:

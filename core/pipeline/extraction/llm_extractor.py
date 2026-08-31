@@ -39,8 +39,12 @@ class LLMExtractor:
                 user_prompt=user_prompt,
                 temperature=0.0,
             )
-            data = raw.get("data", {})
-            extracted = raw.get("extracted", True)
+            if not isinstance(raw, dict):
+                raw = {}
+            data = raw.get("data")
+            if not isinstance(data, dict):
+                data = {k: v for k, v in raw.items() if k not in ("extracted", "notes", "data")}
+            extracted = bool(raw.get("extracted", True))
             return {
                 "url": url,
                 "extracted": extracted,

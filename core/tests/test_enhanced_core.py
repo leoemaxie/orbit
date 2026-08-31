@@ -98,6 +98,37 @@ def test_anomaly_detector_multi_domain():
     assert outliers[0]["data"]["sqft"] == 15
 
 
+def test_anomaly_detector_handles_none_data_payloads():
+    detector = AnomalyDetector()
+    records = [
+        {"url": "https://example.com/1", "data": {"price": 100}},
+        {"url": "https://example.com/2", "data": None, "extracted": False},
+        {"url": "https://example.com/3", "data": {"price": 105}},
+        {"url": "https://example.com/4", "data": {"price": 1100}},  # Outlier
+        {"url": "https://example.com/5", "extracted": False},
+    ]
+    # Should not raise AttributeError when data is None
+    annotated = detector.filter_and_annotate_outliers(records)
+    outliers = [r for r in annotated if r.get("anomalies")]
+    assert len(outliers) == 1
+    assert outliers[0]["data"]["price"] == 1100
+
+
+def test_condition_evaluator_handles_none_data_payloads():
+    evaluator = ConditionEvaluator()
+    records = [
+        {"url": "https://example.com/1", "data": None},
+        {"url": "https://example.com/2", "data": {"status": "available", "price": 50}},
+        {"url": "https://example.com/3", "extracted": False},
+    ]
+    matched, msg = evaluator.evaluate("status == 'available'", records)
+    assert matched is True
+    assert "1 record(s)" in msg
+
+    matched_num, msg_num = evaluator.evaluate("price < 100", records)
+    assert matched_num is True
+
+
 def test_verification_engine():
     engine = VerificationEngine()
     plan = ExecutionPlan(

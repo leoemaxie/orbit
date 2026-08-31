@@ -134,11 +134,12 @@ class ConditionEvaluator:
             field_name, op, target_str = cat_match.groups()
             matching_records = []
             for r in records:
-                val = str(r.get("data", {}).get(field_name, "")).strip().lower()
+                data = self._extract_data(r)
+                val = str(data.get(field_name, "")).strip().lower()
                 target_cmp = target_str.strip().lower()
                 is_match = (val == target_cmp) if op == "==" else (val != target_cmp)
                 if is_match:
-                    matching_records.append(r.get("url"))
+                    matching_records.append(r.get("url") if isinstance(r, dict) else "")
 
             if matching_records:
                 return True, f"Found {len(matching_records)} record(s) matching '{field_name} {op} \"{target_str}\"'"
@@ -154,13 +155,13 @@ class ConditionEvaluator:
             target_val = float(target_str)
             matching_records = []
             for r in records:
-                data = r.get("data", {})
+                data = self._extract_data(r)
                 v = data.get(field_name)
                 if v is not None:
                     try:
                         num = float(v)
                         if self._compare_numeric(num, op, target_val):
-                            matching_records.append((r.get("url"), num))
+                            matching_records.append((r.get("url") if isinstance(r, dict) else "", num))
                     except (ValueError, TypeError):
                         pass
 
@@ -173,13 +174,24 @@ class ConditionEvaluator:
 
         return False, f"Unsupported condition format: '{expr}'"
 
+    @staticmethod
+    def _extract_data(r: Any) -> dict[str, Any]:
+        if not isinstance(r, dict):
+            return {}
+        data = r.get("data")
+        if isinstance(data, dict):
+            return data
+        if not any(k in r for k in ("url", "extracted", "notes", "anomalies")):
+            return r
+        return {}
+
     def _discover_primary_numeric_field(self, records: list[dict[str, Any]]) -> str | None:
         """Dynamically identifies the primary numeric field present across extracted data payloads."""
         if not records:
             return None
         candidate_counts: dict[str, int] = {}
         for r in records:
-            data = r.get("data", {})
+            data = self._extract_data(r)
             for k, v in data.items():
                 if v is not None and not isinstance(v, bool):
                     try:
@@ -197,7 +209,7 @@ class ConditionEvaluator:
     def _extract_numeric_values(self, records: list[dict[str, Any]], field: str) -> list[float]:
         values: list[float] = []
         for r in records:
-            data = r.get("data", {})
+            data = self._extract_data(r)
             v = data.get(field)
             if v is not None and not isinstance(v, bool):
                 try:
