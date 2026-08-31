@@ -440,39 +440,62 @@ class AgentOrchestrator:
                 )
             )
 
-            # Export sinks (local file / S3 cloud storage / document dossier)
+            # ────────────────────────────────────────────────
+            # 4. STORAGE & EXPORT STAGE (Trigger Configured Adapters Only)
+            # ────────────────────────────────────────────────
             has_persisted = True
             dossier_url: str | None = None
             if valid_records:
                 try:
-                    # Resolve dynamic document generator style & template ID from workflow nodes if configured
-                    doc_gen = self.doc_generator
-                    template_id = None
+                    # 1. Check if Document Dossier Generator is configured in workflow nodes
+                    dossier_node = None
                     if plan.workflow_nodes:
                         for node in plan.workflow_nodes:
                             if node.get("typeId") in ("pdf_report", "dossier", "template_report") or node.get("category") == "dossier":
-                                node_config = node.get("config", {})
-                                style = node_config.get("style") or ("template" if "template" in node.get("typeId", "") else "html")
-                                template_id = node_config.get("template_id") or node_config.get("template_guid")
-                                doc_gen = DocumentAdapterFactory.get_generator(style=style)
+                                dossier_node = node
                                 break
 
-                    raw_dossier = await doc_gen.generate_dossier(
-                        automation.id, run.id, valid_records, plan_summary=plan.objective, template_id=template_id
-                    )
-                    dossier_bytes = await self.doc_redactor.redact_pii(raw_dossier)
+                    dossier_bytes: bytes | None = None
+                    if dossier_node:
+                        node_config = dossier_node.get("config", {})
+                        style = node_config.get("style") or ("template" if "template" in dossier_node.get("typeId", "") else "html")
+                        template_id = node_config.get("template_id") or node_config.get("template_guid")
+                        doc_gen = DocumentAdapterFactory.get_generator(style=style)
 
-                    # Export to local, unified cloud storage (GCS / S3), and SQL sink
+                        raw_dossier = await doc_gen.generate_dossier(
+                            automation.id, run.id, valid_records, plan_summary=plan.objective, template_id=template_id
+                        )
+                        dossier_bytes = await self.doc_redactor.redact_pii(raw_dossier)
+
+                    # 2. Local File Export (Always active for local audit trail)
                     await self.export_sink.export_results(
                         automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
                     )
-                    await self.cloud_storage.export_results(
-                        automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
+
+                    # 3. Cloud Object Storage (GCS / S3) — Trigger only if configured in workflow or settings
+                    has_cloud_node = any(
+                        node.get("typeId") in ("cloud_storage", "s3_storage", "s3", "gcs")
+                        or (node.get("category") == "storage" and "database" not in node.get("typeId", ""))
+                        for node in (plan.workflow_nodes or [])
                     )
-                    await self.db_sink.export_results(
-                        automation.id, run.id, valid_records
+                    settings = get_settings()
+                    if has_cloud_node or settings.storage_backend in ("gcs", "s3"):
+                        await self.cloud_storage.export_results(
+                            automation.id, run.id, valid_records, dossier_bytes=dossier_bytes, dossier_filename="dossier.pdf"
+                        )
+                        dossier_url = self.s3_sink.generate_presigned_url(automation.id, run.id, "dossier.pdf")
+
+                    # 4. Database Persistence Sink — Trigger only if database node is configured
+                    has_db_node = any(
+                        node.get("typeId") in ("sql_database", "database", "postgres")
+                        or (node.get("category") == "storage" and "sql" in node.get("typeId", ""))
+                        for node in (plan.workflow_nodes or [])
                     )
-                    dossier_url = self.s3_sink.generate_presigned_url(automation.id, run.id, "dossier.pdf")
+                    if has_db_node:
+                        await self.db_sink.export_results(
+                            automation.id, run.id, valid_records
+                        )
+
                 except Exception as e:  # noqa: BLE001
                     logger.warning(f"Export sink notification error: {e}")
                     has_persisted = False
